@@ -1,0 +1,30 @@
+import { NextRequest, NextResponse } from "next/server";
+import { validateCaptureSecret } from "@/lib/auth/capture-secret";
+import { ingestItem } from "@/lib/ingest";
+import type { CapturePayload } from "@/lib/db/types";
+
+export async function POST(request: NextRequest) {
+  const auth = validateCaptureSecret(request);
+  if (!auth.valid) {
+    const status = auth.error === "CAPTURE_SECRET not configured on server" ? 500 : 401;
+    return NextResponse.json({ success: false, error: auth.error }, { status });
+  }
+
+  try {
+    const payload: CapturePayload = await request.json();
+    if (!payload.external_id || !payload.body_text) {
+      return NextResponse.json(
+        { success: false, error: "external_id and body_text are required" },
+        { status: 400 }
+      );
+    }
+    const result = await ingestItem(payload);
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Ingest error:", error);
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 }
+    );
+  }
+}
