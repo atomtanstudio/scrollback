@@ -34,23 +34,27 @@ export interface SearchProvider {
   ): Promise<void>;
 }
 
-export function getSearchProvider(): SearchProvider {
+let _cachedProvider: SearchProvider | null = null;
+
+export async function getSearchProvider(): Promise<SearchProvider> {
+  if (_cachedProvider) return _cachedProvider;
+
   const dbType = process.env.DATABASE_TYPE || "postgresql";
   switch (dbType) {
     case "postgresql": {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { PostgresSearchProvider } = require("./providers/postgresql");
-      return new PostgresSearchProvider();
+      const { PostgresSearchProvider } = await import("./providers/postgresql");
+      _cachedProvider = new PostgresSearchProvider();
+      return _cachedProvider;
     }
     case "supabase": {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { SupabaseSearchProvider } = require("./providers/supabase");
-      return new SupabaseSearchProvider();
+      const { SupabaseSearchProvider } = await import("./providers/supabase");
+      _cachedProvider = new SupabaseSearchProvider();
+      return _cachedProvider;
     }
     case "sqlite": {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { SqliteSearchProvider } = require("./providers/sqlite");
-      return new SqliteSearchProvider();
+      const { SqliteSearchProvider } = await import("./providers/sqlite");
+      _cachedProvider = new SqliteSearchProvider();
+      return _cachedProvider;
     }
     default:
       throw new Error(`Unsupported DATABASE_TYPE: ${dbType}`);

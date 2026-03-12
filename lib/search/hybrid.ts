@@ -61,7 +61,8 @@ export function mergeAndRankResults(
   }
 
   const results: ScoredResult[] = [];
-  for (const { result, kwScore, semScore, isAuthorMatch } of merged.values()) {
+  const entries = Array.from(merged.values());
+  for (const { result, kwScore, semScore, isAuthorMatch } of entries) {
     const baseScore = keywordWeight * kwScore + semanticWeight * semScore;
     const boost = isAuthorMatch ? AUTHOR_BOOST : 0;
     results.push({ ...result, relevance_score: baseScore + boost });
