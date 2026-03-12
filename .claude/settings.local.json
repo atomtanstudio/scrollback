@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git branch -m main)",
+      "Bash(npx create-next-app@14 . --typescript --tailwind --eslint --app --src-dir=false --import-alias=\"@/*\" --use-npm --no-git)",
+      "Bash(npm install prisma @prisma/client @google/genai framer-motion zod uuid)",
+      "Bash(npm install -D @types/uuid vitest tsx)",
+      "Bash(npx shadcn@latest init -d)"
+    ]
+  }
+}
