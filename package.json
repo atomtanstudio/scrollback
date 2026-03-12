@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.44.0",
+    "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
@@ -19,6 +20,7 @@
     "framer-motion": "^12.36.0",
     "lucide-react": "^0.577.0",
     "next": "14.2.35",
+    "pg": "^8.20.0",
     "prisma": "^7.5.0",
     "react": "^18",
     "react-dom": "^18",
@@ -30,9 +32,11 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/pg": "^8.18.0",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/uuid": "^10.0.0",
+    "dotenv": "^17.3.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "postcss": "^8",

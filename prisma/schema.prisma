@@ -1,0 +1,155 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../lib/generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [pgvector(map: "vector")]
+}
+
+enum SourceType {
+  tweet
+  article
+  thread
+  image_prompt
+  video_prompt
+  unknown
+
+  @@map("source_type_enum")
+}
+
+enum ProcessingStatus {
+  parsed
+  enriched
+  media_downloaded
+  categorized
+  indexed
+  error
+
+  @@map("processing_status_enum")
+}
+
+enum PromptType {
+  image
+  video
+  text
+
+  @@map("prompt_type_enum")
+}
+
+enum MediaType {
+  image
+  video
+  gif
+
+  @@map("media_type_enum")
+}
+
+model ContentItem {
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source_type         SourceType
+  external_id         String?          @db.Text
+  author_handle       String?          @db.Text
+  author_display_name String?          @db.Text
+  author_avatar_url   String?          @db.Text
+  title               String           @db.Text
+  body_text           String           @db.Text
+  body_html           String?          @db.Text
+  original_url        String?          @db.Text
+  posted_at           DateTime?        @db.Timestamptz(6)
+  likes               Int?
+  retweets            Int?
+  replies             Int?
+  views               Int?
+  has_prompt          Boolean          @default(false)
+  prompt_text         String?          @db.Text
+  prompt_type         PromptType?
+  language            String?          @db.Text
+  ai_summary          String?          @db.Text
+  raw_markdown        String           @db.Text
+  source_file_path    String           @unique @db.Text
+  content_hash        String           @db.Text
+  processing_status   ProcessingStatus @default(parsed)
+  processing_error    String?          @db.Text
+  embedding           Unsupported("vector(768)")?
+  search_vector       Unsupported("tsvector")?
+  created_at          DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+
+  media_items Media[]
+  categories  ContentCategory[]
+  tags        ContentTag[]
+
+  @@index([external_id], map: "ix_content_items_external_id")
+  @@index([content_hash], map: "ix_content_items_content_hash")
+  @@index([embedding], map: "idx_content_items_embedding")
+  @@index([search_vector], map: "idx_content_items_search_vector", type: Gin)
+  @@map("content_items")
+}
+
+model Category {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String  @db.Text
+  slug        String  @unique @db.Text
+  description String? @db.Text
+  parent_id   String? @db.Uuid
+
+  parent   Category?  @relation("CategoryToCategory", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children Category[] @relation("CategoryToCategory")
+
+  content_items ContentCategory[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String @unique @db.Text
+  slug String @unique @db.Text
+
+  content_items ContentTag[]
+
+  @@map("tags")
+}
+
+model Media {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content_item_id     String    @db.Uuid
+  media_type          MediaType
+  original_url        String    @db.Text
+  stored_path         String?   @db.Text
+  alt_text            String?   @db.Text
+  ai_description      String?   @db.Text
+  position_in_content Int?
+  file_size_bytes     Int?
+  width               Int?
+  height              Int?
+
+  content_item ContentItem @relation(fields: [content_item_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("media")
+}
+
+model ContentCategory {
+  content_item_id String @db.Uuid
+  category_id     String @db.Uuid
+
+  content_item ContentItem @relation(fields: [content_item_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  category     Category    @relation(fields: [category_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([content_item_id, category_id])
+  @@map("content_categories")
+}
+
+model ContentTag {
+  content_item_id String @db.Uuid
+  tag_id          String @db.Uuid
+
+  content_item ContentItem @relation(fields: [content_item_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tag          Tag         @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([content_item_id, tag_id])
+  @@map("content_tags")
+}
