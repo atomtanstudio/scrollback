@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <div class="brand">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00ffc8" stroke-width="2">
+          <polyline points="4 17 10 11 4 5"></polyline>
+          <line x1="12" y1="19" x2="20" y2="19"></line>
+        </svg>
+        <span>Base<em>X</em></span>
+      </div>
+      <div id="connectionDot" class="connection-dot offline"></div>
+    </header>
+
+    <div class="form-group">
+      <label>SERVER URL</label>
+      <input type="text" id="serverUrl" placeholder="http://localhost:8000" spellcheck="false">
+    </div>
+
+    <div class="form-group">
+      <label>CAPTURE SECRET</label>
+      <input type="password" id="captureSecret" placeholder="Enter your capture secret" spellcheck="false">
+    </div>
+
+    <div class="button-row">
+      <button id="saveBtn" class="btn btn-cyan">SAVE</button>
+      <button id="testBtn" class="btn btn-outline">TEST</button>
+    </div>
+
+    <div id="statusMsg" class="status-msg"></div>
+
+    <hr class="divider">
+
+    <button id="bulkBtn" class="btn btn-cyan btn-full">START BULK CAPTURE</button>
+    <p class="hint">Navigate to your Likes or Bookmarks page on X first.</p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
