@@ -1,5 +1,5 @@
-// BaseX Extension - Background Service Worker
-// Relays captured tweet data from content script to BaseX server.
+// FeedSilo Extension - Background Service Worker
+// Relays captured tweet data from content script to FeedSilo server.
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'CAPTURE_TWEET') {
@@ -62,7 +62,7 @@ async function resolveVideoUrls(data) {
       data.media_urls.push(...videoUrls);
     }
   } catch (e) {
-    console.warn('BaseX: syndication resolve failed', e);
+    console.warn('FeedSilo: syndication resolve failed', e);
   }
 
   // Clean internal flag before sending to server
@@ -84,28 +84,17 @@ async function resolveArticleContent(data) {
     const resp = await fetch(
       `https://cdn.syndication.twimg.com/tweet-result?id=${tweetId}&token=x`
     );
-    if (!resp.ok) {
-      console.warn('BaseX: syndication API returned', resp.status, 'for', tweetId);
-      return;
-    }
+    if (!resp.ok) return;
     const syndicationData = await resp.json();
 
     const article = syndicationData.article;
     if (article) {
       data.source_type = 'article';
-      // Always set title from syndication — it's the canonical source
-      if (article.title) {
-        console.log('BaseX: setting article title:', JSON.stringify(article.title), '(was:', JSON.stringify(data.title), ')');
-        data.title = article.title;
-      }
-      // Fill body if empty or just a URL
-      if (article.preview_text && bodyIsEmpty) {
-        data.body_text = article.preview_text;
-      }
-      console.log('BaseX: resolved article content | title:', data.title, '| body:', data.body_text?.length, 'chars');
+      if (article.title) data.title = article.title;
+      if (article.preview_text && bodyIsEmpty) data.body_text = article.preview_text;
     }
   } catch (e) {
-    console.warn('BaseX: article resolve failed', e);
+    console.warn('FeedSilo: article resolve failed', e);
   }
 }
 
@@ -135,7 +124,7 @@ async function handleSingleCapture(data) {
 
     return await response.json();
   } catch (error) {
-    console.error('BaseX capture error:', error);
+    console.error('FeedSilo capture error:', error);
     return { success: false, error: error.message };
   }
 }
@@ -168,7 +157,7 @@ async function handleBulkCapture(items) {
 
     return await response.json();
   } catch (error) {
-    console.error('BaseX bulk capture error:', error);
+    console.error('FeedSilo bulk capture error:', error);
     return { success: false, error: error.message };
   }
 }

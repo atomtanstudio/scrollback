@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "BaseX Capture",
-  "version": "1.0",
-  "description": "Capture tweets from X/Twitter to your BaseX knowledge base.",
+  "name": "FeedSilo Capture",
+  "version": "2.0",
+  "description": "Capture tweets, threads, and articles from X/Twitter to your FeedSilo knowledge base.",
   "permissions": [
     "activeTab",
     "storage"

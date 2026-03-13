@@ -56,6 +56,8 @@ export async function ingestItem(payload: CapturePayload): Promise<CaptureResult
       author_avatar_url: payload.author_avatar_url,
       title: itemTitle,
       body_text: bodyText,
+      body_html: sanitizeText(payload.body_html),
+      conversation_id: payload.conversation_id || null,
       original_url: payload.source_url,
       posted_at: payload.posted_at ? new Date(payload.posted_at) : null,
       likes: payload.likes,

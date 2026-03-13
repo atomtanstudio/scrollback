@@ -7,6 +7,7 @@ import { ExtensionSection } from "./sections/extension-section";
 import { SearchSection } from "./sections/search-section";
 import { EmbeddingsSection } from "./sections/embeddings-section";
 import { DataSection } from "./sections/data-section";
+import { XApiSection } from "./sections/xapi-section";
 
 interface SettingsData {
   configured: boolean;
@@ -63,6 +64,7 @@ export function SettingsPage({ stats }: SettingsPageProps) {
           <div className="flex flex-col gap-4">
             <DatabaseSection settings={settings} onRefresh={fetchSettings} />
             <ExtensionSection settings={settings} onRefresh={fetchSettings} />
+            <XApiSection />
             <SearchSection settings={settings} onRefresh={fetchSettings} />
             <EmbeddingsSection settings={settings} onRefresh={fetchSettings} />
             <DataSection stats={stats} settings={settings} />

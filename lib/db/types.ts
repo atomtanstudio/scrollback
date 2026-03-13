@@ -64,8 +64,10 @@ export interface CapturePayload {
   author_avatar_url?: string | null;
   title?: string | null;
   body_text: string;
+  body_html?: string | null;
   posted_at?: string | null;
   media_urls?: string[];
+  conversation_id?: string | null;
   likes?: number | null;
   retweets?: number | null;
   replies?: number | null;

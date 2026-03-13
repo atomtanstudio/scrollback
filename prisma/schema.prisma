@@ -57,6 +57,7 @@ model ContentItem {
   title               String           @db.Text
   body_text           String           @db.Text
   body_html           String?          @db.Text
+  conversation_id     String?          @db.Text
   original_url        String?          @db.Text
   posted_at           DateTime?        @db.Timestamptz(6)
   likes               Int?
@@ -83,6 +84,7 @@ model ContentItem {
   tags        ContentTag[]
 
   @@index([external_id], map: "ix_content_items_external_id")
+  @@index([conversation_id], map: "ix_content_items_conversation_id")
   @@index([content_hash], map: "ix_content_items_content_hash")
   @@index([embedding], map: "idx_content_items_embedding")
   @@index([search_vector], map: "idx_content_items_search_vector", type: Gin)
@@ -152,4 +154,18 @@ model ContentTag {
 
   @@id([content_item_id, tag_id])
   @@map("content_tags")
+}
+
+model XApiConnection {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  x_user_id         String   @unique @db.Text
+  x_username        String   @db.Text
+  access_token_enc  String   @db.Text
+  refresh_token_enc String   @db.Text
+  token_expires_at  DateTime @db.Timestamptz(6)
+  scopes            String   @db.Text
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@map("xapi_connections")
 }

@@ -1,5 +1,5 @@
 /* --- Per-Tweet Save Button --- */
-.basex-save-btn {
+.feedsilo-save-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -18,43 +18,43 @@
   min-width: 34px;
 }
 
-.basex-save-btn:hover {
+.feedsilo-save-btn:hover {
   background-color: rgba(0, 255, 200, 0.1);
   color: #00ffc8;
 }
 
-.basex-save-btn svg {
+.feedsilo-save-btn svg {
   width: 18px;
   height: 18px;
 }
 
-.basex-save-btn.saving {
+.feedsilo-save-btn.saving {
   color: #00ffc8;
-  animation: basex-pulse 0.8s ease-in-out infinite;
+  animation: feedsilo-pulse 0.8s ease-in-out infinite;
 }
 
-.basex-save-btn.saved {
+.feedsilo-save-btn.saved {
   color: #00ffc8;
   font-size: 16px;
 }
 
-.basex-save-btn.dupe {
+.feedsilo-save-btn.dupe {
   color: #ff6b35;
   font-size: 10px;
   letter-spacing: 0.5px;
 }
 
-.basex-save-btn.error {
+.feedsilo-save-btn.error {
   color: #ff4444;
 }
 
-@keyframes basex-pulse {
+@keyframes feedsilo-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
 
 /* --- Bulk Capture HUD --- */
-#basex-hud {
+#feedsilo-hud {
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -71,7 +71,7 @@
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 200, 0.05);
 }
 
-.basex-hud-header {
+.feedsilo-hud-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -82,7 +82,7 @@
   color: #00ffc8;
 }
 
-#basex-hud-stop {
+#feedsilo-hud-stop {
   background: linear-gradient(135deg, #ff6b35, #e55a2b);
   color: #fff;
   border: none;
@@ -95,32 +95,32 @@
   letter-spacing: 0.5px;
 }
 
-#basex-hud-stop:hover {
+#feedsilo-hud-stop:hover {
   opacity: 0.85;
 }
 
-.basex-hud-stats {
+.feedsilo-hud-stats {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.basex-hud-stats div {
+.feedsilo-hud-stats div {
   display: flex;
   justify-content: space-between;
   color: #888;
   font-size: 10px;
 }
 
-.basex-hud-stats .stat-captured {
+.feedsilo-hud-stats .stat-captured {
   color: #00ffc8;
 }
 
-.basex-hud-stats .stat-skipped {
+.feedsilo-hud-stats .stat-skipped {
   color: #ff6b35;
 }
 
-.basex-hud-stats span {
+.feedsilo-hud-stats span {
   font-weight: 700;
   color: inherit;
 }

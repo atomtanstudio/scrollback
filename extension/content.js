@@ -1,14 +1,18 @@
 // ============================================================
-// BaseX Extension - Content Script
+// FeedSilo Extension - Content Script
 // ============================================================
+
+// --- Debug logging (set to true for development) ---
+const DEBUG = false;
+function log(...args) { if (DEBUG) console.log('FeedSilo:', ...args); }
 
 // --- API Interceptor (receives data from interceptor.js in MAIN world) ---
 // Cache of intercepted tweet data: Map<tweetId, tweetData>
-console.log('BaseX: content script loaded at', document.readyState);
+log('content script loaded at', document.readyState);
 const tweetCache = new Map();
 
 // Listen for API responses forwarded from the MAIN world interceptor
-document.addEventListener('basex-api-response', (event) => {
+document.addEventListener('feedsilo-api-response', (event) => {
   try {
     const data = JSON.parse(event.detail);
     extractTweetsFromApiResponse(data);
@@ -41,18 +45,22 @@ function extractTweetsFromApiResponse(data) {
   if (data.content_state?.blocks?.length > 0) {
     const { body: fullBody, imageUrls } = formatContentStateBlocks(data.content_state);
     if (fullBody.length > 200) {
-      console.log('BaseX: Found content_state with', data.content_state.blocks.length, 'blocks,', fullBody.length, 'chars,', imageUrls.length, 'images');
-
-      // Update any cached article tweets that have short body text
+      // Find the most recently cached article with a shorter body and update it
+      let bestMatch = null;
+      let bestTime = 0;
       for (const [id, cached] of tweetCache) {
-        if (cached.source_type === 'article' && cached.body_text && cached.body_text.length < 500) {
-          if (fullBody.substring(0, 50).includes(cached.body_text.substring(0, 40))) {
-            console.log('BaseX: Updating cached article', id, 'with full body (' + fullBody.length + ' chars)');
-            cached.body_text = fullBody;
-            // Add any inline images not already in media_urls
-            for (const imgUrl of imageUrls) {
-              if (!cached.media_urls.includes(imgUrl)) cached.media_urls.push(imgUrl);
-            }
+        if (cached.source_type === 'article' && (cached._cachedAt || 0) > bestTime) {
+          if (!cached.body_text || cached.body_text.length < fullBody.length) {
+            bestMatch = { id, cached };
+            bestTime = cached._cachedAt || 0;
+          }
+        }
+      }
+      if (bestMatch && (Date.now() - bestTime) < 60000) {
+        bestMatch.cached.body_text = fullBody;
+        for (const imgUrl of imageUrls) {
+          if (!bestMatch.cached.media_urls.includes(imgUrl)) {
+            bestMatch.cached.media_urls.push(imgUrl);
           }
         }
       }
@@ -80,14 +88,14 @@ function formatContentStateBlocks(contentState) {
   let codeBuffer = []; // Merge consecutive code-block lines
 
   // Log ALL blocks for debugging — compact format
-  console.log('BaseX: content_state has', blocks.length, 'blocks,', Object.keys(entityMap).length, 'entities');
+  log(' content_state has', blocks.length, 'blocks,', Object.keys(entityMap).length, 'entities');
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];
     const t = b.type || 'unstyled';
     const txt = (b.text || '').substring(0, 80);
     const dataKeys = Object.keys(b.data || {});
     const entityCount = (b.entityRanges || []).length;
-    console.log(`BaseX: block[${i}] type="${t}" text="${txt}" dataKeys=${JSON.stringify(dataKeys)} entities=${entityCount}`);
+    log(`block[${i}] type="${t}" text="${txt}" dataKeys=${JSON.stringify(dataKeys)} entities=${entityCount}`);
   }
   // X's entityMap uses { key, value: { type, data } } — build a lookup by entity.key
   // Standard Draft.js uses entityMap[N] = { type, data } directly
@@ -96,11 +104,11 @@ function formatContentStateBlocks(contentState) {
     if (entry.value && entry.key !== undefined) {
       // X format: map by the entity's own .key, resolve to .value
       entityLookup[entry.key] = entry.value;
-      console.log(`BaseX: entityLookup[${entry.key}] (idx ${idx}) type="${entry.value.type}" data=`, JSON.stringify(entry.value.data || {}).substring(0, 300));
+      log(`entityLookup[${entry.key}] (idx ${idx}) type="${entry.value.type}" data=`, JSON.stringify(entry.value.data || {}).substring(0, 300));
     } else {
       // Standard Draft.js format: use array index as key
       entityLookup[idx] = entry;
-      console.log(`BaseX: entityLookup[${idx}] type="${entry.type}" data=`, JSON.stringify(entry.data || {}).substring(0, 300));
+      log(`entityLookup[${idx}] type="${entry.type}" data=`, JSON.stringify(entry.data || {}).substring(0, 300));
     }
   }
 
@@ -220,6 +228,51 @@ function formatContentStateBlocks(contentState) {
   return { body: bodyParts.join('\n\n'), imageUrls };
 }
 
+// --- Source Type Detection ---
+function detectSourceType(bodyText, mediaUrls, isArticle, isThread) {
+  if (isArticle) return 'article';
+  if (isThread) return 'thread';
+
+  // Art prompt detection (only if tweet has media)
+  if (mediaUrls.length > 0 && bodyText) {
+    const text = bodyText.toLowerCase();
+
+    // Midjourney patterns
+    if (/--ar\s+\d+:\d+/.test(text) || /--v\s+[\d.]+/.test(text) ||
+        /--style\s+\w+/.test(text) || /\/imagine\b/.test(text) ||
+        /\bmidjourney\b/.test(text)) {
+      return 'image_prompt';
+    }
+
+    // DALL-E
+    if (/\bdall[-·\s]?e\b/i.test(bodyText)) return 'image_prompt';
+
+    // Stable Diffusion / SDXL / ComfyUI
+    if (/\bstable\s*diffusion\b/i.test(bodyText) || /\bsdxl\b/i.test(bodyText) ||
+        /\bcomfyui\b/i.test(bodyText)) {
+      return 'image_prompt';
+    }
+
+    // Flux
+    if (/\bflux\b/i.test(bodyText) && /\b(pro|dev|schnell|1\.1)\b/i.test(bodyText)) {
+      return 'image_prompt';
+    }
+
+    // Generic "generated with/using/by [tool]"
+    if (/\b(generated|created|made)\s+(with|using|by|in)\s+(midjourney|dall-?e|stable.?diffusion|flux|leonardo|firefly)/i.test(bodyText)) {
+      return 'image_prompt';
+    }
+
+    // Video generation tools
+    if (/\b(sora|runway|pika|kling|hailuo|luma\s*dream\s*machine)\b/i.test(bodyText)) {
+      const hasVideo = mediaUrls.some(u => u.includes('.mp4') || u.includes('video'));
+      return hasVideo ? 'video_prompt' : 'image_prompt';
+    }
+  }
+
+  return 'tweet';
+}
+
 function cacheTweetData(tweet) {
   const tweetId = tweet.rest_id;
   if (!tweetId) return;
@@ -243,14 +296,14 @@ function cacheTweetData(tweet) {
     isArticle = true;
     articleTitle = artResult.title || null;
     articlePreview = artResult.preview_text || '';
-    console.log('BaseX: Article detected for tweet', tweetId, '| title:', articleTitle, '| preview:', articlePreview?.substring(0, 60), '| has content_state:', !!artResult.content_state, '| keys:', Object.keys(artResult));
+    log(' Article detected for tweet', tweetId, '| title:', articleTitle, '| preview:', articlePreview?.substring(0, 60), '| has content_state:', !!artResult.content_state, '| keys:', Object.keys(artResult));
 
     // Log unexplored artResult fields for debugging
     if (artResult.media_entities) {
-      console.log('BaseX: artResult.media_entities:', JSON.stringify(artResult.media_entities).substring(0, 1000));
+      log(' artResult.media_entities:', JSON.stringify(artResult.media_entities).substring(0, 1000));
     }
     if (artResult.metadata) {
-      console.log('BaseX: artResult.metadata:', JSON.stringify(artResult.metadata).substring(0, 1000));
+      log(' artResult.metadata:', JSON.stringify(artResult.metadata).substring(0, 1000));
     }
 
     // Extract article cover image
@@ -258,7 +311,7 @@ function cacheTweetData(tweet) {
       || artResult.cover_media?.media_url_https;
     if (coverUrl) {
       articleMediaUrls.push(coverUrl);
-      console.log('BaseX: Article cover image:', coverUrl);
+      log(' Article cover image:', coverUrl);
     }
 
     // Extract images from artResult.media_entities (inline article images)
@@ -268,7 +321,7 @@ function cacheTweetData(tweet) {
         const imgUrl = me?.media_info?.original_img_url || me?.media_url_https || me?.url;
         if (imgUrl && !articleMediaUrls.includes(imgUrl)) {
           articleMediaUrls.push(imgUrl);
-          console.log('BaseX: Article inline image from media_entities:', imgUrl);
+          log(' Article inline image from media_entities:', imgUrl);
         }
       }
     }
@@ -278,7 +331,7 @@ function cacheTweetData(tweet) {
       const result = formatContentStateBlocks(artResult.content_state);
       articleBody = result.body;
       articleMediaUrls.push(...result.imageUrls);
-      console.log('BaseX: Got full article body:', articleBody.length, 'chars from', artResult.content_state.blocks.length, 'blocks,', articleMediaUrls.length, 'images');
+      log(' Got full article body:', articleBody.length, 'chars from', artResult.content_state.blocks.length, 'blocks,', articleMediaUrls.length, 'images');
     }
   }
 
@@ -319,12 +372,19 @@ function cacheTweetData(tweet) {
     bodyText = legacy.full_text || '';
   }
 
+  // Thread detection: conversation_id differs from tweet's own ID
+  const conversationId = legacy.conversation_id || tweetId;
+  const isThread = conversationId !== tweetId;
+
+  const sourceType = detectSourceType(bodyText, mediaUrls, isArticle, isThread);
+
   tweetCache.set(tweetId, {
     external_id: tweetId,
     source_url: user.screen_name
       ? `https://x.com/${user.screen_name}/status/${tweetId}`
       : `https://x.com/i/web/status/${tweetId}`,
-    source_type: isArticle ? 'article' : 'tweet',
+    source_type: sourceType,
+    conversation_id: conversationId,
     author_handle: user.screen_name || null,
     author_display_name: user.name || null,
     author_avatar_url: avatarUrl,
@@ -333,6 +393,7 @@ function cacheTweetData(tweet) {
     posted_at: legacy.created_at ? new Date(legacy.created_at).toISOString() : null,
     media_urls: mediaUrls,
     _hasUnresolvedVideo: hasUnresolvedVideo,
+    _cachedAt: Date.now(),
     likes: legacy.favorite_count || null,
     retweets: legacy.retweet_count || null,
     replies: legacy.reply_count || null,
@@ -359,19 +420,14 @@ function extractTweetFromDOM(tweetElement) {
     if (cached.source_type === 'article' && (!cached.body_text || cached.body_text.length < 500)) {
       const fullBody = extractArticleBodyFromDOM();
       if (fullBody && fullBody.length > (cached.body_text?.length || 0)) {
-        console.log('BaseX: Upgraded article body from DOM:', cached.body_text?.length || 0, '->', fullBody.length, 'chars');
         cached.body_text = fullBody;
       }
-      // Also check if we captured content_state from a GraphQL response
-      if (window._basexArticleContent?.latestBody && window._basexArticleContent.latestBody.length > (cached.body_text?.length || 0)) {
-        const age = Date.now() - (window._basexArticleContent.timestamp || 0);
-        if (age < 60000) { // within last 60 seconds
-          console.log('BaseX: Upgraded article body from intercepted content_state:', cached.body_text?.length || 0, '->', window._basexArticleContent.latestBody.length, 'chars');
-          cached.body_text = window._basexArticleContent.latestBody;
-        }
-      }
     }
-    return cached;
+    // Return a clean copy without internal fields
+    const data = { ...cached };
+    delete data._hasUnresolvedVideo;
+    delete data._cachedAt;
+    return data;
   }
 
   // Fall back to DOM extraction
@@ -416,6 +472,7 @@ function extractTweetFromDOM(tweetElement) {
     external_id: tweetId,
     source_url: `https://x.com/${authorHandle}/status/${tweetId}`,
     source_type: 'tweet',
+    conversation_id: null,
     author_handle: authorHandle,
     author_display_name: displayName,
     author_avatar_url: avatarUrl,
@@ -446,7 +503,7 @@ function extractArticleBodyFromDOM() {
   for (const container of articleContainers) {
     const text = extractTextFromContainer(container);
     if (text && text.length > 200) {
-      console.log('BaseX: Found article body via container selector:', text.length, 'chars');
+      log(' Found article body via container selector:', text.length, 'chars');
       return text;
     }
   }
@@ -480,7 +537,7 @@ function extractArticleBodyFromDOM() {
       if (paragraphs.length > 2) {
         const fullText = paragraphs.join('\n\n');
         if (fullText.length > 200) {
-          console.log('BaseX: Found article body via sibling traversal:', fullText.length, 'chars,', paragraphs.length, 'paragraphs');
+          log(' Found article body via sibling traversal:', fullText.length, 'chars,', paragraphs.length, 'paragraphs');
           return fullText;
         }
       }
@@ -521,7 +578,7 @@ function extractTextFromContainer(container) {
 
 
 // --- Per-Tweet Save Buttons ---
-const BUTTON_ATTR = 'data-basex-btn';
+const BUTTON_ATTR = 'data-feedsilo-btn';
 
 function injectSaveButtons() {
   const tweets = document.querySelectorAll('article[data-testid="tweet"]');
@@ -532,9 +589,9 @@ function injectSaveButtons() {
 
     const btn = document.createElement('button');
     btn.setAttribute(BUTTON_ATTR, 'true');
-    btn.className = 'basex-save-btn';
+    btn.className = 'feedsilo-save-btn';
     btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`;
-    btn.title = 'Save to BaseX';
+    btn.title = 'Save to FeedSilo';
 
     btn.addEventListener('click', async (e) => {
       e.preventDefault();
@@ -556,12 +613,12 @@ function injectSaveButtons() {
         return;
       }
 
-      console.log('BaseX: sending capture data', JSON.stringify(data, null, 2));
+      log(' sending capture data', JSON.stringify(data, null, 2));
       chrome.runtime.sendMessage({ type: 'CAPTURE_TWEET', data }, (response) => {
-        console.log('BaseX: capture response', response);
+        log(' capture response', response);
         btn.classList.remove('saving');
         if (chrome.runtime.lastError) {
-          console.error('BaseX: runtime error', chrome.runtime.lastError);
+          console.error('FeedSilo: runtime error', chrome.runtime.lastError);
           btn.classList.add('error');
           setTimeout(() => resetButton(btn), 3000);
           return;
@@ -577,7 +634,7 @@ function injectSaveButtons() {
           }
         } else {
           btn.classList.add('error');
-          console.error('BaseX save failed:', response?.error);
+          console.error('FeedSilo save failed:', response?.error);
           setTimeout(() => resetButton(btn), 3000);
         }
       });
@@ -588,7 +645,7 @@ function injectSaveButtons() {
 }
 
 function resetButton(btn) {
-  btn.className = 'basex-save-btn';
+  btn.className = 'feedsilo-save-btn';
   btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`;
 }
 
@@ -650,25 +707,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 function createHUD() {
-  const existing = document.getElementById('basex-hud');
+  const existing = document.getElementById('feedsilo-hud');
   if (existing) existing.remove();
 
   const hud = document.createElement('div');
-  hud.id = 'basex-hud';
+  hud.id = 'feedsilo-hud';
   hud.innerHTML = `
-    <div class="basex-hud-header">
-      <span>BaseX CAPTURE</span>
-      <button id="basex-hud-stop">STOP</button>
+    <div class="feedsilo-hud-header">
+      <span>FeedSilo CAPTURE</span>
+      <button id="feedsilo-hud-stop">STOP</button>
     </div>
-    <div class="basex-hud-stats">
-      <div>SCANNED <span id="basex-stat-total">0</span></div>
-      <div class="stat-captured">CAPTURED <span id="basex-stat-captured">0</span></div>
-      <div class="stat-skipped">SKIPPED <span id="basex-stat-skipped">0</span></div>
+    <div class="feedsilo-hud-stats">
+      <div>SCANNED <span id="feedsilo-stat-total">0</span></div>
+      <div class="stat-captured">CAPTURED <span id="feedsilo-stat-captured">0</span></div>
+      <div class="stat-skipped">SKIPPED <span id="feedsilo-stat-skipped">0</span></div>
     </div>
   `;
   document.body.appendChild(hud);
 
-  document.getElementById('basex-hud-stop').addEventListener('click', () => {
+  document.getElementById('feedsilo-hud-stop').addEventListener('click', () => {
     isBulkCapturing = false;
   });
 
@@ -677,9 +734,9 @@ function createHUD() {
 
 function updateHUD() {
   const el = (id) => document.getElementById(id);
-  const totalEl = el('basex-stat-total');
-  const capturedEl = el('basex-stat-captured');
-  const skippedEl = el('basex-stat-skipped');
+  const totalEl = el('feedsilo-stat-total');
+  const capturedEl = el('feedsilo-stat-captured');
+  const skippedEl = el('feedsilo-stat-skipped');
   if (totalEl) totalEl.textContent = bulkStats.total;
   if (capturedEl) capturedEl.textContent = bulkStats.captured;
   if (skippedEl) skippedEl.textContent = bulkStats.skipped;
@@ -768,13 +825,13 @@ async function startBulkCapture() {
 
   // Capture complete
   isBulkCapturing = false;
-  const hudHeader = document.querySelector('.basex-hud-header span');
+  const hudHeader = document.querySelector('.feedsilo-hud-header span');
   if (hudHeader) hudHeader.textContent = 'CAPTURE COMPLETE';
-  const stopBtn = document.getElementById('basex-hud-stop');
+  const stopBtn = document.getElementById('feedsilo-hud-stop');
   if (stopBtn) {
     stopBtn.textContent = 'CLOSE';
     stopBtn.addEventListener('click', () => {
-      document.getElementById('basex-hud')?.remove();
+      document.getElementById('feedsilo-hud')?.remove();
     });
   }
 }
