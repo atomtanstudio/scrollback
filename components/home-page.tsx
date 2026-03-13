@@ -1,12 +1,14 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { useState, useCallback } from "react";
 import { Header } from "@/components/header";
 import { SearchBar } from "@/components/search-bar";
 import { StatPills } from "@/components/stat-pills";
 import { FilterPills } from "@/components/filter-pills";
 import { MasonryFeed } from "@/components/masonry-feed";
+import { SearchResults } from "@/components/search-results";
 import type { ContentItemWithMedia } from "@/lib/db/types";
+import type { ScoredResult } from "@/lib/db/types";
 
 interface HomePageProps {
   initialItems: ContentItemWithMedia[];
@@ -16,9 +18,28 @@ interface HomePageProps {
 
 export function HomePage({ initialItems, totalCount, stats }: HomePageProps) {
   const [activeType, setActiveType] = useState("");
+  const [searchResults, setSearchResults] = useState<ScoredResult[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleSearch = useCallback(async (query: string) => {
+    setIsSearching(true);
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      setSearchResults(data.results || []);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchResults(null);
+  }, []);
 
   return (
-    <div className="relative z-10 max-w-[960px] mx-auto px-6">
+    <div className="relative z-10 max-w-[1200px] mx-auto px-6">
       {/* Header */}
       <Header captureCount={stats.total} />
 
@@ -31,37 +52,43 @@ export function HomePage({ initialItems, totalCount, stats }: HomePageProps) {
           Capture tweets, threads, and articles. Find anything instantly with hybrid search.
         </p>
 
-        <Suspense fallback={
-          <div className="w-full max-w-[640px] h-14 rounded-[14px] bg-[#1a1a24] animate-pulse" />
-        }>
-          <SearchBar />
-        </Suspense>
+        <SearchBar onSearch={handleSearch} onClear={handleClearSearch} />
 
         <div className="mt-6">
           <StatPills stats={stats} />
         </div>
 
-        <div className="mt-5">
-          <FilterPills activeType={activeType} onTypeChange={setActiveType} />
-        </div>
+        {!searchResults && (
+          <div className="mt-5">
+            <FilterPills activeType={activeType} onTypeChange={setActiveType} />
+          </div>
+        )}
       </div>
 
-      {/* Feed */}
-      <div className="flex items-center justify-between mb-5 mt-12">
-        <h2 className="font-heading text-xl font-semibold">Recent Captures</h2>
-        <span className="text-[13px] text-[#555566]">
-          {totalCount.toLocaleString()} items
-        </span>
-      </div>
+      {searchResults ? (
+        <SearchResults results={searchResults} isLoading={isSearching} />
+      ) : (
+        <>
+          {/* Feed */}
+          <div className="flex items-center justify-between mb-5 mt-12">
+            <h2 className="font-heading text-xl font-semibold">
+              {activeType === "tweet" ? "Tweets" : activeType === "thread" ? "Threads" : activeType === "article" ? "Articles" : activeType === "art" ? "Art & Prompts" : "Recent Captures"}
+            </h2>
+            <span className="text-[13px] text-[#555566]">
+              {totalCount.toLocaleString()} items
+            </span>
+          </div>
 
-      <div className="pb-16">
-        <MasonryFeed
-          key={activeType}
-          initialItems={initialItems}
-          totalCount={totalCount}
-          type={activeType || undefined}
-        />
-      </div>
+          <div className="pb-16">
+            <MasonryFeed
+              key={activeType}
+              initialItems={initialItems}
+              totalCount={totalCount}
+              type={activeType || undefined}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

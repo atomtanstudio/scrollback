@@ -2,6 +2,7 @@
 
 import { CardWrapper } from "./card-wrapper";
 import { formatTimeAgo } from "@/lib/format";
+import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { ContentItemWithMedia } from "@/lib/db/types";
 
 interface TweetCardProps {
@@ -35,6 +36,19 @@ export function TweetCard({ item, href }: TweetCardProps) {
         </div>
       </div>
       <p className="text-sm leading-relaxed text-[#8888aa] line-clamp-3 mb-3">{item.body_text}</p>
+      {item.media_items && item.media_items.length > 0 && (() => {
+        const image = item.media_items.find(m => m.media_type === "image");
+        if (!image) return null;
+        return (
+          <div className="mb-3 rounded-lg overflow-hidden">
+            <img
+              src={getMediaDisplayUrl(image.stored_path, image.original_url)}
+              alt={image.alt_text || ""}
+              className="w-full max-h-[200px] object-cover rounded-lg"
+            />
+          </div>
+        );
+      })()}
       <div className="flex items-center justify-between text-xs text-[#555566]">
         <span>Captured {formatTimeAgo(item.created_at)}</span>
         {item.original_url && (

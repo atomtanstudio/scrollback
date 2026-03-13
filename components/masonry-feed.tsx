@@ -14,8 +14,14 @@ interface MasonryFeedProps {
 
 const GAP = 20;
 
+function filterByType(items: ContentItemWithMedia[], type?: string): ContentItemWithMedia[] {
+  if (!type) return items;
+  if (type === "art") return items.filter(i => i.source_type === "image_prompt" || i.source_type === "video_prompt");
+  return items.filter(i => i.source_type === type);
+}
+
 export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: MasonryFeedProps) {
-  const [items, setItems] = useState(initialItems);
+  const [items, setItems] = useState(() => filterByType(initialItems, type));
   const [, setTotalCount] = useState(initialTotal);
   const [hasMore, setHasMore] = useState(initialItems.length < initialTotal);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,10 +43,8 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: Ma
     if (!containerRef.current) return;
     const width = containerRef.current.offsetWidth;
     if (width < 640) setColumnCount(1);
-    else if (width < 1024) setColumnCount(2);
-    else if (width < 1400) setColumnCount(3);
-    else if (width < 1800) setColumnCount(4);
-    else setColumnCount(5);
+    else if (width < 860) setColumnCount(2);
+    else setColumnCount(3);
   }, []);
 
   useEffect(() => {
