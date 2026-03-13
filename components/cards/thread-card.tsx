@@ -6,9 +6,10 @@ import type { ContentItemWithMedia } from "@/lib/db/types";
 
 interface ThreadCardProps {
   item: ContentItemWithMedia;
+  href?: string;
 }
 
-export function ThreadCard({ item }: ThreadCardProps) {
+export function ThreadCard({ item, href }: ThreadCardProps) {
   const initials = (item.author_display_name || item.author_handle || "??")
     .split(/\s+/)
     .map((w) => w[0])
@@ -17,7 +18,7 @@ export function ThreadCard({ item }: ThreadCardProps) {
     .toUpperCase();
 
   return (
-    <CardWrapper type="thread">
+    <CardWrapper type="thread" href={href}>
       <div className="flex items-center gap-2.5 mb-3">
         {item.author_avatar_url ? (
           <img src={item.author_avatar_url} alt="" className="w-9 h-9 rounded-full flex-shrink-0" />

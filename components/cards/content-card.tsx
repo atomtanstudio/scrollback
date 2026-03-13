@@ -11,17 +11,18 @@ interface ContentCardProps {
 }
 
 export function ContentCard({ item }: ContentCardProps) {
+  const href = `/item/${item.id}`;
   switch (item.source_type) {
     case "tweet":
-      return <TweetCard item={item} />;
+      return <TweetCard item={item} href={href} />;
     case "thread":
-      return <ThreadCard item={item} />;
+      return <ThreadCard item={item} href={href} />;
     case "article":
-      return <ArticleCard item={item} />;
+      return <ArticleCard item={item} href={href} />;
     case "image_prompt":
     case "video_prompt":
-      return <ArtCard item={item} />;
+      return <ArtCard item={item} href={href} />;
     default:
-      return <TweetCard item={item} />;
+      return <TweetCard item={item} href={href} />;
   }
 }

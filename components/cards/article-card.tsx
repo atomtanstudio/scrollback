@@ -6,9 +6,10 @@ import type { ContentItemWithMedia } from "@/lib/db/types";
 
 interface ArticleCardProps {
   item: ContentItemWithMedia;
+  href?: string;
 }
 
-export function ArticleCard({ item }: ArticleCardProps) {
+export function ArticleCard({ item, href }: ArticleCardProps) {
   const thumbnail = item.media_items?.find((m) => m.media_type === "image");
   let sourceDomain: string | null = null;
   try {
@@ -20,10 +21,10 @@ export function ArticleCard({ item }: ArticleCardProps) {
   }
 
   return (
-    <CardWrapper type="article" noPadding>
+    <CardWrapper type="article" noPadding href={href}>
       <div className="w-full h-[140px] rounded-t-[13px] overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#1a1a2e] to-[#16213e]">
         {thumbnail?.stored_path || thumbnail?.original_url ? (
-          <img src={thumbnail.stored_path || thumbnail.original_url} alt={thumbnail.alt_text || item.title} className="w-full h-full object-cover" />
+          <img src={thumbnail.stored_path || thumbnail.original_url} alt={thumbnail.alt_text || item.title} className="w-full h-full object-cover object-top" />
         ) : (
           <span className="text-xs text-[#555566]">No thumbnail</span>
         )}

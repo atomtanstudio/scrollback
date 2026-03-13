@@ -6,9 +6,10 @@ import type { ContentItemWithMedia } from "@/lib/db/types";
 
 interface TweetCardProps {
   item: ContentItemWithMedia;
+  href?: string;
 }
 
-export function TweetCard({ item }: TweetCardProps) {
+export function TweetCard({ item, href }: TweetCardProps) {
   const initials = (item.author_display_name || item.author_handle || "??")
     .split(/\s+/)
     .map((w) => w[0])
@@ -17,7 +18,7 @@ export function TweetCard({ item }: TweetCardProps) {
     .toUpperCase();
 
   return (
-    <CardWrapper type="tweet">
+    <CardWrapper type="tweet" href={href}>
       <div className="flex items-center gap-2.5 mb-3">
         {item.author_avatar_url ? (
           <img src={item.author_avatar_url} alt="" className="w-9 h-9 rounded-full flex-shrink-0" />

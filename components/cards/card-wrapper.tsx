@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
+import Link from "next/link";
 
 type CardType = "tweet" | "thread" | "article" | "art";
 
@@ -24,18 +25,19 @@ interface CardWrapperProps {
   children: ReactNode;
   className?: string;
   noPadding?: boolean;
+  href?: string;
 }
 
-export function CardWrapper({ type, children, className, noPadding }: CardWrapperProps) {
-  return (
-    <div
-      className={cn(
-        "rounded-[14px] p-px transition-transform duration-200 ease-out cursor-pointer hover:-translate-y-0.5 relative",
-        borderGradients[type],
-        type === "thread" && "mb-2",
-        className
-      )}
-    >
+export function CardWrapper({ type, children, className, noPadding, href }: CardWrapperProps) {
+  const outerClasses = cn(
+    "rounded-[14px] p-px transition-transform duration-200 ease-out cursor-pointer hover:-translate-y-0.5 relative",
+    borderGradients[type],
+    type === "thread" && "mb-2",
+    className
+  );
+
+  const content = (
+    <>
       {type === "thread" && (
         <>
           <div className="absolute -bottom-[5px] left-[6px] right-[6px] h-[5px] rounded-b-[14px] bg-gradient-to-r from-[#a78bfa30] via-[#a78bfa10] to-[#a78bfa30]" />
@@ -51,6 +53,16 @@ export function CardWrapper({ type, children, className, noPadding }: CardWrappe
       >
         {children}
       </div>
-    </div>
+    </>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className={cn(outerClasses, "block no-underline text-inherit")}>
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className={outerClasses}>{content}</div>;
 }
