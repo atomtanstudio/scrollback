@@ -16,7 +16,7 @@ const GAP = 20;
 
 export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: MasonryFeedProps) {
   const [items, setItems] = useState(initialItems);
-  const [totalCount, setTotalCount] = useState(initialTotal);
+  const [, setTotalCount] = useState(initialTotal);
   const [hasMore, setHasMore] = useState(initialItems.length < initialTotal);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -126,6 +126,7 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: Ma
       const data = await res.json();
 
       const newItems = data.items.filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (item: any) => !loadedIds.includes(item.id)
       );
 

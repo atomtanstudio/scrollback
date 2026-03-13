@@ -11,6 +11,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
   const prisma = await getClient();
   const { limit = 50, type, excludeIds = [] } = options;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const baseWhere: any = {};
 
   if (type) {

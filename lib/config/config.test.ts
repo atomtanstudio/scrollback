@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { configSchema, type FeedsiloConfig } from './schema';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { configSchema } from './schema';
 
 describe('configSchema', () => {
   it('validates a complete postgresql config', () => {

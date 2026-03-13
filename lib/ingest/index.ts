@@ -46,6 +46,7 @@ export async function ingestItem(payload: CapturePayload): Promise<CaptureResult
   await prisma.contentItem.create({
     data: {
       id: itemId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       source_type: (payload.source_type as any) || "tweet",
       external_id: payload.external_id,
       author_handle: cleanHandle,
@@ -73,6 +74,7 @@ export async function ingestItem(payload: CapturePayload): Promise<CaptureResult
       data: payload.media_urls.map((url, position) => ({
         id: uuidv4(),
         content_item_id: itemId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         media_type: detectMediaType(url) as any,
         original_url: url,
         position_in_content: position,

@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
     } else {
       return testPgConnection(parsed.data);
     }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return NextResponse.json(
       { connected: false, pgvector: false, error: error.message || "Unknown error" },
@@ -114,6 +115,7 @@ async function testPgConnection(data: z.infer<typeof requestSchema>) {
     await pool.end();
 
     return NextResponse.json({ connected: true, pgvector });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     await pool.end().catch(() => {});
     return NextResponse.json({

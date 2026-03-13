@@ -1,5 +1,6 @@
 import { getConfig, type DatabaseType } from "@/lib/config";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PrismaClientAny = any; // Both PG and SQLite clients satisfy this
 
 const globalForClient = globalThis as unknown as {
@@ -36,8 +37,13 @@ export async function getClient(): Promise<PrismaClientAny> {
     const { PrismaClient } = await import(
       "@/lib/generated/prisma-sqlite/client"
     );
+    const { PrismaBetterSqlite3 } = await import(
+      "@prisma/adapter-better-sqlite3"
+    );
+    const filePath = config.database.url.replace(/^file:/, "");
+    const adapter = new PrismaBetterSqlite3({ url: `file:${filePath}` });
     client = new PrismaClient({
-      datasourceUrl: config.database.url,
+      adapter,
       log: process.env.NODE_ENV === "development" ? ["query"] : [],
     });
   } else {

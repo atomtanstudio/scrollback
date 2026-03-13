@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 import type { SearchProvider } from "@/lib/db/search-provider";
 import type { SearchFilters, SearchOptions, ScoredResult } from "@/lib/db/types";
 import { getClient } from "@/lib/db/client";
@@ -161,6 +162,7 @@ export class SqliteSearchProvider implements SearchProvider {
     const rows = await prisma.$queryRawUnsafe(
       `SELECT rowid FROM content_items WHERE id = ?`,
       itemId
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ) as any[];
 
     if (rows.length === 0) return;
@@ -183,6 +185,7 @@ export class SqliteSearchProvider implements SearchProvider {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapRow(row: any): ScoredResult {
     return {
       id: row.id,

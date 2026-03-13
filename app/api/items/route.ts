@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
 
   const [items, total] = await Promise.all([
     prisma.contentItem.findMany({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       where: where as any,
       orderBy: { posted_at: "desc" },
       skip: (page - 1) * perPage,
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
         },
       },
     }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     prisma.contentItem.count({ where: where as any }),
   ]);
 

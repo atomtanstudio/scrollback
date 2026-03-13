@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
         env: { ...process.env, DATABASE_URL: config.database.url },
         timeout: 30000,
       });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       return NextResponse.json({
         success: false,
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
         const { SqliteSearchProvider } = await import("@/lib/db/providers/sqlite");
         const provider = new SqliteSearchProvider();
         await provider.ensureFts5Table();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         // Log but don't fail — FTS5 can be created later
         console.warn("FTS5 table creation failed:", error.message);
@@ -95,6 +97,7 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365 * 10, // 10 years
     });
     return response;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || "Unknown error" },
