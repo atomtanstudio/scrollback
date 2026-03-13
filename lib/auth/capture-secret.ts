@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server";
+import { getConfig } from "@/lib/config";
 
-export function validateCaptureSecret(request: NextRequest): { valid: boolean; error?: string } {
-  const captureSecret = process.env.CAPTURE_SECRET;
+export function validateCaptureSecret(
+  request: NextRequest
+): { valid: boolean; error?: string } {
+  // Priority: CAPTURE_SECRET env var > config pairingToken
+  const captureSecret =
+    process.env.CAPTURE_SECRET || getConfig()?.extension?.pairingToken;
+
   if (!captureSecret) {
     return { valid: false, error: "CAPTURE_SECRET not configured on server" };
   }
