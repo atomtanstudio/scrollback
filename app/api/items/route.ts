@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
+import { getClient } from "@/lib/db/client";
 import { fetchItems } from "@/lib/db/queries";
 
 export async function GET(request: NextRequest) {
@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
   };
   if (type) where.source_type = type;
 
+  const prisma = await getClient();
   const [items, total] = await Promise.all([
     prisma.contentItem.findMany({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,7 +45,8 @@ export async function GET(request: NextRequest) {
   ]);
 
   return NextResponse.json({
-    items: items.map((item) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    items: items.map((item: any) => ({
       id: item.id,
       source_type: item.source_type,
       title: item.title,
