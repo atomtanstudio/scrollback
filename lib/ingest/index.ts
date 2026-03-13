@@ -4,6 +4,8 @@ import { getClient } from "@/lib/db/client";
 import { getSearchProvider } from "@/lib/db/search-provider";
 import { generateEmbedding } from "@/lib/embeddings/gemini";
 import type { CapturePayload, CaptureResult } from "@/lib/db/types";
+import { isR2Configured } from "@/lib/storage/r2";
+import { downloadAndStoreMedia } from "@/lib/storage/download";
 
 function sanitizeText(s: string | null | undefined): string | null {
   if (!s) return null;
@@ -68,24 +70,37 @@ export async function ingestItem(payload: CapturePayload): Promise<CaptureResult
   });
 
   // Create media records
+  // TODO: SQLite uses prisma.mediaItem — abstract when adding SQLite ingest support
+  const mediaRecords: Array<{ id: string; originalUrl: string }> = [];
   if (payload.media_urls && payload.media_urls.length > 0) {
-    // TODO: SQLite uses prisma.mediaItem — abstract when adding SQLite ingest support
-    await prisma.media.createMany({
-      data: payload.media_urls.map((url, position) => ({
-        id: uuidv4(),
-        content_item_id: itemId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        media_type: detectMediaType(url) as any,
-        original_url: url,
-        position_in_content: position,
-      })),
-    });
+    for (let i = 0; i < payload.media_urls.length; i++) {
+      const url = payload.media_urls[i];
+      const mediaId = uuidv4();
+      await prisma.media.create({
+        data: {
+          id: mediaId,
+          content_item_id: itemId,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          media_type: detectMediaType(url) as any,
+          original_url: url,
+          position_in_content: i,
+        },
+      });
+      mediaRecords.push({ id: mediaId, originalUrl: url });
+    }
   }
 
   // Fire-and-forget background indexing
   indexItemInBackground(itemId, itemTitle, bodyText, cleanHandle, authorDisplayName).catch(err =>
     console.error(`Background indexing failed for ${itemId}:`, err)
   );
+
+  // Fire-and-forget R2 media download
+  if (mediaRecords.length > 0) {
+    downloadMediaInBackground(itemId, mediaRecords).catch((err) =>
+      console.error(`Background media download failed for ${itemId}:`, err)
+    );
+  }
 
   return { success: true, already_exists: false, item_id: itemId };
 }
@@ -133,5 +148,28 @@ async function indexItemInBackground(
         },
       });
     } catch {} // Don't throw on error update failure
+  }
+}
+
+async function downloadMediaInBackground(
+  contentItemId: string,
+  mediaRecords: Array<{ id: string; originalUrl: string }>
+): Promise<void> {
+  if (!isR2Configured()) return;
+
+  const prisma = await getClient();
+  for (const { id, originalUrl } of mediaRecords) {
+    try {
+      const storedUrl = await downloadAndStoreMedia(id, contentItemId, originalUrl);
+      if (storedUrl) {
+        await prisma.media.update({
+          where: { id },
+          data: { stored_path: storedUrl },
+        });
+      }
+    } catch (error) {
+      console.warn(`Failed to download media ${id}:`, error instanceof Error ? error.message : error);
+      // Continue with next media item
+    }
   }
 }
