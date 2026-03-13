@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma-sqlite"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model ContentItem {
+  id                  String    @id @default(uuid())
+  source_type         String
+  external_id         String?
+  author_handle       String?
+  author_display_name String?
+  author_avatar_url   String?
+  title               String
+  body_text           String
+  body_html           String?
+  original_url        String?
+  posted_at           DateTime?
+  likes               Int?
+  retweets            Int?
+  replies             Int?
+  views               Int?
+  has_prompt          Boolean   @default(false)
+  prompt_text         String?
+  prompt_type         String?
+  language            String?
+  ai_summary          String?
+  raw_markdown        String
+  source_file_path    String    @unique
+  content_hash        String
+  processing_status   String    @default("parsed")
+  processing_error    String?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @default(now()) @updatedAt
+
+  media_items MediaItem[]
+  categories  ContentCategory[]
+  tags        ContentTag[]
+
+  @@index([external_id])
+  @@index([content_hash])
+  @@map("content_items")
+}
+
+model Category {
+  id          String  @id @default(uuid())
+  name        String
+  slug        String  @unique
+  description String?
+  parent_id   String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parent_id], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+
+  content_items ContentCategory[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id   String @id @default(uuid())
+  name String @unique
+  slug String @unique
+
+  content_items ContentTag[]
+
+  @@map("tags")
+}
+
+model MediaItem {
+  id                  String  @id @default(uuid())
+  content_item_id     String
+  content_item        ContentItem @relation(fields: [content_item_id], references: [id], onDelete: Cascade)
+  media_type          String
+  original_url        String
+  stored_path         String?
+  alt_text            String?
+  ai_description      String?
+  position_in_content Int?
+  file_size_bytes     Int?
+  width               Int?
+  height              Int?
+
+  @@map("media")
+}
+
+model ContentCategory {
+  content_item_id String
+  category_id     String
+  content_item    ContentItem @relation(fields: [content_item_id], references: [id], onDelete: Cascade)
+  category        Category    @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@id([content_item_id, category_id])
+  @@map("content_categories")
+}
+
+model ContentTag {
+  content_item_id String
+  tag_id          String
+  content_item    ContentItem @relation(fields: [content_item_id], references: [id], onDelete: Cascade)
+  tag             Tag         @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([content_item_id, tag_id])
+  @@map("content_tags")
+}
