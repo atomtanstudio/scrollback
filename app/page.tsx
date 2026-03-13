@@ -1,14 +1,19 @@
-export default function Home() {
+import { HomePage } from "@/components/home-page";
+import { fetchItems, fetchStats } from "@/lib/db/queries";
+
+export default async function Home() {
+  const [{ items, totalCount }, stats] = await Promise.all([
+    fetchItems({ limit: 50 }),
+    fetchStats(),
+  ]);
+
   return (
-    <main style={{ padding: "2rem", fontFamily: "system-ui" }}>
-      <h1>FeedSilo</h1>
-      <p>Personal content intelligence. Session 2 will add the full UI.</p>
-      <p>API endpoints available:</p>
-      <ul>
-        <li>GET /api/search?q=your+query</li>
-        <li>GET /api/items</li>
-        <li>POST /api/ingest</li>
-      </ul>
+    <main className="min-h-screen">
+      <HomePage
+        initialItems={JSON.parse(JSON.stringify(items))}
+        totalCount={totalCount}
+        stats={stats}
+      />
     </main>
   );
 }
