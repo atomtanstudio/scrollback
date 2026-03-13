@@ -2,6 +2,7 @@
 
 import { CardWrapper } from "./card-wrapper";
 import { formatTimeAgo } from "@/lib/format";
+import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { ContentItemWithMedia } from "@/lib/db/types";
 
 interface ArtCardProps {
@@ -24,7 +25,7 @@ export function ArtCard({ item, href }: ArtCardProps) {
     <CardWrapper type="art" noPadding={hasImage} href={href}>
       {hasImage && (
         <div className="w-full h-[180px] rounded-t-[13px] overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#1a1028] to-[#201430] relative">
-          <img src={image!.stored_path || image!.original_url} alt={image!.alt_text || item.title} className="w-full h-full object-cover object-top" />
+          <img src={getMediaDisplayUrl(image!.stored_path, image!.original_url)} alt={image!.alt_text || item.title} className="w-full h-full object-cover object-top" />
           {item.prompt_type && (
             <div className="absolute top-2.5 right-2.5 bg-[#0e101890] backdrop-blur-md border border-[#ec489940] rounded-md px-2 py-0.5 text-[11px] text-[var(--accent-art)] font-medium">
               {item.prompt_type === "image" ? "Image" : "Video"} Prompt

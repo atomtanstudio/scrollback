@@ -43,7 +43,6 @@ Copy `.env.example` to `.env.local` and fill in your values, or use the onboardi
 | `R2_ACCESS_KEY_ID` | No | R2 API token access key |
 | `R2_SECRET_ACCESS_KEY` | No | R2 API token secret key |
 | `R2_BUCKET_NAME` | No | R2 bucket name (e.g. `feedsilo-media`) |
-| `R2_PUBLIC_URL` | No | R2 public bucket URL or custom domain |
 
 ## Deploy (Dokploy / Nixpacks)
 

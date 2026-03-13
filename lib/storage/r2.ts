@@ -1,20 +1,14 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 
 const REQUIRED_ENV_VARS = [
   "R2_ACCOUNT_ID",
   "R2_ACCESS_KEY_ID",
   "R2_SECRET_ACCESS_KEY",
   "R2_BUCKET_NAME",
-  "R2_PUBLIC_URL",
 ] as const;
 
 export function isR2Configured(): boolean {
   return REQUIRED_ENV_VARS.every((key) => !!process.env[key]);
-}
-
-export function getPublicUrl(key: string): string {
-  const base = (process.env.R2_PUBLIC_URL || "").replace(/\/$/, "");
-  return `${base}/${key}`;
 }
 
 function getClient(): S3Client {
@@ -42,7 +36,27 @@ export async function uploadMedia(
       ContentType: contentType,
     })
   );
-  return getPublicUrl(key);
+  return key;
+}
+
+export async function getR2Object(key: string): Promise<{ body: ReadableStream; contentType: string } | null> {
+  const client = getClient();
+  try {
+    const response = await client.send(
+      new GetObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME!,
+        Key: key,
+      })
+    );
+    if (!response.Body) return null;
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      body: response.Body.transformToWebStream() as any,
+      contentType: response.ContentType || "application/octet-stream",
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function deleteMedia(key: string): Promise<void> {

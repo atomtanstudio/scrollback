@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { optimizeXImageUrl } from "@/lib/media-utils";
+import { getMediaDisplayUrl } from "@/lib/media-url";
 
 interface MediaLightboxItem {
   id: string;
@@ -19,7 +20,7 @@ interface MediaLightboxProps {
 }
 
 function getMediaUrl(item: MediaLightboxItem): string {
-  return item.stored_path || item.original_url;
+  return getMediaDisplayUrl(item.stored_path, item.original_url);
 }
 
 function getLargeImageUrl(item: MediaLightboxItem): string {

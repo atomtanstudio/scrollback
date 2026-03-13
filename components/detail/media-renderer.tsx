@@ -1,6 +1,7 @@
 "use client";
 
 import { optimizeXImageUrl } from "@/lib/media-utils";
+import { getMediaDisplayUrl } from "@/lib/media-url";
 
 interface MediaItem {
   id: string;
@@ -18,7 +19,7 @@ interface MediaRendererProps {
 }
 
 function getMediaUrl(item: MediaItem): string {
-  return item.stored_path || item.original_url;
+  return getMediaDisplayUrl(item.stored_path, item.original_url);
 }
 
 function getOptimizedImageUrl(item: MediaItem, size: "small" | "medium" | "large" = "medium"): string {

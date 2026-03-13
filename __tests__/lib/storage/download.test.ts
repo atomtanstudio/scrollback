@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Mock r2 module
 vi.mock("@/lib/storage/r2", () => ({
   isR2Configured: vi.fn(() => true),
-  uploadMedia: vi.fn(async (key: string) => `https://media.example.com/${key}`),
+  uploadMedia: vi.fn(async (key: string) => key),
 }));
 
 // Mock global fetch
@@ -26,7 +26,7 @@ describe("downloadAndStoreMedia", () => {
     const { downloadAndStoreMedia } = await import("@/lib/storage/download");
     const result = await downloadAndStoreMedia("media-123", "item-456", "https://pbs.twimg.com/media/photo.jpg");
 
-    expect(result).toBe("https://media.example.com/media/item-456/media-123.jpg");
+    expect(result).toBe("media/item-456/media-123.jpg");
     expect(mockFetch).toHaveBeenCalledWith("https://pbs.twimg.com/media/photo.jpg", expect.any(Object));
   });
 
