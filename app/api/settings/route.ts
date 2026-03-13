@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getConfig, writeConfig, readConfig, invalidateConfigCache } from "@/lib/config";
-import { disconnectClient } from "@/lib/db/client";
+import { getClient, disconnectClient } from "@/lib/db/client";
 import { invalidateSearchProvider } from "@/lib/db/search-provider";
+import { isR2Configured } from "@/lib/storage/r2";
 import type { FeedsiloConfig } from "@/lib/config";
 
 function maskUrl(url: string): string {
@@ -23,6 +24,23 @@ export async function GET() {
     return NextResponse.json({ configured: false });
   }
 
+  // R2 media counts
+  let r2 = { configured: false, mediaWithStored: 0, mediaWithoutStored: 0 };
+  const r2Configured = isR2Configured();
+  if (r2Configured) {
+    try {
+      const prisma = await getClient();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const [withStored, withoutStored] = await Promise.all([
+        (prisma as any).media.count({ where: { stored_path: { not: null } } }),
+        (prisma as any).media.count({ where: { stored_path: null } }),
+      ]);
+      r2 = { configured: true, mediaWithStored: withStored, mediaWithoutStored: withoutStored };
+    } catch {
+      r2 = { configured: true, mediaWithStored: 0, mediaWithoutStored: 0 };
+    }
+  }
+
   return NextResponse.json({
     configured: true,
     database: {
@@ -41,6 +59,7 @@ export async function GET() {
       keywordWeight: config.search.keywordWeight,
       semanticWeight: config.search.semanticWeight,
     },
+    r2,
   });
 }
 
