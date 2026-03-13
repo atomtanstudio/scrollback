@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { Header } from "@/components/header";
 import { SearchBar } from "@/components/search-bar";
 import { StatPills } from "@/components/stat-pills";
 import { FilterPills } from "@/components/filter-pills";
@@ -19,12 +20,7 @@ export function HomePage({ initialItems, totalCount, stats }: HomePageProps) {
   return (
     <div className="relative z-10 max-w-[960px] mx-auto px-6">
       {/* Header */}
-      <header className="flex items-center justify-between py-6">
-        <div className="font-heading font-semibold text-[21px] tracking-tight text-[#f0f0f5] flex items-center">
-          feed<span className="inline-block w-[5px] h-[5px] rounded-full bg-[var(--accent-thread)] mx-[1px] relative top-[1px]" />silo
-        </div>
-        <div className="text-[13px] text-[#555566]">{stats.total.toLocaleString()} captures</div>
-      </header>
+      <Header captureCount={stats.total} />
 
       {/* Hero */}
       <div className="flex flex-col items-center pt-20 pb-10 text-center">
