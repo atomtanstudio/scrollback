@@ -12,6 +12,7 @@ Built with Next.js 14, Prisma, and PostgreSQL (pgvector).
 - **Detail Pages** — Newspaper-style content view with engagement stats, thread chains, and related items
 - **Multi-Database** — PostgreSQL, Supabase, or SQLite
 - **Embeddings** — Google Gemini for vector embeddings (optional)
+- **Media Storage** — Cloudflare R2 for persistent media storage (optional)
 - **Export** — JSON (NDJSON) and CSV export
 
 ## Quick Start
@@ -38,6 +39,11 @@ Copy `.env.example` to `.env.local` and fill in your values, or use the onboardi
 | `CAPTURE_SECRET` | No | Browser extension pairing token |
 | `SEARCH_KEYWORD_WEIGHT` | No | Keyword search weight (default: `0.4`) |
 | `SEARCH_VECTOR_WEIGHT` | No | Semantic search weight (default: `0.6`) |
+| `R2_ACCOUNT_ID` | No | Cloudflare account ID (for media storage) |
+| `R2_ACCESS_KEY_ID` | No | R2 API token access key |
+| `R2_SECRET_ACCESS_KEY` | No | R2 API token secret key |
+| `R2_BUCKET_NAME` | No | R2 bucket name (e.g. `feedsilo-media`) |
+| `R2_PUBLIC_URL` | No | R2 public bucket URL or custom domain |
 
 ## Deploy (Dokploy / Nixpacks)
 
