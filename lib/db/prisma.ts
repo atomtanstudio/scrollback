@@ -1,3 +1,9 @@
+/**
+ * @deprecated Use getClient() from '@/lib/db/client' instead.
+ * This file is kept temporarily for backward compatibility during migration.
+ * It will be removed once all consumers use getClient().
+ */
+
 import { PrismaClient } from "@/lib/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
