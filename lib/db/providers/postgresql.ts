@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma";
+import { getClient } from "@/lib/db/client";
 import type { SearchProvider } from "@/lib/db/search-provider";
 import type { SearchFilters, SearchOptions, ScoredResult } from "@/lib/db/types";
 
@@ -117,6 +117,7 @@ export class PostgresSearchProvider implements SearchProvider {
     filters: SearchFilters,
     opts: SearchOptions
   ): Promise<ScoredResult[]> {
+    const prisma = await getClient();
     const offset = (opts.page - 1) * opts.perPage;
 
     // Build filter clauses starting at $2 (query is $1)
@@ -182,6 +183,7 @@ export class PostgresSearchProvider implements SearchProvider {
     filters: SearchFilters,
     opts: SearchOptions
   ): Promise<ScoredResult[]> {
+    const prisma = await getClient();
     const offset = (opts.page - 1) * opts.perPage;
     const likePattern = `%${query}%`;
 
@@ -238,6 +240,7 @@ export class PostgresSearchProvider implements SearchProvider {
     filters: SearchFilters,
     opts: SearchOptions
   ): Promise<ScoredResult[]> {
+    const prisma = await getClient();
     const offset = (opts.page - 1) * opts.perPage;
 
     // $1 = vector string, e.g. "[0.1,0.2,...]"
@@ -297,6 +300,7 @@ export class PostgresSearchProvider implements SearchProvider {
     filters: SearchFilters,
     opts: SearchOptions
   ): Promise<ScoredResult[]> {
+    const prisma = await getClient();
     const offset = (opts.page - 1) * opts.perPage;
     const likePattern = `%${query}%`;
 
@@ -354,6 +358,7 @@ export class PostgresSearchProvider implements SearchProvider {
    * Count total matching results for keyword search (for pagination).
    */
   async countResults(query: string, filters: SearchFilters): Promise<number> {
+    const prisma = await getClient();
     const { clauses, params: filterParams } = buildFilterClauses(filters, 2);
 
     const tsWhere = [
@@ -406,6 +411,7 @@ export class PostgresSearchProvider implements SearchProvider {
    * Write a vector embedding to the embedding column for a content item.
    */
   async writeEmbedding(itemId: string, embedding: number[]): Promise<void> {
+    const prisma = await getClient();
     const vectorStr = `[${embedding.join(",")}]`;
 
     await prisma.$queryRawUnsafe(
@@ -428,6 +434,7 @@ export class PostgresSearchProvider implements SearchProvider {
       author?: string;
     }
   ): Promise<void> {
+    const prisma = await getClient();
     const parts: string[] = [
       `setweight(to_tsvector('english', COALESCE($1, '')), 'A')`,
       `setweight(to_tsvector('english', COALESCE($2, '')), 'B')`,

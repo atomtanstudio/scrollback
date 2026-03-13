@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { createHash } from "crypto";
-import { prisma } from "@/lib/db/prisma";
+import { getClient } from "@/lib/db/client";
 import { getSearchProvider } from "@/lib/db/search-provider";
 import { generateEmbedding } from "@/lib/embeddings/gemini";
 import type { CapturePayload, CaptureResult } from "@/lib/db/types";
@@ -18,6 +18,8 @@ function detectMediaType(url: string): "image" | "video" | "gif" {
 }
 
 export async function ingestItem(payload: CapturePayload): Promise<CaptureResult> {
+  const prisma = await getClient();
+
   // Check for duplicate
   const existing = await prisma.contentItem.findFirst({
     where: { external_id: payload.external_id },
@@ -66,6 +68,7 @@ export async function ingestItem(payload: CapturePayload): Promise<CaptureResult
 
   // Create media records
   if (payload.media_urls && payload.media_urls.length > 0) {
+    // TODO: SQLite uses prisma.mediaItem — abstract when adding SQLite ingest support
     await prisma.media.createMany({
       data: payload.media_urls.map((url, position) => ({
         id: uuidv4(),
@@ -92,6 +95,7 @@ async function indexItemInBackground(
   authorHandle: string | null,
   authorDisplayName: string | null
 ): Promise<void> {
+  const prisma = await getClient();
   try {
     const provider = await getSearchProvider();
 

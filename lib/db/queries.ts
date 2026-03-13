@@ -1,4 +1,4 @@
-import { prisma } from "./prisma";
+import { getClient, getDatabaseType } from "./client";
 
 export interface FetchItemsOptions {
   limit?: number;
@@ -8,6 +8,7 @@ export interface FetchItemsOptions {
 }
 
 export async function fetchItems(options: FetchItemsOptions = {}) {
+  const prisma = await getClient();
   const { limit = 50, type, excludeIds = [] } = options;
 
   const baseWhere: any = {};
@@ -45,6 +46,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
 }
 
 export async function fetchStats() {
+  const prisma = await getClient();
   const [total, tweets, threads, articles, art] = await Promise.all([
     prisma.contentItem.count(),
     prisma.contentItem.count({ where: { source_type: "tweet" } }),
@@ -59,6 +61,7 @@ export async function fetchStats() {
 }
 
 export async function fetchItemById(id: string) {
+  const prisma = await getClient();
   return prisma.contentItem.findUnique({
     where: { id },
     include: {
@@ -74,6 +77,7 @@ export async function fetchThreadChain(item: { source_type: string; author_handl
     return [];
   }
 
+  const prisma = await getClient();
   const timeWindow = 24 * 60 * 60 * 1000; // 24 hours
   const postedAt = item.posted_at ? new Date(item.posted_at).getTime() : Date.now();
 
@@ -98,6 +102,13 @@ export async function fetchThreadChain(item: { source_type: string; author_handl
 }
 
 export async function fetchRelatedItems(itemId: string, limit: number = 6) {
+  const dbType = getDatabaseType();
+  if (dbType === "sqlite") {
+    // pgvector not available on SQLite — return empty
+    return [];
+  }
+
+  const prisma = await getClient();
   const results = await prisma.$queryRawUnsafe(`
     SELECT ci.id, ci.source_type, ci.title, ci.body_text,
            ci.author_handle, ci.author_display_name, ci.author_avatar_url,
