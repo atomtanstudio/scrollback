@@ -49,7 +49,7 @@ export function MediaRenderer({ mediaItems, onImageClick }: MediaRendererProps) 
 
       {images.length === 2 && (
         <div className="grid grid-cols-2 gap-2">
-          {images.map((item, i) => (
+          {images.map((item) => (
             <img
               key={item.id}
               src={getOptimizedImageUrl(item, "medium")}

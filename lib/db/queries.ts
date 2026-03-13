@@ -8,7 +8,7 @@ export interface FetchItemsOptions {
 }
 
 export async function fetchItems(options: FetchItemsOptions = {}) {
-  const { limit = 50, type, excludeIds = [], search } = options;
+  const { limit = 50, type, excludeIds = [] } = options;
 
   const baseWhere: any = {};
 
