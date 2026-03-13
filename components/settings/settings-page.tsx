@@ -14,6 +14,7 @@ interface SettingsData {
   embeddings?: { provider: string; apiKey: string | null; hasKey: boolean };
   extension?: { pairingToken: string | null };
   search?: { keywordWeight: number; semanticWeight: number };
+  r2?: { configured: boolean; mediaWithStored: number; mediaWithoutStored: number };
 }
 
 interface SettingsPageProps {
@@ -64,7 +65,7 @@ export function SettingsPage({ stats }: SettingsPageProps) {
             <ExtensionSection settings={settings} onRefresh={fetchSettings} />
             <SearchSection settings={settings} onRefresh={fetchSettings} />
             <EmbeddingsSection settings={settings} onRefresh={fetchSettings} />
-            <DataSection stats={stats} />
+            <DataSection stats={stats} settings={settings} />
           </div>
         )}
       </div>

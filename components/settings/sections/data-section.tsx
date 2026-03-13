@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import { DangerZone } from "@/components/shared/danger-zone";
+import { ProgressBar } from "@/components/shared/progress-bar";
 
 interface DataSectionProps {
   stats: { total: number; tweets: number; threads: number; articles: number; art: number };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  settings?: any;
 }
 
-export function DataSection({ stats }: DataSectionProps) {
+export function DataSection({ stats, settings }: DataSectionProps) {
   const [deleteResult, setDeleteResult] = useState<string | null>(null);
+  const r2 = settings?.r2;
 
   const handleDelete = async () => {
     const res = await fetch("/api/data", {
@@ -41,6 +45,28 @@ export function DataSection({ stats }: DataSectionProps) {
           <StatCard label="Threads" value={stats.threads} color="var(--accent-thread)" />
           <StatCard label="Articles" value={stats.articles} color="var(--accent-article)" />
         </div>
+
+        {/* Media Storage (R2) */}
+        {r2?.configured && (
+          <div className="flex flex-col gap-2">
+            <h4 className="text-sm font-medium text-[#f0f0f5]">Media Storage (R2)</h4>
+            {r2.mediaWithoutStored > 0 ? (
+              <>
+                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                  {r2.mediaWithoutStored} of {r2.mediaWithStored + r2.mediaWithoutStored} media items pending download
+                </p>
+                <ProgressBar
+                  endpoint="/api/media/backfill"
+                  buttonLabel="Download Media to R2"
+                />
+              </>
+            ) : (
+              <p className="text-xs text-emerald-400">
+                All {r2.mediaWithStored} media items stored in R2
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Export */}
         <div className="flex flex-col gap-2">
