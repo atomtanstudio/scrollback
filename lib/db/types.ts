@@ -1,3 +1,6 @@
+export type { ContentItemModel as ContentItem } from "@/lib/generated/prisma/models/ContentItem";
+export type { MediaModel as Media } from "@/lib/generated/prisma/models/Media";
+
 export interface SearchFilters {
   type?: string; // source_type filter
   author?: string; // author_handle or author_display_name
