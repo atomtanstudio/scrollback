@@ -4,58 +4,35 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-  }
+    --background: 240 20% 4%;       /* #0a0a0f */
+    --surface: 240 18% 8%;          /* #111118 */
+    --surface-elevated: 240 15% 12%; /* #1a1a24 */
+    --foreground: 240 10% 95%;      /* #f0f0f5 */
+    --muted: 240 10% 35%;           /* #555566 */
+    --muted-foreground: 240 12% 60%; /* #8888aa */
+    --border: 0 0% 100% / 0.07;
+    --border-hover: 0 0% 100% / 0.14;
+    --card: 240 18% 8%;
+    --card-foreground: 240 10% 95%;
+    --primary: 186 78% 53%;         /* #22d3ee cyan */
+    --primary-foreground: 240 20% 4%;
+    --accent-tweet: #22d3ee;
+    --accent-thread: #a78bfa;
+    --accent-article: #fb923c;
+    --accent-art: #ec4899;
+    --radius: 0.75rem;
 
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    /* shadcn compatibility variables */
+    --popover: 240 18% 8%;
+    --popover-foreground: 240 10% 95%;
+    --secondary: 240 15% 12%;
+    --secondary-foreground: 240 10% 95%;
+    --accent: 240 15% 12%;
+    --accent-foreground: 240 10% 95%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --destructive-foreground: 240 10% 95%;
+    --input: 240 15% 12%;
+    --ring: 186 78% 53%;
   }
 }
 
@@ -64,6 +41,103 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#0a0a0f] text-[#f0f0f5] antialiased;
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   }
+}
+
+/* Card gradient backgrounds — shared template */
+
+.card-gradient-tweet {
+  background:
+    linear-gradient(to top, #0e1018 0%, #0e101880 18%, transparent 40%),
+    radial-gradient(ellipse at 0% 0%, #0e1018 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, #0e1018 0%, transparent 8%),
+    radial-gradient(circle at 97% 3%, #c47a30 0%, #8a5030 3%, transparent 14%),
+    radial-gradient(ellipse at 78% 15%, #5a2870 0%, #3a1858 15%, transparent 45%),
+    radial-gradient(ellipse at 50% 40%, #1e3068 0%, transparent 55%),
+    radial-gradient(ellipse at 40% 60%, #184058 0%, transparent 55%),
+    #0e1018;
+}
+
+.card-gradient-thread {
+  background:
+    linear-gradient(to top, #0e1018 0%, #0e101880 18%, transparent 40%),
+    radial-gradient(ellipse at 0% 0%, #0e1018 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, #0e1018 0%, transparent 8%),
+    radial-gradient(circle at 97% 3%, #a04858 0%, #7a3858 3%, transparent 14%),
+    radial-gradient(ellipse at 78% 15%, #5a2878 0%, #3a1860 15%, transparent 45%),
+    radial-gradient(ellipse at 50% 40%, #1e2870 0%, transparent 55%),
+    radial-gradient(ellipse at 40% 60%, #184a60 0%, transparent 55%),
+    #0e1018;
+}
+
+.card-gradient-article {
+  background:
+    linear-gradient(to top, #0e1018 0%, #0e101880 18%, transparent 40%),
+    radial-gradient(ellipse at 0% 0%, #0e1018 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, #0e1018 0%, transparent 8%),
+    radial-gradient(circle at 97% 3%, #c48a30 0%, #8a7028 3%, transparent 14%),
+    radial-gradient(ellipse at 78% 15%, #3a5a40 0%, #2a4a38 15%, transparent 45%),
+    radial-gradient(ellipse at 50% 40%, #1e3060 0%, transparent 55%),
+    radial-gradient(ellipse at 40% 60%, #1a2a58 0%, transparent 55%),
+    #0e1018;
+}
+
+.card-gradient-art {
+  background:
+    linear-gradient(to top, #0e1018 0%, #0e101880 18%, transparent 40%),
+    radial-gradient(ellipse at 0% 0%, #0e1018 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, #0e1018 0%, transparent 8%),
+    radial-gradient(circle at 97% 3%, #ec4899 0%, #c0387a 3%, transparent 14%),
+    radial-gradient(ellipse at 78% 15%, #7a1858 0%, #5a1048 15%, transparent 45%),
+    radial-gradient(ellipse at 50% 40%, #2a1860 0%, transparent 55%),
+    radial-gradient(ellipse at 40% 60%, #1a2858 0%, transparent 55%),
+    #0e1018;
+}
+
+/* Border gradient wrappers */
+.border-gradient-tweet {
+  background: linear-gradient(135deg, #22d3ee50 0%, #22d3ee20 30%, #22d3ee10 50%, #22d3ee20 70%, #22d3ee40 100%);
+}
+.border-gradient-thread {
+  background: linear-gradient(135deg, #a78bfa50 0%, #a78bfa20 30%, #a78bfa10 50%, #a78bfa20 70%, #a78bfa40 100%);
+}
+.border-gradient-article {
+  background: linear-gradient(135deg, #fb923c50 0%, #fb923c20 30%, #fb923c10 50%, #fb923c20 70%, #fb923c40 100%);
+}
+.border-gradient-art {
+  background: linear-gradient(135deg, #ec489950 0%, #ec489920 30%, #ec489910 50%, #ec489920 70%, #ec489940 100%);
+}
+
+/* Search bar gradient */
+.search-border-gradient {
+  background: linear-gradient(135deg, var(--accent-tweet), var(--accent-thread), var(--accent-art), var(--accent-article));
+}
+
+/* Background glow effects */
+.bg-glow::before {
+  content: '';
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.07) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-glow::after {
+  content: '';
+  position: fixed;
+  top: 30%;
+  left: 60%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(8, 145, 178, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
 }
