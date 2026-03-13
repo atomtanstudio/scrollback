@@ -2,7 +2,7 @@
 
 import { ContentCard } from "@/components/cards/content-card";
 import { CardSkeletonGrid } from "@/components/card-skeleton";
-import { useEffect, useState, useCallback, useTransition, useRef, useLayoutEffect } from "react";
+import { useEffect, useState, useCallback, useRef, useLayoutEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import type { ContentItemWithMedia } from "@/lib/db/types";
 
@@ -18,7 +18,7 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: Ma
   const [items, setItems] = useState(initialItems);
   const [totalCount, setTotalCount] = useState(initialTotal);
   const [hasMore, setHasMore] = useState(initialItems.length < initialTotal);
-  const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(0);
@@ -110,10 +110,11 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: Ma
   }, [calculatePositions]);
 
   // Load more via API with excludeIds
-  const loadMore = useCallback(() => {
-    if (!hasMore || isPending) return;
+  const loadMore = useCallback(async () => {
+    if (!hasMore || isLoading) return;
 
-    startTransition(async () => {
+    setIsLoading(true);
+    try {
       const loadedIds = items.map((i) => i.id);
       const params = new URLSearchParams({
         limit: "50",
@@ -131,12 +132,14 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: Ma
       setItems((prev) => [...prev, ...newItems]);
       setHasMore(data.hasMore);
       setTotalCount(data.totalCount);
-    });
-  }, [hasMore, isPending, items, type]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [hasMore, isLoading, items, type]);
 
   useEffect(() => {
-    if (inView && hasMore && !isPending) loadMore();
-  }, [inView, loadMore, hasMore, isPending]);
+    if (inView && hasMore && !isLoading) loadMore();
+  }, [inView, loadMore, hasMore, isLoading]);
 
   // Reset on type filter change
   const prevTypeRef = useRef(type);
@@ -181,7 +184,7 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: Ma
         })}
       </div>
 
-      {isPending && (
+      {isLoading && (
         <div className="mt-4">
           <CardSkeletonGrid count={6} />
         </div>
