@@ -8,13 +8,17 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prisma:generate": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/schema-sqlite.prisma",
+    "postinstall": "npm run prisma:generate"
   },
   "dependencies": {
     "@google/genai": "^1.44.0",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
     "@radix-ui/react-slot": "^1.2.4",
+    "better-sqlite3": "^12.6.2",
+    "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.36.0",
@@ -32,6 +36,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/pg": "^8.18.0",
     "@types/react": "^18",
