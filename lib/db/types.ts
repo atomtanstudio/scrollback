@@ -3,9 +3,17 @@ export type { MediaModel as Media } from "@/lib/generated/prisma/models/Media";
 
 import type { ContentItemModel } from "@/lib/generated/prisma/models/ContentItem";
 import type { MediaModel } from "@/lib/generated/prisma/models/Media";
+import type { CategoryModel } from "@/lib/generated/prisma/models/Category";
+import type { TagModel } from "@/lib/generated/prisma/models/Tag";
 
 export type ContentItemWithMedia = ContentItemModel & {
   media_items?: MediaModel[];
+};
+
+export type DetailItem = ContentItemModel & {
+  media_items: MediaModel[];
+  categories: Array<{ category: CategoryModel }>;
+  tags: Array<{ tag: TagModel }>;
 };
 
 export interface SearchFilters {

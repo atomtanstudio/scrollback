@@ -8,3 +8,14 @@ export function formatTimeAgo(date: Date | string): string {
   if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
+
+export function formatNumber(num: number | null | undefined): string {
+  if (num == null) return '0';
+  return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(num);
+}
+
+export function formatFullDate(date: Date | string | null | undefined): string {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
