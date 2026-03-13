@@ -2,10 +2,10 @@
 
 import { CardWrapper } from "./card-wrapper";
 import { formatTimeAgo } from "@/lib/format";
-import type { ContentItem } from "@/lib/db/types";
+import type { ContentItemWithMedia } from "@/lib/db/types";
 
 interface TweetCardProps {
-  item: ContentItem & { media_items?: any[] };
+  item: ContentItemWithMedia;
 }
 
 export function TweetCard({ item }: TweetCardProps) {

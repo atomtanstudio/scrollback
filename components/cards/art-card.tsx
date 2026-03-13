@@ -2,14 +2,14 @@
 
 import { CardWrapper } from "./card-wrapper";
 import { formatTimeAgo } from "@/lib/format";
-import type { ContentItem } from "@/lib/db/types";
+import type { ContentItemWithMedia } from "@/lib/db/types";
 
 interface ArtCardProps {
-  item: ContentItem & { media_items?: any[] };
+  item: ContentItemWithMedia;
 }
 
 export function ArtCard({ item }: ArtCardProps) {
-  const image = item.media_items?.find((m: any) => m.media_type === "image" || m.media_type === "video");
+  const image = item.media_items?.find((m) => m.media_type === "image" || m.media_type === "video");
   const hasImage = !!(image?.stored_path || image?.original_url);
 
   const initials = (item.author_display_name || item.author_handle || "??")

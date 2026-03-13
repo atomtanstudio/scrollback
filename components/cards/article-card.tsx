@@ -2,17 +2,22 @@
 
 import { CardWrapper } from "./card-wrapper";
 import { formatTimeAgo } from "@/lib/format";
-import type { ContentItem } from "@/lib/db/types";
+import type { ContentItemWithMedia } from "@/lib/db/types";
 
 interface ArticleCardProps {
-  item: ContentItem & { media_items?: any[] };
+  item: ContentItemWithMedia;
 }
 
 export function ArticleCard({ item }: ArticleCardProps) {
-  const thumbnail = item.media_items?.find((m: any) => m.media_type === "image");
-  const sourceDomain = item.original_url
-    ? new URL(item.original_url).hostname.replace("www.", "")
-    : null;
+  const thumbnail = item.media_items?.find((m) => m.media_type === "image");
+  let sourceDomain: string | null = null;
+  try {
+    sourceDomain = item.original_url
+      ? new URL(item.original_url).hostname.replace("www.", "")
+      : null;
+  } catch {
+    sourceDomain = null;
+  }
 
   return (
     <CardWrapper type="article" noPadding>

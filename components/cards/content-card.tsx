@@ -4,10 +4,10 @@ import { TweetCard } from "./tweet-card";
 import { ThreadCard } from "./thread-card";
 import { ArticleCard } from "./article-card";
 import { ArtCard } from "./art-card";
-import type { ContentItem } from "@/lib/db/types";
+import type { ContentItemWithMedia } from "@/lib/db/types";
 
 interface ContentCardProps {
-  item: ContentItem & { media_items?: any[] };
+  item: ContentItemWithMedia;
 }
 
 export function ContentCard({ item }: ContentCardProps) {
