@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
+import { fetchItems } from "@/lib/db/queries";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
+
+  // excludeIds mode: when excludeIds param is present, use shared query function
+  const excludeIdsParam = searchParams.get("excludeIds");
+  if (excludeIdsParam !== null) {
+    const excludeIds = excludeIdsParam ? excludeIdsParam.split(",") : [];
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)));
+    const type = searchParams.get("type") || undefined;
+    const result = await fetchItems({ limit, type, excludeIds });
+    return NextResponse.json(result);
+  }
+
+  // Existing offset-based pagination
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
   const perPage = Math.min(100, Math.max(1, parseInt(searchParams.get("per_page") || "20", 10)));
   const type = searchParams.get("type") || undefined;
