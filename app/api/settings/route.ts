@@ -30,11 +30,12 @@ export async function GET() {
   if (r2Configured) {
     try {
       const prisma = await getClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      /* eslint-disable @typescript-eslint/no-explicit-any */
       const [withStored, withoutStored] = await Promise.all([
         (prisma as any).media.count({ where: { stored_path: { not: null } } }),
         (prisma as any).media.count({ where: { stored_path: null } }),
       ]);
+      /* eslint-enable @typescript-eslint/no-explicit-any */
       r2 = { configured: true, mediaWithStored: withStored, mediaWithoutStored: withoutStored };
     } catch {
       r2 = { configured: true, mediaWithStored: 0, mediaWithoutStored: 0 };
