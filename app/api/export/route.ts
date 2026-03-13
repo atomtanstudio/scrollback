@@ -55,7 +55,8 @@ export async function GET(request: NextRequest) {
   }
 
   // JSON (NDJSON)
-  const ndjson = items.map((item) => JSON.stringify(item)).join("\n");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ndjson = items.map((item: any) => JSON.stringify(item)).join("\n");
 
   return new Response(ndjson, {
     headers: {

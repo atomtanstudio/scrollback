@@ -6,6 +6,7 @@ import { ConnectionTester } from "@/components/shared/connection-tester";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface DatabaseSectionProps { settings: any; onRefresh: () => void }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function DatabaseSection({ settings, onRefresh }: DatabaseSectionProps) {
   const [showUrl, setShowUrl] = useState(false);
   const db = settings?.database;
