@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
         ? {
             id: item.media_items[0].id,
             type: item.media_items[0].media_type,
-            url: `/api/media/${item.media_items[0].id}`,
+            url: item.media_items[0].stored_path || item.media_items[0].original_url,
           }
         : null,
     })),
