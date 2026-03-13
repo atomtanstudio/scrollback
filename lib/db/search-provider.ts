@@ -1,4 +1,5 @@
 import type { SearchFilters, SearchOptions, ScoredResult } from "./types";
+import { getConfig } from "@/lib/config";
 
 export interface SearchProvider {
   keywordSearch(
@@ -35,28 +36,43 @@ export interface SearchProvider {
 }
 
 let _cachedProvider: SearchProvider | null = null;
+let _cachedDbType: string | null = null;
 
 export async function getSearchProvider(): Promise<SearchProvider> {
-  if (_cachedProvider) return _cachedProvider;
+  const config = getConfig();
+  const dbType = config?.database.type || process.env.DATABASE_TYPE || "postgresql";
 
-  const dbType = process.env.DATABASE_TYPE || "postgresql";
+  // Invalidate cache if database type changed
+  if (_cachedProvider && _cachedDbType === dbType) return _cachedProvider;
+
   switch (dbType) {
     case "postgresql": {
       const { PostgresSearchProvider } = await import("./providers/postgresql");
       _cachedProvider = new PostgresSearchProvider();
-      return _cachedProvider;
+      break;
     }
     case "supabase": {
       const { SupabaseSearchProvider } = await import("./providers/supabase");
       _cachedProvider = new SupabaseSearchProvider();
-      return _cachedProvider;
+      break;
     }
     case "sqlite": {
       const { SqliteSearchProvider } = await import("./providers/sqlite");
       _cachedProvider = new SqliteSearchProvider();
-      return _cachedProvider;
+      break;
     }
     default:
-      throw new Error(`Unsupported DATABASE_TYPE: ${dbType}`);
+      throw new Error(`Unsupported database type: ${dbType}`);
   }
+
+  _cachedDbType = dbType;
+  return _cachedProvider;
+}
+
+/**
+ * Invalidate the cached provider. Call when switching databases.
+ */
+export function invalidateSearchProvider(): void {
+  _cachedProvider = null;
+  _cachedDbType = null;
 }
