@@ -4,7 +4,9 @@ import { motion } from "framer-motion";
 import { BackNavigation } from "./back-navigation";
 import { DetailContent } from "./detail-content";
 import { DetailSidebar } from "./detail-sidebar";
-import type { DetailItem } from "@/lib/db/types";
+import { ThreadChain } from "./thread-chain";
+import { RelatedItems } from "./related-items";
+import type { DetailItem, ContentItemWithMedia } from "@/lib/db/types";
 
 type CardType = "tweet" | "thread" | "article" | "art";
 
@@ -43,11 +45,13 @@ const itemVariants = {
 
 interface ItemDetailPageProps {
   item: DetailItem;
+  threadSiblings?: ContentItemWithMedia[];
 }
 
-export function ItemDetailPage({ item }: ItemDetailPageProps) {
+export function ItemDetailPage({ item, threadSiblings = [] }: ItemDetailPageProps) {
   const cardType = getCardType(item.source_type);
   const isArticle = cardType === "article";
+  const isThread = cardType === "thread";
 
   return (
     <div className="max-w-[960px] mx-auto px-5 py-6 relative z-[1]">
@@ -71,7 +75,9 @@ export function ItemDetailPage({ item }: ItemDetailPageProps) {
               <div
                 className={`rounded-[15px] overflow-hidden card-gradient-${cardType}${isArticle ? "" : " p-8"}`}
               >
-                {isArticle ? (
+                {isThread ? (
+                  <ThreadChain currentItem={item} siblings={threadSiblings} />
+                ) : isArticle ? (
                   <div className="p-8">
                     <DetailContent item={item} cardType={cardType} />
                   </div>
@@ -87,6 +93,11 @@ export function ItemDetailPage({ item }: ItemDetailPageProps) {
             <DetailSidebar item={item} cardType={cardType} />
           </motion.div>
         </div>
+
+        {/* Related items (full width, below the two-column grid) */}
+        <motion.div variants={itemVariants} className="mt-10">
+          <RelatedItems itemId={item.id} />
+        </motion.div>
       </motion.div>
     </div>
   );

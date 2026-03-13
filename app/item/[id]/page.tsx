@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { fetchItemById } from "@/lib/db/queries";
+import { fetchItemById, fetchThreadChain } from "@/lib/db/queries";
 import type { Metadata } from "next";
-import type { DetailItem } from "@/lib/db/types";
+import type { DetailItem, ContentItemWithMedia } from "@/lib/db/types";
 import { ItemDetailPage } from "@/components/detail/item-detail-page";
 
 export const dynamic = "force-dynamic";
@@ -23,9 +23,12 @@ export default async function ItemDetailPageRoute({ params }: { params: Promise<
   if (!item) notFound();
   const serializedItem = JSON.parse(JSON.stringify(item)) as DetailItem;
 
+  const threadSiblingsRaw = await fetchThreadChain(item);
+  const threadSiblings = JSON.parse(JSON.stringify(threadSiblingsRaw)) as ContentItemWithMedia[];
+
   return (
     <main className="min-h-screen">
-      <ItemDetailPage item={serializedItem} />
+      <ItemDetailPage item={serializedItem} threadSiblings={threadSiblings} />
     </main>
   );
 }
