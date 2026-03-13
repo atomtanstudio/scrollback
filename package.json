@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prisma:generate": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/schema-sqlite.prisma",
+    "db:push": "prisma db push --schema=prisma/schema.prisma --accept-data-loss --skip-generate",
     "postinstall": "npm run prisma:generate"
   },
   "dependencies": {
