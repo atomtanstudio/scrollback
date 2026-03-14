@@ -11,7 +11,7 @@ interface ArticleCardProps {
 }
 
 export function ArticleCard({ item, href }: ArticleCardProps) {
-  const thumbnail = item.media_items?.find((m) => m.media_type === "image");
+  const thumbnail = item.media_items?.[0] || null;
   let sourceDomain: string | null = null;
   try {
     sourceDomain = item.original_url
@@ -23,9 +23,22 @@ export function ArticleCard({ item, href }: ArticleCardProps) {
 
   return (
     <CardWrapper type="article" noPadding href={href}>
-      <div className="w-full h-[140px] rounded-t-[13px] overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#1a1a2e] to-[#16213e]">
+      <div className="w-full h-[140px] rounded-t-[13px] overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#1a1a2e] to-[#16213e] relative">
         {thumbnail?.stored_path || thumbnail?.original_url ? (
-          <img src={getMediaDisplayUrl(thumbnail.stored_path, thumbnail.original_url)} alt={thumbnail.alt_text || item.title} className="w-full h-full object-cover object-top" />
+          <>
+            {thumbnail.media_type === "video" ? (
+              <video src={getMediaDisplayUrl(thumbnail.stored_path, thumbnail.original_url)} muted preload="metadata" className="w-full h-full object-cover object-top" />
+            ) : (
+              <img src={getMediaDisplayUrl(thumbnail.stored_path, thumbnail.original_url)} alt={thumbnail.alt_text || item.title} className="w-full h-full object-cover object-top" />
+            )}
+            {thumbnail.media_type === "video" && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <span className="text-xs text-[#555566]">No thumbnail</span>
         )}

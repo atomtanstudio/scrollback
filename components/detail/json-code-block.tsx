@@ -127,7 +127,7 @@ export function JsonCodeBlock({ code, onCopy }: JsonCodeBlockProps) {
         {copied ? "Copied!" : "Copy"}
       </button>
 
-      <pre className="font-mono text-[13px] leading-[1.65] m-0">
+      <pre className="font-mono text-[13px] leading-[1.65] m-0 whitespace-pre-wrap break-words">
         {lines.map((line, lineIndex) => {
           const tokens = tokenizeLine(line);
           return (

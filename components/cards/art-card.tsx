@@ -25,7 +25,18 @@ export function ArtCard({ item, href }: ArtCardProps) {
     <CardWrapper type="art" noPadding={hasImage} href={href}>
       {hasImage && (
         <div className="w-full h-[180px] rounded-t-[13px] overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#1a1028] to-[#201430] relative">
-          <img src={getMediaDisplayUrl(image!.stored_path, image!.original_url)} alt={image!.alt_text || item.title} className="w-full h-full object-cover object-top" />
+          {image!.media_type === "video" ? (
+            <video src={getMediaDisplayUrl(image!.stored_path, image!.original_url)} muted preload="metadata" className="w-full h-full object-cover object-top" />
+          ) : (
+            <img src={getMediaDisplayUrl(image!.stored_path, image!.original_url)} alt={image!.alt_text || item.title} className="w-full h-full object-cover object-top" />
+          )}
+          {image!.media_type === "video" && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+              </div>
+            </div>
+          )}
           {item.prompt_type && (
             <div className="absolute top-2.5 right-2.5 bg-[#0e101890] backdrop-blur-md border border-[#ec489940] rounded-md px-2 py-0.5 text-[11px] text-[var(--accent-art)] font-medium">
               {item.prompt_type === "image" ? "Image" : "Video"} Prompt
@@ -43,6 +54,9 @@ export function ArtCard({ item, href }: ArtCardProps) {
           <p className="text-[13px] text-[#8888aa] italic line-clamp-2 mb-2 before:content-['\201C'] before:text-[var(--accent-art)] after:content-['\201D'] after:text-[var(--accent-art)]">
             {item.prompt_text}
           </p>
+        )}
+        {item.body_text && !item.prompt_text && (
+          <p className="text-sm leading-relaxed text-[#8888aa] line-clamp-2 mb-2">{item.body_text}</p>
         )}
         <div className="flex items-center gap-2 mb-2">
           {item.author_avatar_url ? (

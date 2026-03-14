@@ -96,6 +96,101 @@ function TableOfContents({ html }: { html: string }) {
   );
 }
 
+const borderGradients: Record<CardType, string> = {
+  tweet: "border-gradient-tweet",
+  thread: "border-gradient-thread",
+  article: "border-gradient-article",
+  art: "border-gradient-art",
+};
+
+const cardGradients: Record<CardType, string> = {
+  tweet: "card-gradient-tweet",
+  thread: "card-gradient-thread",
+  article: "card-gradient-article",
+  art: "card-gradient-art",
+};
+
+function AiSummaryCard({ summary, cardType }: { summary: string; cardType: CardType }) {
+  return (
+    <div className={`rounded-[14px] p-px ${borderGradients[cardType]}`}>
+      <div className={`rounded-[13px] p-5 ${cardGradients[cardType]}`}>
+        <p
+          className="font-heading font-semibold text-[13px] text-[#8888aa] mb-3"
+          style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}
+        >
+          AI Summary
+        </p>
+        <p className="text-sm leading-relaxed text-[#d8d8e8]">{summary}</p>
+      </div>
+    </div>
+  );
+}
+
+function TagsCard({ tags, cardType }: { tags: DetailItem["tags"]; cardType: CardType }) {
+  if (!tags || tags.length === 0) return null;
+  const accent = accentColors[cardType];
+
+  return (
+    <div className={`rounded-[14px] p-px ${borderGradients[cardType]}`}>
+      <div className={`rounded-[13px] p-5 ${cardGradients[cardType]}`}>
+        <p
+          className="font-heading font-semibold text-[13px] text-[#8888aa] mb-3"
+          style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}
+        >
+          Tags
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {tags.map(({ tag }) => (
+            <span
+              key={tag.id}
+              className="rounded-full px-2.5 py-0.5 text-[11px] border"
+              style={{
+                backgroundColor: `${accent}14`,
+                color: accent,
+                borderColor: `${accent}26`,
+              }}
+            >
+              {tag.name}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CategoriesCard({ categories, cardType }: { categories: DetailItem["categories"]; cardType: CardType }) {
+  if (!categories || categories.length === 0) return null;
+  const accent = accentColors[cardType];
+
+  return (
+    <div className={`rounded-[14px] p-px ${borderGradients[cardType]}`}>
+      <div className={`rounded-[13px] p-5 ${cardGradients[cardType]}`}>
+        <p
+          className="font-heading font-semibold text-[13px] text-[#8888aa] mb-3"
+          style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}
+        >
+          Categories
+        </p>
+        <div className="space-y-1.5">
+          {categories.map(({ category }) => (
+            <div
+              key={category.id}
+              className="flex items-center gap-2 text-[13px]"
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: accent }}
+              />
+              <span className="text-[#d8d8e8]">{category.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function DetailSidebar({ item, cardType }: DetailSidebarProps) {
   const accent = accentColors[cardType];
   const sourceTypeLabel =
@@ -103,6 +198,10 @@ export function DetailSidebar({ item, cardType }: DetailSidebarProps) {
 
   return (
     <div className="sticky top-6 flex flex-col gap-5">
+      {item.ai_summary && (
+        <AiSummaryCard summary={item.ai_summary} cardType={cardType} />
+      )}
+
       <EngagementBento
         views={item.views}
         likes={item.likes}
@@ -118,6 +217,9 @@ export function DetailSidebar({ item, cardType }: DetailSidebarProps) {
         originalUrl={item.original_url}
         sourceType={item.source_type}
       />
+
+      <TagsCard tags={item.tags} cardType={cardType} />
+      <CategoriesCard categories={item.categories} cardType={cardType} />
 
       <div className="bg-[var(--surface)] border border-[hsl(var(--border))] rounded-[14px] p-4 px-5">
         <p

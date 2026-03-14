@@ -9,6 +9,7 @@ interface MediaItem {
   original_url: string;
   stored_path: string | null;
   alt_text: string | null;
+  ai_description: string | null;
   width: number | null;
   height: number | null;
 }
@@ -27,6 +28,15 @@ function getOptimizedImageUrl(item: MediaItem, size: "small" | "medium" | "large
   return optimizeXImageUrl(url, size);
 }
 
+function MediaCaption({ item }: { item: MediaItem }) {
+  if (!item.ai_description) return null;
+  return (
+    <p className="text-xs text-[#8888aa] italic mt-1.5 px-1 leading-relaxed">
+      {item.ai_description}
+    </p>
+  );
+}
+
 export function MediaRenderer({ mediaItems, onImageClick }: MediaRendererProps) {
   if (!mediaItems || mediaItems.length === 0) return null;
 
@@ -40,12 +50,15 @@ export function MediaRenderer({ mediaItems, onImageClick }: MediaRendererProps) 
     <div className="space-y-2">
       {/* Images */}
       {images.length === 1 && (
-        <img
-          src={getOptimizedImageUrl(images[0], "medium")}
-          alt={images[0].alt_text || ""}
-          className="w-full max-h-[480px] object-contain rounded-xl bg-[#0c0c14] cursor-pointer"
-          onClick={() => onImageClick?.(mediaItems.indexOf(images[0]))}
-        />
+        <div>
+          <img
+            src={getOptimizedImageUrl(images[0], "medium")}
+            alt={images[0].alt_text || ""}
+            className="w-full max-h-[480px] object-contain rounded-xl bg-[#0c0c14] cursor-pointer"
+            onClick={() => onImageClick?.(mediaItems.indexOf(images[0]))}
+          />
+          <MediaCaption item={images[0]} />
+        </div>
       )}
 
       {images.length === 2 && (
