@@ -4,6 +4,7 @@ import { formatFullDate } from "@/lib/format";
 import type { DetailItem } from "@/lib/db/types";
 import { EngagementBento } from "./engagement-bento";
 import { AuthorCard } from "./author-card";
+import { AdminActions } from "@/components/detail/admin-actions";
 
 type CardType = "tweet" | "thread" | "article" | "art";
 
@@ -217,6 +218,8 @@ export function DetailSidebar({ item, cardType }: DetailSidebarProps) {
         originalUrl={item.original_url}
         sourceType={item.source_type}
       />
+
+      <AdminActions item={item} />
 
       <TagsCard tags={item.tags} cardType={cardType} />
       <CategoriesCard categories={item.categories} cardType={cardType} />
