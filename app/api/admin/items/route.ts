@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
       body_preview: item.body_text?.substring(0, 150) || "",
       thumbnail: (() => {
         // Prefer an image over a video for the thumbnail
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const img = item.media_items.find((m: any) => m.media_type === "image" || m.media_type === "gif");
         const first = img || item.media_items[0];
         if (!first) return null;

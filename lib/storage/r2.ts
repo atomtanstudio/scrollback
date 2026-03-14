@@ -69,7 +69,11 @@ export async function uploadMediaStream(
   return key;
 }
 
-export async function getR2Object(key: string): Promise<{ body: ReadableStream; contentType: string } | null> {
+export async function getR2Object(key: string): Promise<{
+  body: ReadableStream;
+  contentType: string;
+  contentLength: number | undefined;
+} | null> {
   const client = getClient();
   try {
     const response = await client.send(
@@ -79,10 +83,36 @@ export async function getR2Object(key: string): Promise<{ body: ReadableStream; 
       })
     );
     if (!response.Body) return null;
+
+    // Wrap the SDK stream so that enqueue-after-close (client disconnect) is
+    // silently caught instead of crashing the process as an uncaughtException.
+    const sdkStream = response.Body as import("stream").Readable;
+    const safeStream = new ReadableStream({
+      start(controller) {
+        sdkStream.on("data", (chunk: Buffer) => {
+          try {
+            controller.enqueue(new Uint8Array(chunk));
+          } catch {
+            // Controller already closed (client disconnected) — ignore
+            sdkStream.destroy();
+          }
+        });
+        sdkStream.on("end", () => {
+          try { controller.close(); } catch { /* already closed */ }
+        });
+        sdkStream.on("error", (err: Error) => {
+          try { controller.error(err); } catch { /* already closed */ }
+        });
+      },
+      cancel() {
+        sdkStream.destroy();
+      },
+    });
+
     return {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      body: response.Body.transformToWebStream() as any,
+      body: safeStream,
       contentType: response.ContentType || "application/octet-stream",
+      contentLength: response.ContentLength,
     };
   } catch (err) {
     const code = (err as { Code?: string; name?: string }).Code || (err as { name?: string }).name;

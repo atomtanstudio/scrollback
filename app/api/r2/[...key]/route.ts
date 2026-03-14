@@ -26,10 +26,13 @@ export async function GET(
     return new Response("Not found", { status: 404 });
   }
 
-  return new Response(object.body, {
-    headers: {
-      "Content-Type": object.contentType,
-      "Cache-Control": "public, max-age=31536000, immutable",
-    },
-  });
+  const headers: Record<string, string> = {
+    "Content-Type": object.contentType,
+    "Cache-Control": "public, max-age=31536000, immutable",
+  };
+  if (object.contentLength) {
+    headers["Content-Length"] = String(object.contentLength);
+  }
+
+  return new Response(object.body, { headers });
 }
