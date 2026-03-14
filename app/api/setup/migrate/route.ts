@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         : "--schema=prisma/schema.prisma";
 
     try {
-      await execAsync(`npx prisma db push ${schemaFlag} --accept-data-loss --skip-generate`, {
+      await execAsync(`npx prisma db push ${schemaFlag} --accept-data-loss`, {
         env: { ...process.env, DATABASE_URL: config.database.url },
         timeout: 30000,
       });
