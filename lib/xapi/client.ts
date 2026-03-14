@@ -1,5 +1,6 @@
 import { loadTokens, storeTokens } from "./token-store";
 import { refreshAccessToken } from "./oauth";
+import { getConfig } from "@/lib/config";
 
 const BASE_URL = "https://api.x.com/2";
 
@@ -91,6 +92,37 @@ export async function fetchLikedTweets(paginationToken?: string): Promise<any> {
   if (paginationToken) params.pagination_token = paginationToken;
 
   return xApiFetch(`/users/${tokens.xUserId}/liked_tweets`, params);
+}
+
+/**
+ * Fetch tweets by IDs using the App-Only Bearer Token.
+ * Works without OAuth — uses XAPI_BEARER_TOKEN env var.
+ * Max 100 IDs per call (X API limit).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function fetchTweetsByIds(ids: string[]): Promise<any> {
+  const bearerToken = process.env.XAPI_BEARER_TOKEN || getConfig()?.xapi?.bearerToken;
+  if (!bearerToken) throw new Error("XAPI_BEARER_TOKEN not configured");
+  if (ids.length === 0) return { data: [], includes: { users: [], media: [] } };
+  if (ids.length > 100) throw new Error("Max 100 tweet IDs per request");
+
+  const url = new URL(`${BASE_URL}/tweets`);
+  url.searchParams.set("ids", ids.join(","));
+  url.searchParams.set("tweet.fields", TWEET_FIELDS);
+  url.searchParams.set("user.fields", USER_FIELDS);
+  url.searchParams.set("media.fields", MEDIA_FIELDS);
+  url.searchParams.set("expansions", EXPANSIONS);
+
+  const resp = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${bearerToken}` },
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`X API error: ${resp.status} ${text}`);
+  }
+
+  return resp.json();
 }
 
 // Fetch current user info (for getting user ID after OAuth)
