@@ -3,10 +3,10 @@
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { loginAction } from "@/lib/auth/actions";
+import { bootstrapAdminAction, loginAction } from "@/lib/auth/actions";
 import { BrandWordmark } from "@/components/brand-wordmark";
 
-function SubmitButton() {
+function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
   const { pending } = useFormStatus();
 
   return (
@@ -15,16 +15,21 @@ function SubmitButton() {
       className="mt-2 inline-flex h-12 items-center justify-center rounded-[16px] border border-[#cfb28a55] bg-[#b89462] px-8 font-heading text-[15px] font-semibold text-[#10141a] shadow-[0_16px_40px_rgba(184,148,98,0.24)] transition-all duration-200 hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d8c0a0] disabled:cursor-default disabled:opacity-30 disabled:hover:brightness-100"
       disabled={pending}
     >
-      {pending ? "Signing in..." : "Sign In"}
+      {pending ? pendingLabel : label}
     </button>
   );
 }
 
-export function LoginForm() {
+export function LoginForm({ bootstrapMode = false }: { bootstrapMode?: boolean }) {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const callbackUrl = searchParams.get("callbackUrl") || "/admin";
   const errorParam = searchParams.get("error");
-  const error = errorParam ? "Invalid email or password" : "";
+  const setupErrorParam = searchParams.get("setupError");
+  const error = bootstrapMode
+    ? setupErrorParam || ""
+    : errorParam
+      ? "Invalid email or password"
+      : "";
 
   return (
     <div className="w-full rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 sm:p-7">
@@ -38,13 +43,15 @@ export function LoginForm() {
       </div>
 
       <h1 className="text-center font-heading text-[2rem] font-semibold tracking-[-0.05em] text-[#f2ede5]">
-        Sign in
+        {bootstrapMode ? "Create admin account" : "Sign in"}
       </h1>
       <p className="mt-2 text-center text-sm leading-7 text-[#b4ab9d]">
-        Unlock settings and admin surfaces for this local instance.
+        {bootstrapMode
+          ? "This is the first run for this hosted instance. Create the local admin account once and you are in."
+          : "Unlock settings and admin surfaces for this local instance."}
       </p>
 
-      <form action={loginAction} className="mt-6 flex flex-col gap-4">
+      <form action={bootstrapMode ? bootstrapAdminAction : loginAction} className="mt-6 flex flex-col gap-4">
         <input type="hidden" name="callbackUrl" value={callbackUrl} />
         <div>
           <label className="mb-2 block text-[13px] font-medium text-[#e7e0d5]">
@@ -72,13 +79,31 @@ export function LoginForm() {
           />
         </div>
 
+        {bootstrapMode && (
+          <div>
+            <label className="mb-2 block text-[13px] font-medium text-[#e7e0d5]">
+              Confirm password
+            </label>
+            <input
+              name="confirmPassword"
+              type="password"
+              placeholder="Repeat your password"
+              required
+              className="h-11 w-full rounded-[16px] border border-[#d6c9b21f] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+            />
+          </div>
+        )}
+
         {error && (
           <p className="rounded-[14px] border border-red-500/20 bg-red-500/10 px-4 py-3 text-center text-sm text-red-300">
             {error}
           </p>
         )}
 
-        <SubmitButton />
+        <SubmitButton
+          label={bootstrapMode ? "Create admin account" : "Sign In"}
+          pendingLabel={bootstrapMode ? "Creating account..." : "Signing in..."}
+        />
       </form>
     </div>
   );

@@ -3,10 +3,22 @@ import { LoginForm } from "@/components/login/login-form";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BrandWordmark } from "@/components/brand-wordmark";
+import { getConfig, isConfigured } from "@/lib/config";
+import { hasAdminUsers } from "@/lib/auth/bootstrap";
 
 export const metadata: Metadata = { title: "Login — FeedSilo" };
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  let bootstrapMode = false;
+
+  if (isConfigured(getConfig())) {
+    try {
+      bootstrapMode = !(await hasAdminUsers());
+    } catch {
+      bootstrapMode = false;
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#090c11] px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1120px]">
@@ -29,14 +41,15 @@ export default function LoginPage() {
           <div className="grid lg:grid-cols-[1.15fr_420px]">
             <div className="border-b border-[#d6c9b214] p-7 sm:p-10 lg:border-b-0 lg:border-r">
               <p className="text-[11px] uppercase tracking-[0.18em] text-[#a49b8b]">
-                Protected surfaces
+                {bootstrapMode ? "First-run setup" : "Protected surfaces"}
               </p>
               <h1 className="mt-4 max-w-[10ch] font-heading text-[clamp(2.7rem,5vw,4.6rem)] font-semibold leading-[0.94] tracking-[-0.06em] text-[#f2ede5]">
-                Enter the control room.
+                {bootstrapMode ? "Create the first admin." : "Enter the control room."}
               </h1>
               <p className="mt-5 max-w-[42ch] text-[16px] leading-8 text-[#b4ab9d]">
-                Admin, settings, and maintenance tools live behind a local
-                account so the rest of the archive can stay quiet and public.
+                {bootstrapMode
+                  ? "Your app is already configured from environment variables. Create the first local admin account to unlock settings and admin."
+                  : "Admin, settings, and maintenance tools live behind a local account so the rest of the archive can stay quiet and public."}
               </p>
 
               <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -70,7 +83,7 @@ export default function LoginPage() {
 
             <div className="p-6 sm:p-8">
               <Suspense>
-                <LoginForm />
+                <LoginForm bootstrapMode={bootstrapMode} />
               </Suspense>
             </div>
           </div>
