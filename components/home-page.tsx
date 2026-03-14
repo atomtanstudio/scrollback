@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { SearchBar } from "@/components/search-bar";
+import { HomeCommandPalette } from "@/components/home-command-palette";
 import { MasonryFeed } from "@/components/masonry-feed";
 import { CardSkeletonGrid } from "@/components/card-skeleton";
 import { VideoPoster } from "@/components/cards/video-poster";
 import { formatTimeAgo } from "@/lib/format";
 import { getMediaDisplayUrl } from "@/lib/media-url";
+import { Command } from "lucide-react";
 import type { ContentItemWithMedia } from "@/lib/db/types";
 
 interface HomePageProps {
@@ -68,7 +70,7 @@ function HomeFeatureCard({ item, eyebrow, className = "", tall = false }: HomeFe
   return (
     <Link
       href={`/item/${item.id}`}
-      className={`group rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 transition-colors hover:border-[#d6c9b233] ${className}`}
+      className={`group rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 transition-colors hover:border-[#d6c9b233] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462] ${className}`}
     >
       <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">{eyebrow}</p>
       <h2 className="mt-3 max-w-[14ch] font-heading text-[2rem] leading-[0.98] tracking-[-0.05em] text-[#f2ede5] group-hover:text-white">
@@ -119,6 +121,8 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
   const [searchResults, setSearchResults] = useState<ContentItemWithMedia[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const feedSectionRef = useRef<HTMLElement | null>(null);
 
   const statEntries = [
     { label: "Tweets", count: stats.tweets, dot: "bg-[var(--accent-tweet)]" },
@@ -157,8 +161,26 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
     statEntries[0]
   );
 
+  const scrollToFeed = useCallback(() => {
+    feedSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, []);
+
+  const applyFilter = useCallback(
+    (type: string) => {
+      setActiveType(type);
+      setSearchResults(null);
+      setSearchQuery("");
+      window.setTimeout(scrollToFeed, 60);
+    },
+    [scrollToFeed]
+  );
+
   const handleSearch = useCallback(async (query: string) => {
     setIsSearching(true);
+    setActiveType("");
     setSearchQuery(query);
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&format=full&per_page=50`);
@@ -168,12 +190,42 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
       setSearchResults([]);
     } finally {
       setIsSearching(false);
+      window.setTimeout(scrollToFeed, 60);
     }
-  }, []);
+  }, [scrollToFeed]);
 
   const handleClearSearch = useCallback(() => {
     setSearchResults(null);
     setSearchQuery("");
+  }, []);
+
+  useEffect(() => {
+    const shouldIgnoreShortcut = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+      const tag = target.tagName;
+      return (
+        target.isContentEditable ||
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT"
+      );
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen(true);
+        return;
+      }
+
+      if (event.key === "/" && !shouldIgnoreShortcut(event.target)) {
+        event.preventDefault();
+        setPaletteOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const feedTitle = searchResults
@@ -207,8 +259,9 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                       <button
                         key={filter.value || "all"}
                         type="button"
-                        onClick={() => setActiveType(filter.value)}
-                        className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left text-[14px] transition-colors ${
+                        onClick={() => applyFilter(filter.value)}
+                        aria-pressed={isActive}
+                        className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left text-[14px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462] ${
                           isActive
                             ? "border-[#d6c9b242] bg-[#f2ede50a] text-[#f2ede5]"
                             : "border-[#d6c9b214] bg-[#ffffff05] text-[#a49b8b] hover:border-[#d6c9b233] hover:text-[#f2ede5]"
@@ -251,7 +304,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                     <Link
                       key={item.id}
                       href={`/item/${item.id}`}
-                      className="rounded-[18px] border border-[#d6c9b214] bg-[#ffffff05] px-4 py-3 transition-colors hover:border-[#d6c9b233]"
+                      className="rounded-[18px] border border-[#d6c9b214] bg-[#ffffff05] px-4 py-3 transition-colors hover:border-[#d6c9b233] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
                     >
                       <div className="flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.12em] text-[#8a8174]">
                         <span>{getItemLabel(item)}</span>
@@ -269,7 +322,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_340px]">
               <div className="rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 sm:p-8">
                 <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">FeedSilo</p>
-                <h1 className="mt-3 max-w-[9ch] font-heading text-[clamp(3rem,6vw,5rem)] font-semibold leading-[0.94] tracking-[-0.07em] text-[#f2ede5]">
+                <h1 className="mt-3 max-w-[9ch] font-heading text-[clamp(2.7rem,6vw,5rem)] font-semibold leading-[0.94] tracking-[-0.07em] text-[#f2ede5]">
                   A premium archive for the captures you actually keep.
                 </h1>
                 <p className="mt-5 max-w-[58ch] text-[16px] leading-8 text-[#b4ab9d]">
@@ -279,6 +332,16 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                 </p>
                 <div className="mt-8">
                   <SearchBar onSearch={handleSearch} onClear={handleClearSearch} />
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setPaletteOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-4 py-2 text-[12px] uppercase tracking-[0.16em] text-[#8a8174] transition-colors hover:border-[#d6c9b233] hover:text-[#f2ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+                  >
+                    <Command size={14} />
+                    Command palette
+                  </button>
                 </div>
               </div>
 
@@ -296,7 +359,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                 {featuredArticle ? (
                   <Link
                     href={`/item/${featuredArticle.id}`}
-                    className="rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 transition-colors hover:border-[#d6c9b233]"
+                    className="rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 transition-colors hover:border-[#d6c9b233] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
                   >
                     <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">Latest article</p>
                     <h2 className="mt-3 font-heading text-[1.7rem] leading-[1] tracking-[-0.05em] text-[#f2ede5]">
@@ -331,7 +394,10 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
               {featuredArt ? <HomeFeatureCard item={featuredArt} eyebrow="Latest art" /> : null}
             </div>
 
-            <div className="mt-6 rounded-[28px] border border-[#d6c9b214] bg-[#12161d]/70 p-5 sm:p-6">
+            <section
+              ref={feedSectionRef}
+              className="mt-6 rounded-[28px] border border-[#d6c9b214] bg-[#12161d]/70 p-5 sm:p-6"
+            >
               <div className="mb-6 flex flex-col gap-3 border-b border-[#d6c9b214] pb-5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">Library feed</p>
@@ -370,10 +436,22 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                   type={activeType || undefined}
                 />
               )}
-            </div>
+            </section>
           </div>
         </div>
       </section>
+
+      <HomeCommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        isAuthed={isAuthed}
+        recentItems={recentItems}
+        currentFilter={activeType}
+        currentSearch={searchQuery}
+        onApplyFilter={applyFilter}
+        onApplySearch={handleSearch}
+        onClearSearch={handleClearSearch}
+      />
     </div>
   );
 }

@@ -49,7 +49,7 @@ export function SearchBar({ onSearch, onClear }: SearchBarProps) {
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-[640px]">
       <div className="rounded-[20px] border border-[#d6c9b233] bg-[linear-gradient(180deg,rgba(244,234,216,0.05),rgba(244,234,216,0.015))] p-[1px] shadow-[0_18px_42px_rgba(0,0,0,0.22)] transition-colors duration-300 hover:border-[#d6c9b24d] focus-within:border-[#d6c9b266]">
-        <div className="flex h-16 w-full items-center gap-3 rounded-[19px] bg-[#171b22]/95 px-5">
+        <div className="flex h-14 w-full items-center gap-3 rounded-[19px] bg-[#171b22]/95 px-4 sm:h-16 sm:px-5">
           <svg className="shrink-0 text-[#8a8174]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.35-4.35" />
@@ -74,7 +74,7 @@ export function SearchBar({ onSearch, onClear }: SearchBarProps) {
               </svg>
             </button>
           )}
-          <span className="rounded-full border border-[#d6c9b21f] bg-[#0f1319] px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-[#8a8174]">
+          <span className="hidden rounded-full border border-[#d6c9b21f] bg-[#0f1319] px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-[#8a8174] md:inline-flex">
             &#8984;K
           </span>
         </div>

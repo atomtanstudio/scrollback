@@ -17,7 +17,7 @@ export function Header({ captureCount, isAuthed, currentPath = "/" }: HeaderProp
       : `/login?callbackUrl=${encodeURIComponent(currentPath)}`;
 
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4 py-6">
+    <header className="flex flex-wrap items-center justify-between gap-3 py-6 sm:gap-4">
       <Link
         href="/"
         className="font-heading flex items-center text-[clamp(1.7rem,2vw,2.15rem)] font-semibold tracking-[-0.05em] text-[#f2ede5] transition-opacity hover:opacity-80"
@@ -29,8 +29,11 @@ export function Header({ captureCount, isAuthed, currentPath = "/" }: HeaderProp
 
       <div className="flex flex-wrap items-center justify-end gap-2 text-[13px] text-[#a49b8b]">
         {captureCount !== undefined && (
-          <span className="rounded-full border border-[#d6c9b21a] bg-[#ffffff08] px-4 py-2">
-            {captureCount.toLocaleString()} captures
+          <span className="rounded-full border border-[#d6c9b21a] bg-[#ffffff08] px-3 py-2 sm:px-4">
+            <span className="sm:hidden">{captureCount.toLocaleString()}</span>
+            <span className="hidden sm:inline">
+              {captureCount.toLocaleString()} captures
+            </span>
           </span>
         )}
         {isAuthed && (
