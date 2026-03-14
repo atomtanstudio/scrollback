@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface ProgressBarProps {
@@ -24,13 +24,31 @@ export function ProgressBar({ endpoint, buttonLabel, className }: ProgressBarPro
   const [state, setState] = useState<ProgressState>("idle");
   const [data, setData] = useState<ProgressData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const esRef = useRef<EventSource | null>(null);
+
+  // Clean up EventSource on unmount or when a new one starts
+  useEffect(() => {
+    return () => {
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
+    };
+  }, []);
 
   const handleStart = useCallback(() => {
+    // Close any existing connection first
+    if (esRef.current) {
+      esRef.current.close();
+      esRef.current = null;
+    }
+
     setState("running");
     setError(null);
     setData({ progress: 0, processed: 0, total: 0 });
 
     const es = new EventSource(endpoint);
+    esRef.current = es;
 
     es.onmessage = (event) => {
       try {
@@ -41,12 +59,14 @@ export function ProgressBar({ endpoint, buttonLabel, className }: ProgressBarPro
           setState("error");
           setError(parsed.error);
           es.close();
+          esRef.current = null;
           return;
         }
 
         if (parsed.done) {
           setState("done");
           es.close();
+          esRef.current = null;
         }
       } catch {
         // Ignore parse errors
@@ -57,6 +77,7 @@ export function ProgressBar({ endpoint, buttonLabel, className }: ProgressBarPro
       setState("error");
       setError("Connection lost");
       es.close();
+      esRef.current = null;
     };
   }, [endpoint]);
 

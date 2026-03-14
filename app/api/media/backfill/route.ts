@@ -3,14 +3,25 @@ import { isR2Configured } from "@/lib/storage/r2";
 import { downloadAndStoreMedia } from "@/lib/storage/download";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
-export async function GET() {
+export async function GET(request: Request) {
   const encoder = new TextEncoder();
+  let cancelled = false;
+
+  request.signal.addEventListener("abort", () => {
+    cancelled = true;
+  });
 
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data: Record<string, unknown>) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        if (cancelled) return;
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          cancelled = true;
+        }
       };
 
       try {
@@ -26,6 +37,7 @@ export async function GET() {
         const mediaItems = await (prisma as any).media.findMany({
           where: { stored_path: null },
           select: { id: true, content_item_id: true, original_url: true },
+          take: 200,
         });
 
         const total = mediaItems.length;
@@ -38,6 +50,8 @@ export async function GET() {
         let processed = 0;
 
         for (const item of mediaItems) {
+          if (cancelled) break;
+
           try {
             const storedUrl = await downloadAndStoreMedia(
               item.id,
@@ -65,15 +79,20 @@ export async function GET() {
           });
         }
 
-        send({ progress: 1, processed, total, done: true });
+        if (!cancelled) {
+          send({ progress: 1, processed, total, done: true });
+        }
       } catch (err) {
         send({
           error: err instanceof Error ? err.message : "Backfill failed",
           done: true,
         });
       } finally {
-        controller.close();
+        try { controller.close(); } catch { /* already closed */ }
       }
+    },
+    cancel() {
+      cancelled = true;
     },
   });
 

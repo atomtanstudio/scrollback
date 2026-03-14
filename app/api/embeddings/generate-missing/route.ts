@@ -3,14 +3,25 @@ import { getSearchProvider } from "@/lib/db/search-provider";
 import { generateEmbedding } from "@/lib/embeddings/gemini";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
-export async function GET() {
+export async function GET(request: Request) {
   const encoder = new TextEncoder();
+  let cancelled = false;
+
+  request.signal.addEventListener("abort", () => {
+    cancelled = true;
+  });
 
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data: Record<string, unknown>) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        if (cancelled) return;
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          cancelled = true;
+        }
       };
 
       try {
@@ -34,6 +45,8 @@ export async function GET() {
             author_handle: true,
             author_display_name: true,
           },
+          take: 500,
+          orderBy: { created_at: "desc" },
         });
 
         const total = items.length;
@@ -44,6 +57,8 @@ export async function GET() {
         }
 
         for (let i = 0; i < items.length; i++) {
+          if (cancelled) break;
+
           const item = items[i];
           try {
             const embeddingText = [
@@ -79,15 +94,20 @@ export async function GET() {
           }
         }
 
-        send({ progress: 1, processed: total, total, done: true });
+        if (!cancelled) {
+          send({ progress: 1, processed: total, total, done: true });
+        }
       } catch (err) {
         send({
           error: err instanceof Error ? err.message : "Generation failed",
           done: true,
         });
       } finally {
-        controller.close();
+        try { controller.close(); } catch { /* already closed */ }
       }
+    },
+    cancel() {
+      cancelled = true;
     },
   });
 
