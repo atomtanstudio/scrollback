@@ -1,4 +1,5 @@
 import fs from "fs";
+import fsp from "fs/promises";
 import path from "path";
 import { configSchema, type FeedsiloConfig, type DatabaseType } from "./schema";
 
@@ -12,6 +13,19 @@ export function readConfig(
   try {
     if (!fs.existsSync(configPath)) return null;
     const raw = fs.readFileSync(configPath, "utf-8");
+    const parsed = JSON.parse(raw);
+    const result = configSchema.safeParse(parsed);
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function readConfigAsync(
+  configPath: string = DEFAULT_CONFIG_PATH
+): Promise<FeedsiloConfig | null> {
+  try {
+    const raw = await fsp.readFile(configPath, "utf-8");
     const parsed = JSON.parse(raw);
     const result = configSchema.safeParse(parsed);
     return result.success ? result.data : null;
@@ -138,7 +152,9 @@ export function isConfigured(config: FeedsiloConfig | null): boolean {
 }
 
 let _resolvedConfig: FeedsiloConfig | null | undefined;
+let _resolvedConfigPromise: Promise<FeedsiloConfig | null> | undefined;
 
+/** Synchronous getter — uses cached value or falls back to sync file read */
 export function getConfig(): FeedsiloConfig | null {
   if (_resolvedConfig !== undefined) return _resolvedConfig;
   const fileConfig = readConfig();
@@ -146,8 +162,21 @@ export function getConfig(): FeedsiloConfig | null {
   return _resolvedConfig;
 }
 
+/** Async getter — non-blocking file read, populates the same cache */
+export async function getConfigAsync(): Promise<FeedsiloConfig | null> {
+  if (_resolvedConfig !== undefined) return _resolvedConfig;
+  if (_resolvedConfigPromise) return _resolvedConfigPromise;
+  _resolvedConfigPromise = readConfigAsync().then((fileConfig) => {
+    _resolvedConfig = resolveConfig(fileConfig);
+    _resolvedConfigPromise = undefined;
+    return _resolvedConfig;
+  });
+  return _resolvedConfigPromise;
+}
+
 export function invalidateConfigCache(): void {
   _resolvedConfig = undefined;
+  _resolvedConfigPromise = undefined;
 }
 
 export { configSchema, type FeedsiloConfig, type DatabaseType } from "./schema";

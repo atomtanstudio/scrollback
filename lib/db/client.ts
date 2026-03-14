@@ -1,4 +1,5 @@
-import { getConfig, type DatabaseType } from "@/lib/config";
+import { getConfigAsync, getConfig, type DatabaseType } from "@/lib/config";
+import pg from "pg";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PrismaClientAny = any; // Both PG and SQLite clients satisfy this
@@ -6,6 +7,7 @@ type PrismaClientAny = any; // Both PG and SQLite clients satisfy this
 const globalForClient = globalThis as unknown as {
   feedsiloClient: PrismaClientAny | undefined;
   feedsiloDbType: DatabaseType | undefined;
+  feedsiloPool: pg.Pool | undefined;
 };
 
 /**
@@ -14,7 +16,7 @@ const globalForClient = globalThis as unknown as {
  * Throws if no database is configured.
  */
 export async function getClient(): Promise<PrismaClientAny> {
-  const config = getConfig();
+  const config = await getConfigAsync();
   if (!config) {
     throw new Error(
       "No database configured. Complete onboarding at /onboarding"
@@ -47,14 +49,32 @@ export async function getClient(): Promise<PrismaClientAny> {
       log: process.env.NODE_ENV === "development" ? ["query"] : [],
     });
   } else {
-    // postgresql or supabase — both use PG client
+    // postgresql or supabase — both use PG client with explicit pool config
     const { PrismaClient } = await import("@/lib/generated/prisma/client");
     const { PrismaPg } = await import("@prisma/adapter-pg");
-    const adapter = new PrismaPg({ connectionString: config.database.url });
+
+    // Create our own pool with proper timeouts so queries fail fast
+    // instead of hanging forever when the pool is exhausted or connections die.
+    const pool = new pg.Pool({
+      connectionString: config.database.url,
+      max: 10,                      // max connections in pool
+      idleTimeoutMillis: 30_000,    // close idle connections after 30s
+      connectionTimeoutMillis: 5_000, // fail after 5s if no connection available
+    });
+
+    // Log pool errors so they don't crash the process silently
+    pool.on("error", (err) => {
+      console.error("[db pool] Idle client error:", err.message);
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const adapter = new PrismaPg(pool as any);
     client = new PrismaClient({
       adapter,
       log: process.env.NODE_ENV === "development" ? ["query"] : [],
     });
+
+    globalForClient.feedsiloPool = pool;
   }
 
   globalForClient.feedsiloClient = client;
@@ -76,9 +96,12 @@ export function getDatabaseType(): DatabaseType | null {
  * Call when switching databases.
  */
 export async function disconnectClient(): Promise<void> {
-  if (globalForClient.feedsiloClient) {
-    await globalForClient.feedsiloClient.$disconnect();
-    globalForClient.feedsiloClient = undefined;
-    globalForClient.feedsiloDbType = undefined;
-  }
+  // Disconnect Prisma first (releases pool connections), then end the pool
+  const client = globalForClient.feedsiloClient;
+  const pool = globalForClient.feedsiloPool;
+  globalForClient.feedsiloClient = undefined;
+  globalForClient.feedsiloDbType = undefined;
+  globalForClient.feedsiloPool = undefined;
+  if (client) await client.$disconnect();
+  if (pool) await pool.end();
 }
