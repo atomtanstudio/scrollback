@@ -4,11 +4,12 @@
  * Determines whether a tweet/post is a regular tweet, an AI image prompt,
  * or an AI video prompt based on body text + media presence.
  *
- * Key principle: "generated with Tool X" is NOT the same as an actual prompt.
- * We only classify visual prompt posts when the post shows prompt syntax or
- * explicitly shares the prompt text.
+ * Key principle: art posts do not always expose the exact prompt, but they do
+ * need real visual-generation context. Tooling screenshots, infographics, and
+ * generic AI discussions should stay out of the art bucket.
  */
 
+import { hasArtGenerationContext, looksLikeNonArtVisualContent } from "@/lib/art-detection";
 import { hasExplicitPromptSnippet } from "@/lib/visual-prompt";
 
 // --- Tool name lists (keep alphabetical within tiers) ---
@@ -178,9 +179,12 @@ export function classifySourceType(
     if (mentionsVideoTool(bodyText)) return hasVideo ? "video_prompt" : "image_prompt";
   }
 
-  // --- Level 4: Tool mentions/showcase language are NOT enough ---
-  // "Generated with Midjourney" or "made with Kling" without the actual prompt
-  // is still just a tweet for this classifier.
+  // --- Level 4: Art showcase context without prompt text ---
+  // Allow clear AI art/video posts even when the author did not include the
+  // exact prompt, as long as the content does not read like docs/UI/screenshot content.
+  if (!looksLikeNonArtVisualContent(bodyText) && hasArtGenerationContext(bodyText, hasVideo)) {
+    return hasVideo || mentionsVideoTool(bodyText) ? "video_prompt" : "image_prompt";
+  }
 
   return "tweet";
 }

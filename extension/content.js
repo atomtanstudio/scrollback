@@ -285,6 +285,43 @@ const PROMPT_LANG = [
   /\bprompt (?:I |i )used\b/i,
   /\bsharing (?:the|my) prompt\b/i,
 ];
+const ART_CUES = [
+  /\bstyle\s+reference\b/i,
+  /\bsref\s+club\b/i,
+  /\bprompt\s+share\b/i,
+  /\bprompt\s+template\b/i,
+  /\bmade\s+with\b/i,
+  /\bgenerated\s+with\b/i,
+  /\bcreated\s+with\b/i,
+  /\brendered\s+with\b/i,
+  /\bremix(?:ed)?\b/i,
+  /\bai\s+(?:art|video|image)\b/i,
+  /\bworkflow\b/i,
+  /\bshowcase\b/i,
+  /\b--sref\b/i,
+];
+const NON_ART_CUES = [
+  /\binfographic\b/i,
+  /\bdashboard\b/i,
+  /\binterface\b/i,
+  /\bbrowser\b/i,
+  /\bscreenshot\b/i,
+  /\bwebsite\b/i,
+  /\blanding page\b/i,
+  /\bgithub\b/i,
+  /\brepositor(?:y|ies)\b/i,
+  /\brepo\b/i,
+  /\bdocs?\b/i,
+  /\bdocumentation\b/i,
+  /\bcheatsheet\b/i,
+  /\blogo concepts?\b/i,
+  /\bclaude code\b/i,
+  /\bopenclaw\b/i,
+  /\bcloudflare\b/i,
+  /\bskill(?:s)?\b/i,
+  /\btask board\b/i,
+  /\bstartup ideas\b/i,
+];
 
 function hasExplicitPromptSnippet(text) {
   const normalized = (text || '').replace(/\s+/g, ' ').trim();
@@ -300,6 +337,29 @@ function hasExplicitPromptSnippet(text) {
     if (!match || !match[1]) return false;
     return match[1].trim().split(/\s+/).filter(Boolean).length >= 5;
   });
+}
+
+function hasArtGenerationContext(text, hasVideo) {
+  const normalized = (text || '').replace(/\s+/g, ' ').trim();
+  if (!normalized) return false;
+
+  const imageGroup = IMAGE_TOOLS.join('|');
+  const videoGroup = VIDEO_TOOLS.join('|');
+  const hasImageTool = new RegExp(`\\b(?:${imageGroup})\\b`, 'i').test(normalized);
+  const hasVideoTool = new RegExp(`\\b(?:${videoGroup})\\b`, 'i').test(normalized);
+  const hasCue = ART_CUES.some((pattern) => pattern.test(normalized));
+
+  if (/\b--sref\s+\d+/i.test(normalized)) return true;
+  if (hasCue && (hasImageTool || hasVideoTool)) return true;
+  if (hasVideo && hasVideoTool) return true;
+
+  return false;
+}
+
+function looksLikeNonArtVisualContent(text) {
+  const normalized = (text || '').replace(/\s+/g, ' ').trim();
+  if (!normalized) return false;
+  return NON_ART_CUES.some((pattern) => pattern.test(normalized));
 }
 
 function detectSourceType(bodyText, mediaUrls, isArticle, isThread) {
@@ -333,8 +393,14 @@ function detectSourceType(bodyText, mediaUrls, isArticle, isThread) {
     if (new RegExp(`\\b(?:${videoGroup})\\b`, 'i').test(bodyText)) return hasVideo ? 'video_prompt' : 'image_prompt';
   }
 
-  // Level 4: Tool mentions/showcase language are NOT enough.
-  // "Generated with Midjourney" or "made with Kling" without the prompt ≠ art prompt
+  // Level 4: Art showcase context without prompt text.
+  if (!looksLikeNonArtVisualContent(bodyText) && hasArtGenerationContext(bodyText, hasVideo)) {
+    return (hasVideo || new RegExp(`\\b(?:${videoGroup})\\b`, 'i').test(bodyText))
+      ? 'video_prompt'
+      : 'image_prompt';
+  }
+
+  // Tool mentions alone are still not enough.
   return 'tweet';
 }
 

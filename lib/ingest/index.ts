@@ -7,7 +7,7 @@ import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { CapturePayload, CaptureResult } from "@/lib/db/types";
 import { isR2Configured } from "@/lib/storage/r2";
 import { downloadAndStoreMedia } from "@/lib/storage/download";
-import { isLikelyVisualPromptText } from "@/lib/visual-prompt";
+import { qualifiesAsArtCapture } from "@/lib/art-detection";
 
 function sanitizeText(s: string | null | undefined): string | null {
   if (!s) return null;
@@ -305,10 +305,14 @@ async function indexAndClassifyInBackground(
         };
 
         const canPromoteToArt =
-          classification.has_prompt &&
-          !!classification.prompt_text &&
-          isLikelyVisualPromptText(classification.prompt_text) &&
-          classification.confidence >= 0.7;
+          classification.confidence >= 0.7 &&
+          qualifiesAsArtCapture({
+            title,
+            bodyText: body,
+            promptText: classification.prompt_text,
+            promptType: classification.prompt_type,
+            hasVideo: payload.media_urls.some((url) => detectMediaType(url) === "video"),
+          });
 
         if (classification.has_prompt) {
           updateData.has_prompt = true;

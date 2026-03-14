@@ -1,6 +1,6 @@
 import { getClient } from "@/lib/db/client";
 import { classifyContent } from "@/lib/embeddings/gemini";
-import { isLikelyVisualPromptText } from "@/lib/visual-prompt";
+import { qualifiesAsArtCapture } from "@/lib/art-detection";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -84,11 +84,13 @@ export async function GET(request: Request) {
             );
 
             const isLegitArt =
-              classification.has_prompt &&
-              !!classification.prompt_text &&
-              isLikelyVisualPromptText(classification.prompt_text) &&
-              classification.confidence >= 0.7 &&
-              (classification.prompt_type === "image" || classification.prompt_type === "video");
+              qualifiesAsArtCapture({
+                title: item.title,
+                bodyText: item.body_text,
+                promptText: classification.prompt_text,
+                promptType: classification.prompt_type,
+                hasVideo: item.source_type === "video_prompt",
+              });
 
             if (!isLegitArt) {
               downgraded++;

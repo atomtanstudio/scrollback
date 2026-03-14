@@ -14,6 +14,30 @@ describe("classifySourceType", () => {
     expect(result).toBe("tweet");
   });
 
+  it("classifies art showcase posts with tool context even without a stored prompt", () => {
+    const result = classifySourceType(
+      "Golden hour and a gentle breeze. Made with Gemini Nano Banana.",
+      ["https://example.com/image.jpg"],
+      false,
+      false,
+      false,
+    );
+
+    expect(result).toBe("image_prompt");
+  });
+
+  it("classifies Midjourney style reference posts as image_prompt", () => {
+    const result = classifySourceType(
+      "New Midjourney Style Reference. Unlock with --sref 2678582728.",
+      ["https://example.com/image.jpg"],
+      false,
+      false,
+      false,
+    );
+
+    expect(result).toBe("image_prompt");
+  });
+
   it("classifies explicit image prompt posts as image_prompt", () => {
     const result = classifySourceType(
       "Image prompt: surreal chrome tiger walking through neon Tokyo alley, volumetric fog, cinematic lighting, 35mm",

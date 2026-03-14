@@ -3,7 +3,7 @@ import { getSearchProvider } from "@/lib/db/search-provider";
 import { generateEmbedding, classifyContent, describeImage } from "@/lib/embeddings/gemini";
 import { isR2Configured } from "@/lib/storage/r2";
 import { downloadAndStoreMedia } from "@/lib/storage/download";
-import { isLikelyVisualPromptText } from "@/lib/visual-prompt";
+import { qualifiesAsArtCapture } from "@/lib/art-detection";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 min max for serverless
@@ -97,10 +97,14 @@ export async function GET(request: Request) {
               };
 
               const canPromoteToArt =
-                classification.has_prompt &&
-                !!classification.prompt_text &&
-                isLikelyVisualPromptText(classification.prompt_text) &&
-                classification.confidence >= 0.7;
+                classification.confidence >= 0.7 &&
+                qualifiesAsArtCapture({
+                  title: item.title,
+                  bodyText: item.body_text,
+                  promptText: classification.prompt_text,
+                  promptType: classification.prompt_type,
+                  hasVideo: item.source_type === "video_prompt",
+                });
 
               if (classification.has_prompt) {
                 updateData.has_prompt = true;
