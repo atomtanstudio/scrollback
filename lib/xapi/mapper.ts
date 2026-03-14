@@ -1,6 +1,41 @@
 import type { CapturePayload } from "@/lib/db/types";
 import { classifySourceType } from "@/lib/content-classifier";
 
+/**
+ * Detect self-threads in a batch of payloads: if 2+ tweets from the same
+ * author share a conversation_id, mark all of them as "thread".
+ */
+export function detectSelfThreadsInBatch(payloads: CapturePayload[]): void {
+  // Group by conversation_id
+  const convGroups = new Map<string, CapturePayload[]>();
+  for (const p of payloads) {
+    if (!p.conversation_id) continue;
+    const group = convGroups.get(p.conversation_id) || [];
+    group.push(p);
+    convGroups.set(p.conversation_id, group);
+  }
+
+  for (const [, siblings] of Array.from(convGroups.entries())) {
+    if (siblings.length < 2) continue;
+    // Count per author
+    const authorCounts = new Map<string, number>();
+    for (const s of siblings) {
+      const author = (s.author_handle || "").toLowerCase();
+      if (author) authorCounts.set(author, (authorCounts.get(author) || 0) + 1);
+    }
+    // If any author has 2+ tweets → self-thread
+    for (const [author, count] of Array.from(authorCounts.entries())) {
+      if (count >= 2) {
+        for (const s of siblings) {
+          if ((s.author_handle || "").toLowerCase() === author && s.source_type !== "article") {
+            s.source_type = "thread";
+          }
+        }
+      }
+    }
+  }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mapTweetToPayload(tweet: any, users: any[], media: any[]): CapturePayload {
   const author = users.find((u: { id: string }) => u.id === tweet.author_id);

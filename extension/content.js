@@ -352,6 +352,12 @@ function cacheTweetData(tweet) {
     || userResult?.result?.legacy  // wrapped in extra result
     || tweet.user?.legacy          // alternate path
     || {};
+  // screen_name may also be at the top-level user_results (non-legacy path)
+  const screenName = user.screen_name
+    || userResult?.screen_name
+    || userResult?.result?.screen_name
+    || legacy.user_id_str && null  // can't resolve from just user_id
+    || null;
   const noteTweet = tweet.note_tweet?.note_tweet_results?.result;
 
   // Get avatar URL - upgrade to full size by removing _normal suffix
@@ -446,21 +452,33 @@ function cacheTweetData(tweet) {
   }
 
   // Thread detection: conversation_id differs from tweet's own ID
-  const conversationId = legacy.conversation_id || tweetId;
+  // X API uses conversation_id_str (string), not conversation_id
+  let conversationId = legacy.conversation_id_str || legacy.conversation_id || tweetId;
+  // Preserve a good conversation_id from a previous cache hit — some API responses
+  // return the same tweet without conversation_id_str, which would overwrite the good value
+  const existingEntry = tweetCache.get(tweetId);
+  if (conversationId === tweetId && existingEntry?.conversation_id && existingEntry.conversation_id !== tweetId) {
+    conversationId = existingEntry.conversation_id;
+  }
   const isThread = conversationId !== tweetId;
 
   const sourceType = detectSourceType(bodyText, mediaUrls, isArticle, isThread);
 
+  // Preserve existing author info if this API response doesn't have it
+  const finalScreenName = screenName || existingEntry?.author_handle || null;
+  const finalDisplayName = user.name || existingEntry?.author_display_name || null;
+  const finalAvatarUrl = avatarUrl || existingEntry?.author_avatar_url || null;
+
   tweetCache.set(tweetId, {
     external_id: tweetId,
-    source_url: user.screen_name
-      ? `https://x.com/${user.screen_name}/status/${tweetId}`
+    source_url: finalScreenName
+      ? `https://x.com/${finalScreenName}/status/${tweetId}`
       : `https://x.com/i/web/status/${tweetId}`,
     source_type: sourceType,
     conversation_id: conversationId,
-    author_handle: user.screen_name || null,
-    author_display_name: user.name || null,
-    author_avatar_url: avatarUrl,
+    author_handle: finalScreenName,
+    author_display_name: finalDisplayName,
+    author_avatar_url: finalAvatarUrl,
     title: isArticle ? articleTitle : null,
     body_text: bodyText,
     posted_at: legacy.created_at ? new Date(legacy.created_at).toISOString() : null,
@@ -472,6 +490,42 @@ function cacheTweetData(tweet) {
     replies: legacy.reply_count || null,
     views: tweet.views?.count ? parseInt(tweet.views.count) : null,
   });
+
+  // Detect self-threads: if 2+ tweets from the same author share a conversation_id,
+  // mark ALL of them as "thread" (including the root tweet where conversation_id === tweet.id)
+  detectSelfThreadInCache(conversationId);
+}
+
+function detectSelfThreadInCache(conversationId) {
+  if (!conversationId) return;
+
+  // Collect all cached tweets in this conversation
+  const siblings = [];
+  for (const [, data] of tweetCache) {
+    if (data.conversation_id === conversationId) siblings.push(data);
+  }
+  if (siblings.length < 2) return;
+
+  // Count tweets per author in this conversation
+  const authorCounts = {};
+  for (const s of siblings) {
+    const author = (s.author_handle || '').toLowerCase();
+    if (author) authorCounts[author] = (authorCounts[author] || 0) + 1;
+  }
+
+  // If any author has 2+ tweets in the same conversation, it's a self-thread
+  for (const [author, count] of Object.entries(authorCounts)) {
+    if (count >= 2) {
+      for (const s of siblings) {
+        if ((s.author_handle || '').toLowerCase() === author
+            && (s.source_type === 'tweet' || s.source_type === 'image_prompt' || s.source_type === 'video_prompt')) {
+          // Only upgrade to thread if it's not an article
+          // Keep prompt classification if it was detected — just change the base type
+          s.source_type = 'thread';
+        }
+      }
+    }
+  }
 }
 
 
@@ -530,6 +584,16 @@ function extractTweetFromDOM(tweetElement) {
         cached.source_url = `https://x.com/${cached.author_handle}/status/${cached.external_id}`;
       }
     }
+    // Last-chance self-thread detection: re-check cache + DOM right before returning
+    if (cached.source_type === 'tweet' || cached.source_type === 'image_prompt' || cached.source_type === 'video_prompt') {
+      // Re-run cache-based detection (replies may have loaded since initial cache)
+      detectSelfThreadInCache(cached.conversation_id);
+      // If cache detection didn't upgrade, try DOM-based detection
+      if (cached.source_type !== 'thread' && isSelfThreadOnPage(tweetElement)) {
+        cached.source_type = 'thread';
+      }
+    }
+
     // Return a clean copy without internal fields
     const data = { ...cached };
     delete data._hasUnresolvedVideo;
@@ -575,10 +639,14 @@ function extractTweetFromDOM(tweetElement) {
     if (vid.poster) mediaUrls.push(vid.poster);
   });
 
+  // Check if this tweet is part of a self-thread via DOM signals
+  const isThread = isSelfThreadOnPage(tweetElement);
+  const sourceType = isThread ? 'thread' : detectSourceType(bodyText, mediaUrls, false, false);
+
   return {
     external_id: tweetId,
     source_url: `https://x.com/${authorHandle}/status/${tweetId}`,
-    source_type: 'tweet',
+    source_type: sourceType,
     conversation_id: null,
     author_handle: authorHandle,
     author_display_name: displayName,
@@ -720,6 +788,35 @@ function injectSaveButtons() {
         return;
       }
 
+      // If this is a thread, collect all siblings from cache and send as bulk
+      if (data.source_type === 'thread' && data.conversation_id) {
+        const threadItems = getThreadSiblingsFromCache(data.conversation_id, data.author_handle);
+        if (threadItems.length > 1) {
+          log(' Thread detected — saving', threadItems.length, 'tweets in conversation');
+          chrome.runtime.sendMessage({ type: 'CAPTURE_BULK', items: threadItems }, (response) => {
+            btn.classList.remove('saving');
+            if (chrome.runtime.lastError) {
+              console.error('FeedSilo: runtime error', chrome.runtime.lastError);
+              btn.classList.add('error');
+              setTimeout(() => resetButton(btn), 3000);
+              return;
+            }
+            if (response?.success) {
+              const total = (response.captured || 0) + (response.skipped || 0);
+              btn.classList.add('saved');
+              btn.innerHTML = `&#10003; ${total}`;
+              // Mark all other thread tweets' save buttons as saved too
+              markThreadButtonsSaved(data.conversation_id, data.author_handle);
+            } else {
+              btn.classList.add('error');
+              console.error('FeedSilo thread save failed:', response?.error);
+              setTimeout(() => resetButton(btn), 3000);
+            }
+          });
+          return;
+        }
+      }
+
       log(' sending capture data', JSON.stringify(data, null, 2));
       chrome.runtime.sendMessage({ type: 'CAPTURE_TWEET', data }, (response) => {
         log(' capture response', response);
@@ -748,6 +845,71 @@ function injectSaveButtons() {
     });
 
     actionBar.appendChild(btn);
+  });
+}
+
+// Collect all thread siblings from cache for a given conversation + author
+function getThreadSiblingsFromCache(conversationId, authorHandle) {
+  const author = (authorHandle || '').toLowerCase();
+  const siblings = [];
+  // First pass: find a sibling with full author info to use for backfill
+  let refDisplayName = null;
+  let refAvatarUrl = null;
+  let refSourceUrl = null;
+  for (const [, data] of tweetCache) {
+    if (data.conversation_id !== conversationId) continue;
+    if (data.author_display_name && !refDisplayName) refDisplayName = data.author_display_name;
+    if (data.author_avatar_url && !refAvatarUrl) refAvatarUrl = data.author_avatar_url;
+    if (data.source_url && !data.source_url.includes('/i/web/') && !refSourceUrl) refSourceUrl = data.source_url;
+  }
+  for (const [, data] of tweetCache) {
+    if (data.conversation_id !== conversationId) continue;
+    // Include if author matches OR author is null (API didn't resolve user data)
+    const entryAuthor = (data.author_handle || '').toLowerCase();
+    if (entryAuthor === author || !data.author_handle) {
+      // Backfill missing author info from reference sibling
+      const clean = { ...data };
+      if (!clean.author_handle && authorHandle) clean.author_handle = authorHandle;
+      if (!clean.author_display_name && refDisplayName) clean.author_display_name = refDisplayName;
+      if (!clean.author_avatar_url && refAvatarUrl) clean.author_avatar_url = refAvatarUrl;
+      if (clean.source_url?.includes('/i/web/') && clean.author_handle) {
+        clean.source_url = `https://x.com/${clean.author_handle}/status/${clean.external_id}`;
+      }
+      delete clean._hasUnresolvedVideo;
+      delete clean._cachedAt;
+      siblings.push(clean);
+    }
+  }
+  // Sort by posted_at to maintain thread order (oldest first)
+  siblings.sort((a, b) => {
+    if (!a.posted_at || !b.posted_at) return 0;
+    return new Date(a.posted_at).getTime() - new Date(b.posted_at).getTime();
+  });
+  return siblings;
+}
+
+// After saving a thread, mark all visible save buttons for those tweets as saved
+function markThreadButtonsSaved(conversationId, authorHandle) {
+  const author = (authorHandle || '').toLowerCase();
+  const threadIds = new Set();
+  for (const [id, data] of tweetCache) {
+    if (data.conversation_id === conversationId
+        && (data.author_handle || '').toLowerCase() === author) {
+      threadIds.add(id);
+    }
+  }
+
+  document.querySelectorAll('article[data-testid="tweet"]').forEach(tweet => {
+    const link = tweet.querySelector('a[href*="/status/"]');
+    if (!link) return;
+    const m = link.href.match(/\/status\/(\d+)/);
+    if (!m || !threadIds.has(m[1])) return;
+    const btn = tweet.querySelector(`[${BUTTON_ATTR}]`);
+    if (btn && !btn.classList.contains('saved')) {
+      btn.classList.remove('saving');
+      btn.classList.add('saved');
+      btn.innerHTML = '&#10003;';
+    }
   });
 }
 
@@ -788,6 +950,48 @@ function isThreadReply(tweetElement) {
   if (connector) return true;
 
   return false;
+}
+
+// Detect self-threads via DOM: checks if the current page shows multiple
+// tweets from the same author connected in a thread (for fallback when cache misses)
+function isSelfThreadOnPage(tweetElement) {
+  // Get author from the tweet element
+  const link = tweetElement.querySelector('a[href*="/status/"]');
+  if (!link) return false;
+  const match = link.href.match(/\/([^/]+)\/status\//);
+  if (!match) return false;
+  const authorHandle = match[1].toLowerCase();
+
+  // Check for thread connector lines within this tweet's cell
+  const cell = tweetElement.closest('[data-testid="cellInnerDiv"]');
+  if (cell) {
+    const connector = cell.querySelector('div[style*="width: 2px"]');
+    if (connector) return true;
+  }
+
+  // Count visible tweets from this same author on the page
+  const allTweets = document.querySelectorAll('article[data-testid="tweet"]');
+  let sameAuthorCount = 0;
+  let hasAdjacentSameAuthor = false;
+  let prevWasSameAuthor = false;
+
+  for (const t of allTweets) {
+    const tLink = t.querySelector('a[href*="/status/"]');
+    if (!tLink) continue;
+    const tMatch = tLink.href.match(/\/([^/]+)\/status\//);
+    if (!tMatch) continue;
+
+    if (tMatch[1].toLowerCase() === authorHandle) {
+      sameAuthorCount++;
+      if (prevWasSameAuthor) hasAdjacentSameAuthor = true;
+      prevWasSameAuthor = true;
+    } else {
+      prevWasSameAuthor = false;
+    }
+  }
+
+  // Self-thread: 2+ adjacent tweets from the same author
+  return hasAdjacentSameAuthor && sameAuthorCount >= 2;
 }
 
 

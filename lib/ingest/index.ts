@@ -95,6 +95,15 @@ export async function ingestItem(payload: CapturePayload): Promise<CaptureResult
     }
   }
 
+  // Server-side self-thread detection: if other items share the same
+  // conversation_id and author, this is a self-thread — upgrade all to "thread"
+  const conversationId = payload.conversation_id || null;
+  if (conversationId && payload.source_type !== "article") {
+    detectAndUpgradeThreads(prisma, itemId, conversationId, cleanHandle).catch(
+      (err) => console.error(`Thread detection failed for ${itemId}:`, err)
+    );
+  }
+
   // Instant tags: hashtags + source type (no API call needed)
   const instantTags = extractHashtags(bodyText, payload.source_type || "tweet");
   if (instantTags.length > 0) {
@@ -118,6 +127,45 @@ export async function ingestItem(payload: CapturePayload): Promise<CaptureResult
   }
 
   return { success: true, already_exists: false, item_id: itemId };
+}
+
+/**
+ * Server-side self-thread detection: check if other items in the DB share
+ * the same conversation_id and author. If 2+ items match, upgrade all to "thread".
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function detectAndUpgradeThreads(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  prisma: any,
+  itemId: string,
+  conversationId: string,
+  authorHandle: string | null
+): Promise<void> {
+  if (!authorHandle) return;
+
+  // Find siblings: items with same conversation_id and same author
+  const siblings = await prisma.contentItem.findMany({
+    where: {
+      conversation_id: conversationId,
+      author_handle: authorHandle,
+      source_type: { not: "article" },
+    },
+    select: { id: true, source_type: true },
+  });
+
+  // If 2+ items (including the one just created), it's a self-thread
+  if (siblings.length >= 2) {
+    const idsToUpgrade = siblings
+      .filter((s: { id: string; source_type: string }) => s.source_type !== "thread")
+      .map((s: { id: string }) => s.id);
+
+    if (idsToUpgrade.length > 0) {
+      await prisma.contentItem.updateMany({
+        where: { id: { in: idsToUpgrade } },
+        data: { source_type: "thread" },
+      });
+    }
+  }
 }
 
 /**

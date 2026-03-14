@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateCaptureSecret } from "@/lib/auth/capture-secret";
 import { fetchTweetsByIds } from "@/lib/xapi/client";
-import { mapTweetToPayload } from "@/lib/xapi/mapper";
+import { mapTweetToPayload, detectSelfThreadsInBatch } from "@/lib/xapi/mapper";
 import { ingestItem } from "@/lib/ingest";
+import type { CapturePayload } from "@/lib/db/types";
 
 export async function POST(request: NextRequest) {
   const auth = validateCaptureSecret(request);
@@ -41,9 +42,20 @@ export async function POST(request: NextRequest) {
           if (!returnedIds.has(id)) missingIds.push(id);
         }
 
+        // Map all tweets first, then detect self-threads across the batch
+        const payloads: CapturePayload[] = [];
         for (const tweet of tweets) {
           try {
-            const payload = mapTweetToPayload(tweet, users, media);
+            payloads.push(mapTweetToPayload(tweet, users, media));
+          } catch (err) {
+            errors++;
+            console.error("FeedSilo: tweet map error:", err instanceof Error ? err.message : err);
+          }
+        }
+        detectSelfThreadsInBatch(payloads);
+
+        for (const payload of payloads) {
+          try {
             const result = await ingestItem(payload);
             if (result.already_exists) skipped++;
             else synced++;
