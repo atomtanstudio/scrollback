@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Settings } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
+import { Settings, LogOut, Shield } from "lucide-react";
 
 interface HeaderProps {
   captureCount?: number;
 }
 
 export function Header({ captureCount }: HeaderProps) {
+  const { data: session } = useSession();
+
   return (
     <header className="flex items-center justify-between py-6">
       <Link
@@ -24,6 +27,31 @@ export function Header({ captureCount }: HeaderProps) {
           <span className="text-[13px] text-[#555566]">
             {captureCount.toLocaleString()} captures
           </span>
+        )}
+        {session ? (
+          <>
+            <Link
+              href="/admin"
+              className="text-[#555566] hover:text-[#f0f0f5] transition-colors"
+              aria-label="Admin"
+            >
+              <Shield size={18} />
+            </Link>
+            <button
+              onClick={() => signOut()}
+              className="text-[#555566] hover:text-[#f0f0f5] transition-colors"
+              aria-label="Logout"
+            >
+              <LogOut size={18} />
+            </button>
+          </>
+        ) : (
+          <Link
+            href="/login"
+            className="text-[13px] text-[#555566] hover:text-[#f0f0f5] transition-colors"
+          >
+            Login
+          </Link>
         )}
         <Link
           href="/settings"
