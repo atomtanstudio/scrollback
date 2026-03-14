@@ -1,6 +1,7 @@
 import fs from "fs";
 import fsp from "fs/promises";
 import path from "path";
+import { randomBytes } from "crypto";
 import { configSchema, type FeedsiloConfig, type DatabaseType } from "./schema";
 
 const PROJECT_ROOT = process.cwd();
@@ -53,6 +54,7 @@ export function writeConfig(
 
   // Read existing .env.local and preserve unmanaged vars (R2, XAPI, etc.)
   const preserved: string[] = [];
+  let authSecretLine: string | null = null;
   if (fs.existsSync(envPath)) {
     const existing = fs.readFileSync(envPath, "utf-8");
     for (const line of existing.split("\n")) {
@@ -61,6 +63,10 @@ export function writeConfig(
       const eqIdx = trimmed.indexOf("=");
       if (eqIdx === -1) continue;
       const key = trimmed.slice(0, eqIdx);
+      if (key === "AUTH_SECRET") {
+        authSecretLine = line;
+        continue;
+      }
       if (!MANAGED_ENV_KEYS.has(key)) {
         preserved.push(line);
       }
@@ -82,6 +88,14 @@ export function writeConfig(
     lines.push(`SEARCH_KEYWORD_WEIGHT=${config.search.keywordWeight}`);
     lines.push(`SEARCH_VECTOR_WEIGHT=${config.search.semanticWeight}`);
   }
+
+  if (!authSecretLine && process.env.AUTH_SECRET) {
+    authSecretLine = `AUTH_SECRET=${process.env.AUTH_SECRET}`;
+  }
+  if (!authSecretLine) {
+    authSecretLine = `AUTH_SECRET=${randomBytes(32).toString("hex")}`;
+  }
+  lines.push(authSecretLine);
 
   if (preserved.length > 0) {
     lines.push("");
