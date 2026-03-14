@@ -29,20 +29,20 @@ export function DangerZone({ title, description, buttonLabel, onConfirm }: Dange
   };
 
   return (
-    <div className="border border-red-500/30 rounded-[14px] p-5">
-      <h4 className="text-sm font-semibold text-red-400 mb-1">{title}</h4>
-      <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">{description}</p>
+    <div className="rounded-[20px] border border-red-500/25 bg-red-500/6 p-5">
+      <h4 className="mb-1 text-sm font-semibold text-red-300">{title}</h4>
+      <p className="mb-4 text-xs text-[#b4ab9d]">{description}</p>
 
       {!showConfirm ? (
         <button
           onClick={() => setShowConfirm(true)}
-          className="h-9 px-4 rounded-[10px] text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-all duration-200 cursor-pointer"
+          className="h-9 rounded-[12px] border border-red-500/30 bg-red-500/10 px-4 text-sm font-medium text-red-300 transition-all duration-200 cursor-pointer hover:bg-red-500/20"
         >
           {buttonLabel}
         </button>
       ) : (
         <div className="flex flex-col gap-3">
-          <p className="text-xs text-red-400">
+          <p className="text-xs text-red-300">
             Type <strong>DELETE</strong> to confirm
           </p>
           <input
@@ -50,14 +50,14 @@ export function DangerZone({ title, description, buttonLabel, onConfirm }: Dange
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             placeholder="DELETE"
-            className="h-10 px-4 rounded-[10px] bg-[#0a0a0f] border border-red-500/30 text-[#f0f0f5] text-sm font-mono placeholder:text-[hsl(var(--muted))] focus:outline-none focus:border-red-500/60 transition-colors w-full"
+            className="h-10 w-full rounded-[12px] border border-red-500/30 bg-[#0f141b] px-4 text-sm font-mono text-[#f2ede5] placeholder:text-[#6f695f] transition-colors focus:outline-none focus:border-red-500/60"
             autoFocus
           />
           <div className="flex gap-2">
             <button
               onClick={handleConfirm}
               disabled={typed !== "DELETE" || loading}
-              className="h-9 px-4 rounded-[10px] text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              className="h-9 rounded-[12px] bg-red-500 px-4 text-sm font-medium text-white transition-all duration-200 cursor-pointer hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-30"
             >
               {loading ? "Deleting..." : "Confirm Delete"}
             </button>
@@ -66,7 +66,7 @@ export function DangerZone({ title, description, buttonLabel, onConfirm }: Dange
                 setShowConfirm(false);
                 setTyped("");
               }}
-              className="h-9 px-4 rounded-[10px] text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[#f0f0f5] transition-colors cursor-pointer"
+              className="h-9 rounded-[12px] px-4 text-sm font-medium text-[#a49b8b] transition-colors cursor-pointer hover:text-[#f2ede5]"
             >
               Cancel
             </button>

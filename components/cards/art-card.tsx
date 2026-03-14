@@ -12,7 +12,9 @@ interface ArtCardProps {
 }
 
 export function ArtCard({ item, href }: ArtCardProps) {
-  const image = item.media_items?.find((m) => m.media_type === "image" || m.media_type === "video");
+  const image = item.media_items?.find(
+    (m) => m.media_type === "image" || m.media_type === "video"
+  );
   const hasImage = !!(image?.stored_path || image?.original_url);
 
   const initials = (item.author_display_name || item.author_handle || "??")
@@ -25,62 +27,82 @@ export function ArtCard({ item, href }: ArtCardProps) {
   return (
     <CardWrapper type="art" noPadding={hasImage} href={href}>
       {hasImage && (
-        <div className="w-full h-[180px] rounded-t-[13px] overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#1a1028] to-[#201430] relative">
+        <div className="relative flex h-[180px] w-full items-center justify-center overflow-hidden rounded-t-[23px] bg-[#19161d]">
           {image!.media_type === "video" ? (
             <VideoPoster
               src={getMediaDisplayUrl(image!.stored_path, image!.original_url)}
               alt={image!.alt_text || item.title}
-              className="w-full h-full object-cover object-top"
-              fallbackClassName="w-full h-full bg-gradient-to-br from-[#1a1028] to-[#201430]"
+              className="h-full w-full object-cover object-top"
+              fallbackClassName="h-full w-full bg-[#19161d]"
             />
           ) : (
-            <img src={getMediaDisplayUrl(image!.stored_path, image!.original_url)} alt={image!.alt_text || item.title} loading="lazy" decoding="async" className="w-full h-full object-cover object-top" />
+            <img
+              src={getMediaDisplayUrl(image!.stored_path, image!.original_url)}
+              alt={image!.alt_text || item.title}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-top"
+            />
           )}
           {image!.media_type === "video" && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/45">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
               </div>
             </div>
           )}
           {item.prompt_type && (
-            <div className="absolute top-2.5 right-2.5 bg-[#0e101890] backdrop-blur-md border border-[#ec489940] rounded-md px-2 py-0.5 text-[11px] text-[var(--accent-art)] font-medium">
+            <div className="absolute right-3 top-3 rounded-full border border-[rgba(182,111,120,0.28)] bg-[rgba(22,18,24,0.76)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#dfb3b9]">
               {item.prompt_type === "image" ? "Image" : "Video"} Prompt
             </div>
           )}
         </div>
       )}
-      <div className={hasImage ? "px-5 py-3.5" : "p-5"}>
+      <div className={hasImage ? "px-5 py-4" : "p-5"}>
         {!hasImage && item.prompt_type && (
-          <div className="inline-block bg-[#0e101890] border border-[#ec489940] rounded-md px-2 py-0.5 text-[11px] text-[var(--accent-art)] font-medium mb-2.5">
+          <div className="mb-3 inline-flex rounded-full border border-[rgba(182,111,120,0.28)] bg-[rgba(182,111,120,0.12)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#dfb3b9]">
             {item.prompt_type === "image" ? "Image" : "Video"} Prompt
           </div>
         )}
         {item.prompt_text && (
-          <p className="text-[13px] text-[#8888aa] italic line-clamp-2 mb-2 before:content-['\201C'] before:text-[var(--accent-art)] after:content-['\201D'] after:text-[var(--accent-art)]">
-            {item.prompt_text}
+          <p className="mb-3 text-[13px] italic leading-7 text-[#c8a7ac] line-clamp-2">
+            &ldquo;{item.prompt_text}&rdquo;
           </p>
         )}
         {item.body_text && !item.prompt_text && (
-          <p className="text-sm leading-relaxed text-[#8888aa] line-clamp-2 mb-2">{item.body_text}</p>
+          <p className="mb-3 text-sm leading-7 text-[#b4ab9d] line-clamp-2">
+            {item.body_text}
+          </p>
         )}
-        <div className="flex items-center gap-2 mb-2">
+        <div className="mb-3 flex items-center gap-2">
           {item.author_avatar_url ? (
-            <img src={item.author_avatar_url} alt="" loading="lazy" decoding="async" className="w-7 h-7 rounded-full flex-shrink-0" />
+            <img
+              src={item.author_avatar_url}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="h-7 w-7 shrink-0 rounded-full"
+            />
           ) : (
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#2a2a3a] to-[#3a3a4a] flex-shrink-0 flex items-center justify-center text-[11px] text-[#555566]">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#202733] text-[11px] text-[#9c9387]">
               {initials}
             </div>
           )}
-          <div>
-            <div className="font-semibold text-[13px] text-[#f0f0f5]">{item.author_display_name || item.author_handle}</div>
+          <div className="min-w-0">
+            <div className="truncate text-[13px] font-semibold text-[#f2ede5]">
+              {item.author_display_name || item.author_handle}
+            </div>
             {item.author_handle && (
-              <div className="text-xs text-[#555566]">@{item.author_handle.replace(/^@/, "")}</div>
+              <div className="truncate text-xs text-[#7d7569]">
+                @{item.author_handle.replace(/^@/, "")}
+              </div>
             )}
           </div>
         </div>
-        <div className="flex items-center justify-between text-xs text-[#555566]">
-          <span>Captured {formatTimeAgo(item.created_at)}</span>
+        <div className="text-xs text-[#7d7569]">
+          Captured {formatTimeAgo(item.created_at)}
         </div>
       </div>
     </CardWrapper>

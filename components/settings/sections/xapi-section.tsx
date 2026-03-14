@@ -91,38 +91,38 @@ export function XApiSection({ settings, onRefresh }: XApiSectionProps) {
   };
 
   return (
-    <div className="rounded-[14px] border border-[#ffffff0a] bg-[#111118] p-6">
+    <div className="rounded-[24px] border border-[#d6c9b214] bg-[#ffffff05] p-6">
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="mb-4 flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-[10px] bg-[#1a1a24] border border-[#ffffff0a] flex items-center justify-center shrink-0">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-[#d6c9b214] bg-[#0f141b]">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="#f0f0f5">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
           </div>
           <div>
-            <h3 className="font-heading font-semibold text-[15px] text-[#f0f0f5]">
+            <h3 className="font-heading text-[15px] font-semibold text-[#f2ede5]">
               X API
             </h3>
-            <p className="text-xs text-[#8888aa]">
+            <p className="text-xs text-[#a49b8b]">
               Official API for safe bookmark & like syncing
             </p>
           </div>
         </div>
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
           status?.connected
-            ? "bg-[#00ffc815] text-[#00ffc8] border border-[#00ffc830]"
+            ? "border border-emerald-500/30 bg-emerald-500/12 text-emerald-300"
             : hasBearerToken
-              ? "bg-[#a78bfa15] text-[#a78bfa] border border-[#a78bfa30]"
-              : "bg-[#ffffff08] text-[#8888aa] border border-[#ffffff12]"
+              ? "border border-[rgba(140,127,159,0.28)] bg-[rgba(140,127,159,0.12)] text-[#c7bad6]"
+              : "border border-[#d6c9b214] bg-[#ffffff08] text-[#a49b8b]"
         }`}>
           {status?.connected ? "Connected" : hasBearerToken ? "Token set" : "Not configured"}
         </span>
       </div>
 
       {/* Safety warning */}
-      <div className="rounded-[10px] bg-[#1a1a24] border border-[#ff6b3520] p-3 mb-5">
-        <p className="text-xs text-[#8888aa] leading-relaxed">
+      <div className="mb-5 rounded-[16px] border border-amber-500/20 bg-amber-500/10 p-4">
+        <p className="text-xs leading-relaxed text-[#b4ab9d]">
           <strong className="text-[#ff6b35]">Account safety:</strong>{" "}
           Without the X API, the extension intercepts X&apos;s internal API which
           technically violates their ToS. For zero account risk, add a Bearer Token below.{" "}
@@ -130,7 +130,7 @@ export function XApiSection({ settings, onRefresh }: XApiSectionProps) {
             href="https://developer.x.com/en/portal/products"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[var(--accent-thread)] hover:underline"
+            className="text-[var(--accent-article)] hover:underline"
           >
             Get X API access &rarr;
           </a>
@@ -144,10 +144,10 @@ export function XApiSection({ settings, onRefresh }: XApiSectionProps) {
             <div className="flex items-center gap-2">
               <label className="text-xs text-[hsl(var(--muted-foreground))]">Bearer Token</label>
               {hasBearerToken && (
-                <span className="text-xs text-emerald-400">configured</span>
+                <span className="text-xs text-emerald-300">configured</span>
               )}
               {tokenSaved && (
-                <span className="text-xs text-emerald-400">saved!</span>
+                <span className="text-xs text-emerald-300">saved!</span>
               )}
             </div>
             <div className="flex gap-2">
@@ -156,19 +156,19 @@ export function XApiSection({ settings, onRefresh }: XApiSectionProps) {
                 value={bearerToken}
                 onChange={(e) => setBearerToken(e.target.value)}
                 placeholder={hasBearerToken ? "••••••••" : "AAAAAAAAAAAAAAAAAAA..."}
-                className="flex-1 h-10 px-4 rounded-[10px] bg-[#0a0a0f] border border-[#ffffff12] text-[#f0f0f5] text-sm placeholder:text-[hsl(var(--muted))] focus:outline-none focus:border-[#ffffff30] transition-colors"
+                className="flex-1 h-10 rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#6f695f] focus:outline-none focus:border-[#d6c9b24d] transition-colors"
               />
               {bearerToken && (
                 <button
                   onClick={handleSaveBearerToken}
                   disabled={savingToken}
-                  className="h-10 px-4 rounded-[10px] text-sm font-medium bg-[var(--accent-thread)] text-[#0a0a0f] font-heading hover:brightness-110 transition-all duration-200 cursor-pointer disabled:opacity-50"
+                  className="h-10 rounded-[12px] bg-[var(--accent-article)] px-4 text-sm font-medium text-[#090c11] transition-all duration-200 cursor-pointer hover:brightness-110 disabled:opacity-50"
                 >
                   {savingToken ? "Saving..." : "Save"}
                 </button>
               )}
             </div>
-            <p className="text-[10px] text-[#8888aa]">
+            <p className="text-[10px] text-[#8a8174]">
               Create a project at developer.x.com &rarr; generate a Bearer Token &rarr; paste above
             </p>
           </div>
@@ -176,13 +176,13 @@ export function XApiSection({ settings, onRefresh }: XApiSectionProps) {
 
         {/* OAuth connection (if available) */}
         {loading ? (
-          <div className="h-10 rounded-[10px] bg-[#1a1a24] animate-pulse" />
+          <div className="h-10 rounded-[10px] bg-[#171d24] animate-pulse" />
         ) : status?.connected ? (
-          <div className="border-t border-[#ffffff0a] pt-4 flex flex-col gap-4">
+          <div className="flex flex-col gap-4 border-t border-[#d6c9b214] pt-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-2.5 h-2.5 rounded-full bg-[#00ffc8]" />
-                <span className="text-sm text-[#f0f0f5]">
+                <span className="text-sm text-[#f2ede5]">
                   Connected as <span className="font-semibold">@{status.username}</span>
                 </span>
                 {status.expired && (
@@ -193,7 +193,7 @@ export function XApiSection({ settings, onRefresh }: XApiSectionProps) {
               </div>
               <button
                 onClick={handleDisconnect}
-                className="text-xs text-[#ff6b35] hover:underline cursor-pointer"
+                className="cursor-pointer text-xs text-[#ff6b35] hover:underline"
               >
                 Disconnect
               </button>
@@ -204,42 +204,42 @@ export function XApiSection({ settings, onRefresh }: XApiSectionProps) {
               <button
                 onClick={() => handleSync("bookmarks")}
                 disabled={syncing !== null}
-                className="h-9 px-4 rounded-[10px] text-sm font-medium bg-[var(--accent-thread)] text-[#0a0a0f] font-heading hover:brightness-110 transition-all duration-200 cursor-pointer disabled:opacity-50"
+                className="h-9 rounded-[12px] bg-[var(--accent-article)] px-4 text-sm font-medium text-[#090c11] transition-all duration-200 cursor-pointer hover:brightness-110 disabled:opacity-50"
               >
                 {syncing === "bookmarks" ? "Syncing..." : "Sync Bookmarks"}
               </button>
               <button
                 onClick={() => handleSync("likes")}
                 disabled={syncing !== null}
-                className="h-9 px-4 rounded-[10px] text-sm font-medium bg-[var(--accent-thread)] text-[#0a0a0f] font-heading hover:brightness-110 transition-all duration-200 cursor-pointer disabled:opacity-50"
+                className="h-9 rounded-[12px] bg-[var(--accent-article)] px-4 text-sm font-medium text-[#090c11] transition-all duration-200 cursor-pointer hover:brightness-110 disabled:opacity-50"
               >
                 {syncing === "likes" ? "Syncing..." : "Sync Likes"}
               </button>
             </div>
 
             {syncResult && (
-              <p className={`text-xs ${syncResult.startsWith("Error") || syncResult.startsWith("Failed") ? "text-[#ff4444]" : "text-[#00ffc8]"}`}>
+              <p className={`text-xs ${syncResult.startsWith("Error") || syncResult.startsWith("Failed") ? "text-[#ff6b35]" : "text-emerald-300"}`}>
                 {syncResult}
               </p>
             )}
           </div>
         ) : (
-          <div className="border-t border-[#ffffff0a] pt-4 flex flex-col gap-3">
+          <div className="flex flex-col gap-3 border-t border-[#d6c9b214] pt-4">
             <div>
-              <p className="text-xs text-[#8888aa] mb-1">
-                <strong className="text-[#f0f0f5]">OAuth connection</strong> (alternative)
+              <p className="mb-1 text-xs text-[#a49b8b]">
+                <strong className="text-[#f2ede5]">OAuth connection</strong> (alternative)
               </p>
-              <p className="text-xs text-[#8888aa]">
+              <p className="text-xs text-[#a49b8b]">
                 Connect via OAuth to sync bookmarks and likes directly.
                 Requires{" "}
-                <code className="text-[10px] bg-[#0a0a0f] px-1.5 py-0.5 rounded text-[#8888aa]">XAPI_CLIENT_ID</code>{" "}and{" "}
-                <code className="text-[10px] bg-[#0a0a0f] px-1.5 py-0.5 rounded text-[#8888aa]">XAPI_CLIENT_SECRET</code>{" "}
-                in <code className="text-[10px] bg-[#0a0a0f] px-1.5 py-0.5 rounded text-[#8888aa]">.env.local</code>.
+                <code className="rounded bg-[#0f141b] px-1.5 py-0.5 text-[10px] text-[#cdc4b7]">XAPI_CLIENT_ID</code>{" "}and{" "}
+                <code className="rounded bg-[#0f141b] px-1.5 py-0.5 text-[10px] text-[#cdc4b7]">XAPI_CLIENT_SECRET</code>{" "}
+                in <code className="rounded bg-[#0f141b] px-1.5 py-0.5 text-[10px] text-[#cdc4b7]">.env.local</code>.
               </p>
             </div>
             <button
               onClick={handleConnect}
-              className="h-9 px-4 rounded-[10px] text-sm font-medium bg-[#1a1a24] text-[#f0f0f5] border border-[#ffffff12] hover:border-[#ffffff24] transition-all duration-200 cursor-pointer self-start"
+              className="h-9 self-start rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233]"
             >
               Connect X Account
             </button>

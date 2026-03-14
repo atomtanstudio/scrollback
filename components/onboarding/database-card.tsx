@@ -26,42 +26,41 @@ export function DatabaseCard({
     <button
       onClick={onSelect}
       className={cn(
-        "w-full text-left rounded-[14px] p-px transition-all duration-200 cursor-pointer",
+        "w-full rounded-[24px] border p-5 text-left transition-all duration-200 cursor-pointer",
         selected
-          ? "shadow-[0_0_20px_-4px_var(--glow)]"
-          : "opacity-60 hover:opacity-80"
+          ? "bg-[#ffffff08]"
+          : "border-[#d6c9b214] bg-[#ffffff05] hover:border-[#d6c9b22e]"
       )}
       style={{
-        background: selected
-          ? `linear-gradient(135deg, ${accentColor}40, ${accentColor}15, transparent)`
-          : "hsl(var(--border))",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ["--glow" as any]: accentColor,
+        borderColor: selected ? `${accentColor}55` : undefined,
+        boxShadow: selected ? `0 20px 56px -34px ${accentColor}` : undefined,
       }}
     >
-      <div
-        className={cn(
-          "rounded-[13px] p-5 transition-all duration-200",
-          selected ? "bg-[#111118]" : "bg-[#0e1018]"
-        )}
-      >
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-heading font-semibold text-[15px] text-[#f0f0f5]">
-            {title}
-          </h3>
-          <span
-            className="text-[11px] font-medium px-2.5 py-0.5 rounded-full"
-            style={{
-              backgroundColor: `${accentColor}18`,
-              color: accentColor,
-            }}
-          >
-            {badge}
-          </span>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="mb-3 flex items-center gap-3">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ backgroundColor: accentColor }}
+            />
+            <h3 className="font-heading text-[1.05rem] font-semibold tracking-[-0.03em] text-[#f2ede5]">
+              {title}
+            </h3>
+          </div>
+          <p className="max-w-[48ch] text-sm leading-7 text-[#b4ab9d]">
+            {description}
+          </p>
         </div>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          {description}
-        </p>
+        <span
+          className="shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]"
+          style={{
+            backgroundColor: `${accentColor}12`,
+            borderColor: `${accentColor}24`,
+            color: accentColor,
+          }}
+        >
+          {badge}
+        </span>
       </div>
     </button>
   );

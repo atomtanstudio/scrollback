@@ -30,11 +30,11 @@ import {
 import type { AdminItem } from "@/components/admin/columns";
 
 const TYPE_COLORS: Record<string, string> = {
-  tweet: "bg-[#22d3ee]/15 text-[#22d3ee] border-[#22d3ee]/30",
-  thread: "bg-[#a78bfa]/15 text-[#a78bfa] border-[#a78bfa]/30",
-  article: "bg-[#fb923c]/15 text-[#fb923c] border-[#fb923c]/30",
-  image_prompt: "bg-[#ec4899]/15 text-[#ec4899] border-[#ec4899]/30",
-  video_prompt: "bg-[#ec4899]/15 text-[#ec4899] border-[#ec4899]/30",
+  tweet: "border-[color:rgba(110,152,160,0.22)] bg-[color:rgba(110,152,160,0.12)] text-[var(--accent-tweet)]",
+  thread: "border-[color:rgba(140,127,159,0.22)] bg-[color:rgba(140,127,159,0.12)] text-[var(--accent-thread)]",
+  article: "border-[color:rgba(184,148,98,0.22)] bg-[color:rgba(184,148,98,0.12)] text-[var(--accent-article)]",
+  image_prompt: "border-[color:rgba(182,111,120,0.22)] bg-[color:rgba(182,111,120,0.12)] text-[var(--accent-art)]",
+  video_prompt: "border-[color:rgba(182,111,120,0.22)] bg-[color:rgba(182,111,120,0.12)] text-[var(--accent-art)]",
 };
 
 function formatDate(dateStr: string | null): string {
@@ -110,18 +110,18 @@ export function DataTable({
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-[14px] border border-[#ffffff0a] bg-[var(--surface)] py-20">
-        <FileText className="mb-4 h-10 w-10 text-[#555566]" />
-        <p className="text-[#8888aa]">No items found</p>
+      <div className="flex flex-col items-center justify-center rounded-[24px] border border-[#d6c9b214] bg-[#ffffff05] py-20">
+        <FileText className="mb-4 h-10 w-10 text-[#6f695f]" />
+        <p className="text-[#a49b8b]">No items found</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-[14px] border border-[#ffffff0a] bg-[var(--surface)]">
+    <div className="overflow-hidden rounded-[24px] border border-[#d6c9b214] bg-[#ffffff05]">
       <Table>
         <TableHeader>
-          <TableRow className="border-[#ffffff0a] hover:bg-transparent">
+          <TableRow className="border-[#d6c9b214] hover:bg-transparent">
             <TableHead className="w-[40px]">
               <Checkbox
                 checked={allSelected}
@@ -134,19 +134,19 @@ export function DataTable({
                 onCheckedChange={handleSelectAll}
               />
             </TableHead>
-            <TableHead className="w-[50px] text-[#8888aa]">Thumb</TableHead>
-            <TableHead className="text-[#8888aa]">Title / Preview</TableHead>
-            <TableHead className="text-[#8888aa]">Author</TableHead>
-            <TableHead className="text-[#8888aa]">Type</TableHead>
-            <TableHead className="text-[#8888aa]">Date</TableHead>
-            <TableHead className="w-[50px] text-[#8888aa]">Actions</TableHead>
+            <TableHead className="w-[56px] text-[#8a8174]">Thumb</TableHead>
+            <TableHead className="text-[#8a8174]">Title / Preview</TableHead>
+            <TableHead className="text-[#8a8174]">Author</TableHead>
+            <TableHead className="text-[#8a8174]">Type</TableHead>
+            <TableHead className="text-[#8a8174]">Date</TableHead>
+            <TableHead className="w-[56px] text-[#8a8174]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {items.map((item, index) => (
             <TableRow
               key={item.id}
-              className="border-[#ffffff0a] hover:bg-[#ffffff06]"
+              className="border-[#d6c9b214] hover:bg-[#ffffff06] data-[state=selected]:bg-[#ffffff08]"
               data-state={selectedIds.has(item.id) ? "selected" : undefined}
             >
               <TableCell>
@@ -168,36 +168,36 @@ export function DataTable({
                       src={getMediaDisplayUrl(item.thumbnail, "")}
                       muted
                       preload="metadata"
-                      className="h-10 w-10 rounded-md object-cover"
+                      className="h-10 w-10 rounded-[10px] object-cover"
                     />
                   ) : (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={getMediaDisplayUrl(item.thumbnail, "")}
                       alt=""
-                      className="h-10 w-10 rounded-md object-cover"
+                      className="h-10 w-10 rounded-[10px] object-cover"
                     />
                   )
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[#0a0a0f]">
-                    <FileText className="h-4 w-4 text-[#555566]" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#0f141b]">
+                    <FileText className="h-4 w-4 text-[#6f695f]" />
                   </div>
                 )}
               </TableCell>
               <TableCell className="max-w-[300px]">
-                <div className="truncate font-medium text-[#f0f0f5]">
+                <div className="truncate font-medium text-[#f2ede5]">
                   {item.title || "Untitled"}
                 </div>
-                <div className="truncate text-xs text-[#8888aa]">
+                <div className="truncate text-xs text-[#a49b8b]">
                   {item.body_preview}
                 </div>
               </TableCell>
               <TableCell>
-                <div className="text-sm text-[#f0f0f5]">
+                <div className="text-sm text-[#f2ede5]">
                   {item.author_display_name || "—"}
                 </div>
                 {item.author_handle && (
-                  <div className="text-xs text-[#8888aa]">
+                  <div className="text-xs text-[#8a8174]">
                     @{item.author_handle}
                   </div>
                 )}
@@ -205,12 +205,12 @@ export function DataTable({
               <TableCell>
                 <Badge
                   variant="outline"
-                  className={TYPE_COLORS[item.source_type] || "text-[#8888aa]"}
+                  className={TYPE_COLORS[item.source_type] || "text-[#a49b8b]"}
                 >
                   {formatTypeName(item.source_type)}
                 </Badge>
               </TableCell>
-              <TableCell className="whitespace-nowrap text-sm text-[#8888aa]">
+              <TableCell className="whitespace-nowrap text-sm text-[#a49b8b]">
                 {formatDate(item.posted_at)}
               </TableCell>
               <TableCell>
@@ -219,32 +219,32 @@ export function DataTable({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 text-[#8888aa] hover:text-[#f0f0f5]"
+                      className="h-8 w-8 rounded-[10px] p-0 text-[#a49b8b] hover:bg-[#ffffff08] hover:text-[#f2ede5]"
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="end"
-                    className="border-[#ffffff12] bg-[#111118]"
+                    className="border-[#d6c9b214] bg-[#171b22]"
                   >
                     <DropdownMenuItem
                       onClick={() => onEdit(item)}
-                      className="text-[#f0f0f5] focus:bg-[#ffffff0a] focus:text-[#f0f0f5]"
+                      className="text-[#f2ede5] focus:bg-[#ffffff0a] focus:text-[#f2ede5]"
                     >
                       <Pencil className="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => onDelete(item)}
-                      className="text-red-400 focus:bg-[#ffffff0a] focus:text-red-400"
+                      className="text-red-300 focus:bg-[#ffffff0a] focus:text-red-300"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => onReprocess(item)}
-                      className="text-[#f0f0f5] focus:bg-[#ffffff0a] focus:text-[#f0f0f5]"
+                      className="text-[#f2ede5] focus:bg-[#ffffff0a] focus:text-[#f2ede5]"
                     >
                       <RefreshCw className="mr-2 h-4 w-4" />
                       Reprocess
@@ -252,7 +252,7 @@ export function DataTable({
                     {item.original_url && (
                       <DropdownMenuItem
                         asChild
-                        className="text-[#f0f0f5] focus:bg-[#ffffff0a] focus:text-[#f0f0f5]"
+                        className="text-[#f2ede5] focus:bg-[#ffffff0a] focus:text-[#f2ede5]"
                       >
                         <a
                           href={item.original_url}

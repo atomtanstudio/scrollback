@@ -34,21 +34,21 @@ export function DataSection({ stats, settings }: DataSectionProps) {
   };
 
   return (
-    <div className="rounded-[14px] border border-[#ffffff0a] bg-[#111118] p-6">
+    <div className="rounded-[24px] border border-[#d6c9b214] bg-[#ffffff05] p-6">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-[10px] bg-[#1a1a24] border border-[#ffffff0a] flex items-center justify-center shrink-0">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-[#d6c9b214] bg-[#0f141b]">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-art)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
         </div>
         <div>
-          <h3 className="font-heading font-semibold text-[15px] text-[#f0f0f5]">
+            <h3 className="font-heading text-[15px] font-semibold text-[#f2ede5]">
             Data
           </h3>
-          <p className="text-xs text-[#8888aa]">
+            <p className="text-xs text-[#a49b8b]">
             {stats.total.toLocaleString()} items captured
           </p>
         </div>
@@ -56,7 +56,7 @@ export function DataSection({ stats, settings }: DataSectionProps) {
 
       <div className="flex flex-col gap-5">
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard label="Total" value={stats.total} color="var(--accent-thread)" />
           <StatCard label="Tweets" value={stats.tweets} color="var(--accent-tweet)" />
           <StatCard label="Threads" value={stats.threads} color="var(--accent-thread)" />
@@ -66,10 +66,10 @@ export function DataSection({ stats, settings }: DataSectionProps) {
         {/* Media Storage (R2) */}
         {r2?.configured && (
           <div className="flex flex-col gap-2">
-            <h4 className="text-sm font-medium text-[#f0f0f5]">Media Storage (R2)</h4>
+            <h4 className="text-sm font-medium text-[#f2ede5]">Media Storage (R2)</h4>
             {r2.mediaWithoutStored > 0 ? (
               <>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                <p className="text-xs text-[#a49b8b]">
                   {r2.mediaWithoutStored} of {r2.mediaWithStored + r2.mediaWithoutStored} media items pending download
                 </p>
                 <ProgressBar
@@ -78,7 +78,7 @@ export function DataSection({ stats, settings }: DataSectionProps) {
                 />
               </>
             ) : (
-              <p className="text-xs text-emerald-400">
+              <p className="text-xs text-emerald-300">
                 All {r2.mediaWithStored} media items stored in R2
               </p>
             )}
@@ -87,17 +87,17 @@ export function DataSection({ stats, settings }: DataSectionProps) {
 
         {/* Export */}
         <div className="flex flex-col gap-2">
-          <h4 className="text-sm font-medium text-[#f0f0f5]">Export</h4>
+          <h4 className="text-sm font-medium text-[#f2ede5]">Export</h4>
           <div className="flex gap-2">
             <button
               onClick={() => handleExport("json")}
-              className="h-9 px-4 rounded-[10px] text-sm font-medium bg-[#1a1a24] text-[#f0f0f5] border border-[#ffffff12] hover:border-[#ffffff24] transition-all duration-200 cursor-pointer"
+              className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233]"
             >
               Export JSON
             </button>
             <button
               onClick={() => handleExport("csv")}
-              className="h-9 px-4 rounded-[10px] text-sm font-medium bg-[#1a1a24] text-[#f0f0f5] border border-[#ffffff12] hover:border-[#ffffff24] transition-all duration-200 cursor-pointer"
+              className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233]"
             >
               Export CSV
             </button>
@@ -106,7 +106,7 @@ export function DataSection({ stats, settings }: DataSectionProps) {
 
         {/* Delete result */}
         {deleteResult && (
-          <p className="text-xs text-emerald-400">{deleteResult}</p>
+          <p className="text-xs text-emerald-300">{deleteResult}</p>
         )}
 
         {/* Danger zone */}
@@ -123,8 +123,8 @@ export function DataSection({ stats, settings }: DataSectionProps) {
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="rounded-[10px] bg-[#0a0a0f] border border-[#ffffff0a] p-3">
-      <p className="text-xs text-[hsl(var(--muted-foreground))] mb-1">{label}</p>
+    <div className="rounded-[16px] border border-[#d6c9b214] bg-[#0f141b] p-3">
+      <p className="mb-1 text-xs text-[#8a8174]">{label}</p>
       <p className="text-lg font-heading font-bold" style={{ color }}>
         {value.toLocaleString()}
       </p>

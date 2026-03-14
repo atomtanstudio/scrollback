@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ContentCard } from "@/components/cards/content-card";
-import type { ContentItemWithMedia } from "@/lib/db/types";
+import Link from "next/link";
 
 interface RelatedItemsProps {
   itemId: string;
@@ -25,16 +24,15 @@ interface RelatedApiItem {
 function SkeletonCard() {
   return (
     <div
-      className="min-w-[280px] max-w-[280px] flex-shrink-0 rounded-[14px] overflow-hidden"
+      className="min-w-[280px] max-w-[280px] flex-shrink-0 overflow-hidden rounded-[24px] border border-[#d6c9b214] bg-[#ffffff08]"
       style={{
         background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.07)",
       }}
     >
-      <div className="p-4 space-y-3">
+      <div className="space-y-3 p-5">
         <div className="flex items-center gap-2">
           <div
-            className="w-8 h-8 rounded-full flex-shrink-0"
+            className="h-8 w-8 flex-shrink-0 rounded-full"
             style={{ background: "rgba(255,255,255,0.07)" }}
           />
           <div className="space-y-1.5 flex-1">
@@ -67,8 +65,61 @@ function SkeletonCard() {
   );
 }
 
+function formatTypeLabel(type: string) {
+  if (type === "image_prompt") return "Image Prompt";
+  if (type === "video_prompt") return "Video Prompt";
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+function buildExcerpt(item: RelatedApiItem) {
+  const source = (item.body_text || item.title || "").replace(/\s+/g, " ").trim();
+  if (!source) return "Captured without preview text.";
+  return source.length > 132 ? `${source.slice(0, 131).trimEnd()}…` : source;
+}
+
+function RelatedItemCard({ item }: { item: RelatedApiItem }) {
+  const displayName = item.author_display_name || item.author_handle || "Unknown";
+  const initials = displayName.slice(0, 2).toUpperCase();
+
+  return (
+    <Link
+      href={`/item/${item.id}`}
+      className="block min-w-[280px] max-w-[280px] flex-shrink-0 rounded-[24px] border border-[#d6c9b214] bg-[#ffffff08] p-5 transition-colors hover:border-[#d6c9b233]"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-1 text-[11px] text-[#a49b8b]">
+          {formatTypeLabel(item.source_type)}
+        </span>
+        {typeof item.similarity === "number" && (
+          <span className="text-[11px] text-[#8a8174]">{Math.round(item.similarity * 100)}% match</span>
+        )}
+      </div>
+
+      <h3 className="mt-4 line-clamp-3 font-heading text-[1.35rem] font-semibold leading-[1.02] tracking-[-0.04em] text-[#f2ede5]">
+        {item.title || buildExcerpt(item)}
+      </h3>
+
+      <p className="mt-3 line-clamp-4 text-[14px] leading-6 text-[#b4ab9d]">
+        {buildExcerpt(item)}
+      </p>
+
+      <div className="mt-5 flex items-center gap-3 border-t border-[#d6c9b214] pt-4">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgba(110,152,160,0.28),rgba(140,127,159,0.3))] text-[12px] font-semibold text-[#f2ede5]">
+          {initials}
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-[13px] font-medium text-[#cdc4b7]">{displayName}</p>
+          {item.author_handle && (
+            <p className="truncate text-[12px] text-[#8a8174]">@{item.author_handle}</p>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export function RelatedItems({ itemId }: RelatedItemsProps) {
-  const [items, setItems] = useState<ContentItemWithMedia[]>([]);
+  const [items, setItems] = useState<RelatedApiItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -80,12 +131,7 @@ export function RelatedItems({ itemId }: RelatedItemsProps) {
         if (!res.ok) throw new Error("Failed to fetch");
         const data = await res.json();
         if (!cancelled) {
-          // The API returns a subset of ContentItem fields; cast via unknown to satisfy the type
-          const mapped = (data.items as RelatedApiItem[]).map((item) => ({
-            ...item,
-            media_items: [],
-          })) as unknown as ContentItemWithMedia[];
-          setItems(mapped);
+          setItems(data.items as RelatedApiItem[]);
         }
       } catch {
         if (!cancelled) setItems([]);
@@ -104,10 +150,15 @@ export function RelatedItems({ itemId }: RelatedItemsProps) {
   if (!loading && items.length === 0) return null;
 
   return (
-    <div>
-      <h2 className="font-heading text-lg font-semibold text-[#f0f0f5] mb-4">
-        More like this
-      </h2>
+    <div className="rounded-[30px] border border-[#d6c9b214] bg-[linear-gradient(180deg,rgba(24,29,37,0.96),rgba(14,18,24,0.98))] p-6 shadow-[0_24px_64px_rgba(2,6,12,0.2)] sm:p-8">
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">Related</p>
+          <h2 className="mt-2 font-heading text-[1.7rem] font-semibold tracking-[-0.05em] text-[#f2ede5]">
+            More like this
+          </h2>
+        </div>
+      </div>
 
       <div className="relative">
         {/* Scrollable row */}
@@ -126,12 +177,7 @@ export function RelatedItems({ itemId }: RelatedItemsProps) {
             </>
           ) : (
             items.map((item) => (
-              <div
-                key={item.id}
-                className="min-w-[280px] max-w-[280px] flex-shrink-0"
-              >
-                <ContentCard item={item} />
-              </div>
+              <RelatedItemCard key={item.id} item={item} />
             ))
           )}
         </div>
@@ -142,7 +188,7 @@ export function RelatedItems({ itemId }: RelatedItemsProps) {
           style={{
             width: 64,
             background:
-              "linear-gradient(to right, transparent, rgb(10, 10, 18))",
+              "linear-gradient(to right, transparent, rgb(14, 18, 24))",
           }}
         />
       </div>

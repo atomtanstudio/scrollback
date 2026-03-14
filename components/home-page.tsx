@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import { Header } from "@/components/header";
 import { SearchBar } from "@/components/search-bar";
-import { StatPills } from "@/components/stat-pills";
-import { FilterPills } from "@/components/filter-pills";
 import { MasonryFeed } from "@/components/masonry-feed";
 import { CardSkeletonGrid } from "@/components/card-skeleton";
+import { VideoPoster } from "@/components/cards/video-poster";
+import { formatTimeAgo } from "@/lib/format";
+import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { ContentItemWithMedia } from "@/lib/db/types";
 
 interface HomePageProps {
@@ -17,11 +19,143 @@ interface HomePageProps {
   isAuthed: boolean;
 }
 
+function isArtItem(item: ContentItemWithMedia) {
+  return item.source_type === "image_prompt" || item.source_type === "video_prompt";
+}
+
+function getItemLabel(item: ContentItemWithMedia) {
+  if (item.source_type === "thread") return "Thread";
+  if (item.source_type === "article") return "Article";
+  if (isArtItem(item)) return item.source_type === "video_prompt" ? "Video Prompt" : "Image Prompt";
+  return "Tweet";
+}
+
+function getItemTitle(item: ContentItemWithMedia, max = 92) {
+  const raw = (item.title || item.prompt_text || item.body_text || "Untitled capture").replace(/\s+/g, " ").trim();
+  return raw.length > max ? `${raw.slice(0, max - 1).trimEnd()}…` : raw;
+}
+
+function getItemExcerpt(item: ContentItemWithMedia, max = 150) {
+  const source = (item.body_text || item.prompt_text || item.title || "").replace(/\s+/g, " ").trim();
+  if (!source) return "Captured without body text.";
+  return source.length > max ? `${source.slice(0, max - 1).trimEnd()}…` : source;
+}
+
+function getMedia(item: ContentItemWithMedia) {
+  return item.media_items?.find((media) => media.media_type === "image" || media.media_type === "video") ?? null;
+}
+
+function getDomain(url: string | null | undefined) {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+interface HomeFeatureCardProps {
+  item: ContentItemWithMedia;
+  eyebrow: string;
+  className?: string;
+  tall?: boolean;
+}
+
+function HomeFeatureCard({ item, eyebrow, className = "", tall = false }: HomeFeatureCardProps) {
+  const media = getMedia(item);
+  const mediaUrl = media ? getMediaDisplayUrl(media.stored_path, media.original_url) : null;
+
+  return (
+    <Link
+      href={`/item/${item.id}`}
+      className={`group rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 transition-colors hover:border-[#d6c9b233] ${className}`}
+    >
+      <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">{eyebrow}</p>
+      <h2 className="mt-3 max-w-[14ch] font-heading text-[2rem] leading-[0.98] tracking-[-0.05em] text-[#f2ede5] group-hover:text-white">
+        {getItemTitle(item, tall ? 84 : 76)}
+      </h2>
+
+      {mediaUrl ? (
+        <div className={`mt-5 overflow-hidden rounded-[22px] bg-[#171b22] ${tall ? "h-[208px]" : "h-[168px]"}`}>
+          {media?.media_type === "video" ? (
+            <VideoPoster
+              src={mediaUrl}
+              alt={media.alt_text || item.title || item.body_text || ""}
+              className="h-full w-full object-cover object-top"
+              fallbackClassName="h-full w-full bg-[linear-gradient(135deg,rgba(91,63,41,0.78),rgba(38,62,77,0.86))]"
+            />
+          ) : (
+            <img
+              src={mediaUrl}
+              alt={media?.alt_text || item.title || item.body_text || ""}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-top"
+            />
+          )}
+        </div>
+      ) : null}
+
+      <p className="mt-4 text-[15px] leading-7 text-[#b4ab9d]">{getItemExcerpt(item, tall ? 150 : 132)}</p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2 text-[12px] text-[#cdc4b7]">
+          {getItemLabel(item)}
+        </span>
+        <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2 text-[12px] text-[#cdc4b7]">
+          {formatTimeAgo(item.created_at)}
+        </span>
+        {(item.author_display_name || item.author_handle) && (
+          <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2 text-[12px] text-[#cdc4b7]">
+            {item.author_display_name || item.author_handle}
+          </span>
+        )}
+      </div>
+    </Link>
+  );
+}
+
 export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAuthed }: HomePageProps) {
   const [activeType, setActiveType] = useState("");
   const [searchResults, setSearchResults] = useState<ContentItemWithMedia[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const statEntries = [
+    { label: "Tweets", count: stats.tweets, dot: "bg-[var(--accent-tweet)]" },
+    { label: "Threads", count: stats.threads, dot: "bg-[var(--accent-thread)]" },
+    { label: "Articles", count: stats.articles, dot: "bg-[var(--accent-article)]" },
+    { label: "Art", count: stats.art, dot: "bg-[var(--accent-art)]" },
+  ];
+
+  const filters = [
+    { label: "All", value: "" },
+    { label: "Tweets", value: "tweet" },
+    { label: "Threads", value: "thread" },
+    { label: "Articles", value: "article" },
+    { label: "Art", value: "art" },
+  ];
+
+  const recentItems = initialItems.slice(0, 3);
+  const featuredVisual =
+    initialItems.find((item) => item.source_type === "thread" && Boolean(getMedia(item))) ??
+    initialItems.find((item) => isArtItem(item) && Boolean(getMedia(item))) ??
+    initialItems.find((item) => item.source_type === "article" && Boolean(getMedia(item))) ??
+    initialItems.find((item) => Boolean(getMedia(item))) ??
+    initialItems[0] ??
+    null;
+  const usedFeatureIds = new Set<string>(featuredVisual ? [featuredVisual.id] : []);
+  const featuredThread =
+    initialItems.find((item) => item.source_type === "thread" && !usedFeatureIds.has(item.id)) ?? null;
+  if (featuredThread) usedFeatureIds.add(featuredThread.id);
+  const featuredArt =
+    initialItems.find((item) => isArtItem(item) && !usedFeatureIds.has(item.id)) ?? null;
+  if (featuredArt) usedFeatureIds.add(featuredArt.id);
+  const featuredArticle =
+    initialItems.find((item) => item.source_type === "article" && !usedFeatureIds.has(item.id)) ?? null;
+  const strongestLane = statEntries.slice(1).reduce(
+    (best, entry) => (entry.count > best.count ? entry : best),
+    statEntries[0]
+  );
 
   const handleSearch = useCallback(async (query: string) => {
     setIsSearching(true);
@@ -42,85 +176,204 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
     setSearchQuery("");
   }, []);
 
+  const feedTitle = searchResults
+    ? isSearching
+      ? "Searching..."
+      : `${searchResults.length} result${searchResults.length !== 1 ? "s" : ""}`
+    : activeType === "tweet"
+      ? "Tweets"
+      : activeType === "thread"
+        ? "Threads"
+        : activeType === "article"
+          ? "Articles"
+          : activeType === "art"
+            ? "Art & Prompts"
+            : "Recent Captures";
+
   return (
-    <div className="relative z-10 max-w-[1200px] mx-auto px-6">
-      {/* Header */}
+    <div className="relative z-10 mx-auto max-w-[1440px] px-4 pb-16 sm:px-6 lg:px-8">
       <Header captureCount={stats.total} isAuthed={isAuthed} currentPath="/" />
 
-      {/* Hero */}
-      <div className="flex flex-col items-center pt-20 pb-10 text-center">
-        <h1 className="font-heading text-5xl font-extrabold tracking-[-1.8px] leading-[1.08] mb-3">
-          Your digital<br />knowledge, searchable.
-        </h1>
-        <p className="text-[#8888aa] text-[17px] mb-10 max-w-[480px]">
-          Capture tweets, threads, and articles. Find anything instantly with hybrid search.
-        </p>
-
-        <SearchBar onSearch={handleSearch} onClear={handleClearSearch} />
-
-        <div className="mt-6">
-          <StatPills stats={stats} />
-        </div>
-
-        {!searchResults && (
-          <div className="mt-5">
-            <FilterPills activeType={activeType} onTypeChange={setActiveType} />
-          </div>
-        )}
-      </div>
-
-      {searchResults ? (
-        <>
-          <div className="flex items-center justify-between mb-5 mt-12">
-            <h2 className="font-heading text-xl font-semibold">
-              {isSearching ? "Searching..." : `${searchResults.length} result${searchResults.length !== 1 ? "s" : ""}`}
-            </h2>
-            {searchQuery && (
-              <span className="text-[13px] text-[#555566]">
-                for &ldquo;{searchQuery}&rdquo;
-              </span>
-            )}
-          </div>
-
-          <div className="pb-16">
-            {isSearching ? (
-              <CardSkeletonGrid />
-            ) : searchResults.length === 0 ? (
-              <div className="mt-12 text-center pb-16">
-                <p className="text-[#555566] text-sm">No results found</p>
+      <section className="overflow-hidden rounded-[32px] border border-[#d6c9b21a] bg-[linear-gradient(180deg,rgba(24,29,37,0.96),rgba(14,18,24,0.98))] shadow-[0_34px_90px_rgba(2,6,12,0.45)]">
+        <div className="grid lg:grid-cols-[264px_minmax(0,1fr)]">
+          <aside className="border-b border-[#d6c9b214] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-5 lg:border-b-0 lg:border-r lg:border-r-[#d6c9b214]">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="rounded-[24px] border border-[#d6c9b214] bg-[#ffffff08] p-4">
+                <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">Filters</p>
+                <div className="grid gap-2">
+                  {filters.map((filter) => {
+                    const isActive = activeType === filter.value;
+                    return (
+                      <button
+                        key={filter.value || "all"}
+                        type="button"
+                        onClick={() => setActiveType(filter.value)}
+                        className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left text-[14px] transition-colors ${
+                          isActive
+                            ? "border-[#d6c9b242] bg-[#f2ede50a] text-[#f2ede5]"
+                            : "border-[#d6c9b214] bg-[#ffffff05] text-[#a49b8b] hover:border-[#d6c9b233] hover:text-[#f2ede5]"
+                        }`}
+                      >
+                        <span>{filter.label}</span>
+                        {filter.value && (
+                          <span className="text-[12px] text-[#b89462]">
+                            {statEntries.find((entry) => entry.label.toLowerCase() === filter.label.toLowerCase())?.count.toLocaleString()}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            ) : (
-              <MasonryFeed
-                key={`search-${searchQuery}`}
-                initialItems={searchResults}
-                totalCount={searchResults.length}
-              />
-            )}
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Feed */}
-          <div className="flex items-center justify-between mb-5 mt-12">
-            <h2 className="font-heading text-xl font-semibold">
-              {activeType === "tweet" ? "Tweets" : activeType === "thread" ? "Threads" : activeType === "article" ? "Articles" : activeType === "art" ? "Art & Prompts" : "Recent Captures"}
-            </h2>
-            <span className="text-[13px] text-[#555566]">
-              {totalCount.toLocaleString()} items
-            </span>
-          </div>
 
-          <div className="pb-16">
-            <MasonryFeed
-              key={activeType}
-              initialItems={initialItems}
-              totalCount={totalCount}
-              initialHasMore={initialHasMore}
-              type={activeType || undefined}
-            />
+              <div className="rounded-[24px] border border-[#d6c9b214] bg-[#ffffff08] p-4">
+                <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">Library</p>
+                <div className="grid gap-2">
+                  {statEntries.map((entry) => (
+                    <div
+                      key={entry.label}
+                      className="flex items-center justify-between rounded-[18px] border border-[#d6c9b214] bg-[#ffffff05] px-4 py-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`h-2.5 w-2.5 rounded-full ${entry.dot}`} />
+                        <span className="text-[14px] text-[#cdc4b7]">{entry.label}</span>
+                      </div>
+                      <span className="text-[14px] font-semibold text-[#f2ede5]">{entry.count.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-[#d6c9b214] bg-[#ffffff08] p-4 sm:col-span-2 lg:col-span-1">
+                <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">Recently added</p>
+                <div className="grid gap-3">
+                  {recentItems.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={`/item/${item.id}`}
+                      className="rounded-[18px] border border-[#d6c9b214] bg-[#ffffff05] px-4 py-3 transition-colors hover:border-[#d6c9b233]"
+                    >
+                      <div className="flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.12em] text-[#8a8174]">
+                        <span>{getItemLabel(item)}</span>
+                        <span>{formatTimeAgo(item.created_at)}</span>
+                      </div>
+                      <p className="mt-2 line-clamp-2 text-[14px] leading-6 text-[#cdc4b7]">{getItemTitle(item, 76)}</p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <div className="p-5 sm:p-6 lg:p-7">
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_340px]">
+              <div className="rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 sm:p-8">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">FeedSilo</p>
+                <h1 className="mt-3 max-w-[9ch] font-heading text-[clamp(3rem,6vw,5rem)] font-semibold leading-[0.94] tracking-[-0.07em] text-[#f2ede5]">
+                  A premium archive for the captures you actually keep.
+                </h1>
+                <p className="mt-5 max-w-[58ch] text-[16px] leading-8 text-[#b4ab9d]">
+                  {stats.total.toLocaleString()} captures across {stats.tweets.toLocaleString()} tweets,{" "}
+                  {stats.threads.toLocaleString()} threads, {stats.articles.toLocaleString()} articles, and{" "}
+                  {stats.art.toLocaleString()} art items. Search, filters, and review cues stay close without hiding the content.
+                </p>
+                <div className="mt-8">
+                  <SearchBar onSearch={handleSearch} onClear={handleClearSearch} />
+                </div>
+              </div>
+
+              <div className="grid gap-5">
+                <div className="rounded-[28px] border border-[#d6c9b214] bg-[radial-gradient(circle_at_top_left,rgba(184,148,98,0.14),transparent_30%),rgba(255,255,255,0.05)] p-6">
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">Library size</p>
+                  <div className="mt-5 font-heading text-[clamp(4.5rem,8vw,6rem)] leading-none tracking-[-0.08em] text-[#f2ede5]">
+                    {stats.total.toLocaleString()}
+                  </div>
+                  <p className="mt-4 text-[15px] leading-7 text-[#b4ab9d]">
+                    Biggest lane right now: {strongestLane.label.toLowerCase()} at {strongestLane.count.toLocaleString()} items.
+                  </p>
+                </div>
+
+                {featuredArticle ? (
+                  <Link
+                    href={`/item/${featuredArticle.id}`}
+                    className="rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 transition-colors hover:border-[#d6c9b233]"
+                  >
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">Latest article</p>
+                    <h2 className="mt-3 font-heading text-[1.7rem] leading-[1] tracking-[-0.05em] text-[#f2ede5]">
+                      {getItemTitle(featuredArticle, 66)}
+                    </h2>
+                    <p className="mt-4 text-[15px] leading-7 text-[#b4ab9d]">{getItemExcerpt(featuredArticle, 118)}</p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {getDomain(featuredArticle.original_url) && (
+                        <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2 text-[12px] text-[#cdc4b7]">
+                          {getDomain(featuredArticle.original_url)}
+                        </span>
+                      )}
+                      <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2 text-[12px] text-[#cdc4b7]">
+                        {formatTimeAgo(featuredArticle.created_at)}
+                      </span>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">Latest article</p>
+                    <p className="mt-4 text-[15px] leading-7 text-[#b4ab9d]">
+                      No article in the current surface window.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-5 xl:grid-cols-3">
+              {featuredVisual ? <HomeFeatureCard item={featuredVisual} eyebrow="Featured capture" tall /> : null}
+              {featuredThread ? <HomeFeatureCard item={featuredThread} eyebrow="Latest thread" /> : null}
+              {featuredArt ? <HomeFeatureCard item={featuredArt} eyebrow="Latest art" /> : null}
+            </div>
+
+            <div className="mt-6 rounded-[28px] border border-[#d6c9b214] bg-[#12161d]/70 p-5 sm:p-6">
+              <div className="mb-6 flex flex-col gap-3 border-b border-[#d6c9b214] pb-5 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">Library feed</p>
+                  <h2 className="mt-2 font-heading text-[1.85rem] font-semibold tracking-[-0.04em] text-[#f2ede5]">
+                    {feedTitle}
+                  </h2>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-[13px] text-[#8a8174]">
+                  {searchQuery && searchResults && (
+                    <span>for &ldquo;{searchQuery}&rdquo;</span>
+                  )}
+                  <span>{(searchResults ? searchResults.length : totalCount).toLocaleString()} items</span>
+                </div>
+              </div>
+
+              {searchResults ? (
+                isSearching ? (
+                  <CardSkeletonGrid />
+                ) : searchResults.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <p className="text-sm text-[#8a8174]">No results found</p>
+                  </div>
+                ) : (
+                  <MasonryFeed
+                    key={`search-${searchQuery}`}
+                    initialItems={searchResults}
+                    totalCount={searchResults.length}
+                  />
+                )
+              ) : (
+                <MasonryFeed
+                  key={activeType}
+                  initialItems={initialItems}
+                  totalCount={totalCount}
+                  initialHasMore={initialHasMore}
+                  type={activeType || undefined}
+                />
+              )}
+            </div>
           </div>
-        </>
-      )}
+        </div>
+      </section>
     </div>
   );
 }

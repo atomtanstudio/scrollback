@@ -33,7 +33,6 @@ function buildInitials(displayName: string | null, handle: string | null): strin
 export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  // Combine current item + siblings, sort by posted_at ascending
   const allEntries: ChainEntry[] = [
     {
       id: currentItem.id,
@@ -87,45 +86,37 @@ export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
 
   return (
     <>
-      <div>
-        {/* Thread label */}
-        <div className="inline-flex items-center gap-1.5 bg-[rgba(167,139,250,0.1)] border border-[rgba(167,139,250,0.2)] text-[#a78bfa] font-heading text-xs font-semibold px-3.5 py-1.5 rounded-full mb-6">
+      <div className="rounded-[28px] border border-[#d6c9b214] bg-[linear-gradient(180deg,rgba(18,24,32,0.96),rgba(13,18,24,0.98))] p-5 sm:p-6">
+        <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-[rgba(140,127,159,0.22)] bg-[rgba(140,127,159,0.12)] px-3.5 py-1.5 font-heading text-xs font-semibold text-[#c7bad6]">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <circle cx="6" cy="6" r="5" stroke="#a78bfa" strokeWidth="1.5" />
-            <circle cx="6" cy="6" r="2" fill="#a78bfa" />
+            <circle cx="6" cy="6" r="5" stroke="#c7bad6" strokeWidth="1.2" />
+            <circle cx="6" cy="6" r="2" fill="#c7bad6" />
           </svg>
           Thread &middot; {totalCount} post{totalCount !== 1 ? "s" : ""}
         </div>
 
-        {/* Thread items */}
         <div className="space-y-0">
           {allEntries.map((entry, index) => {
             const isLast = index === allEntries.length - 1;
-            const initials = buildInitials(entry.author_display_name, entry.author_handle);
-            const displayName = entry.author_display_name || entry.author_handle || "Unknown";
+            const initials = buildInitials(
+              entry.author_display_name,
+              entry.author_handle
+            );
+            const displayName =
+              entry.author_display_name || entry.author_handle || "Unknown";
             const avatarSize = entry.isCurrent ? 42 : 36;
             const galleryStartIndex = mediaStartOffsets[index] ?? 0;
 
             return (
-              <div key={entry.id} className="flex gap-3">
-                {/* Left connector column */}
-                <div
-                  className="flex flex-col items-center flex-shrink-0"
-                  style={{ width: 48 }}
-                >
-                  {/* Avatar */}
+              <div key={entry.id} className="flex gap-4">
+                <div className="flex w-12 shrink-0 flex-col items-center">
                   <div
-                    style={{
-                      width: avatarSize,
-                      height: avatarSize,
-                      borderRadius: "50%",
-                      flexShrink: 0,
-                      overflow: "hidden",
-                      boxShadow: entry.isCurrent
-                        ? "0 0 0 3px rgba(167,139,250,0.2)"
-                        : undefined,
-                      opacity: entry.isCurrent ? 1 : 0.7,
-                    }}
+                    className={`overflow-hidden rounded-full border ${
+                      entry.isCurrent
+                        ? "border-[rgba(140,127,159,0.26)] shadow-[0_0_0_4px_rgba(140,127,159,0.08)]"
+                        : "border-[#d6c9b214] opacity-85"
+                    }`}
+                    style={{ width: avatarSize, height: avatarSize }}
                   >
                     {entry.author_avatar_url ? (
                       <img
@@ -133,153 +124,115 @@ export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
                         alt={displayName}
                         width={avatarSize}
                         height={avatarSize}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
+                        className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          background:
-                            "linear-gradient(135deg, #22d3ee 0%, #a78bfa 100%)",
-                          color: "white",
-                          fontSize: entry.isCurrent ? 14 : 12,
-                          fontWeight: 700,
-                        }}
-                      >
+                      <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,#26313d,#534840)] text-sm font-bold text-[#f2ede5]">
                         {initials}
                       </div>
                     )}
                   </div>
 
-                  {/* Connecting line (not after last item) */}
                   {!isLast && (
-                    <div
-                      style={{
-                        width: 2,
-                        flex: 1,
-                        minHeight: 24,
-                        marginTop: 4,
-                        background:
-                          "linear-gradient(to bottom, #a78bfa, rgba(167,139,250,0.15))",
-                        borderRadius: 1,
-                      }}
-                    />
+                    <div className="mt-3 w-px flex-1 rounded-full bg-[linear-gradient(180deg,rgba(140,127,159,0.58),rgba(140,127,159,0.08))]" />
                   )}
                 </div>
 
-                {/* Right content column */}
-                <div className="flex-1 min-w-0" style={{ paddingBottom: isLast ? 0 : 24 }}>
+                <div className="min-w-0 flex-1" style={{ paddingBottom: isLast ? 0 : 24 }}>
                   {entry.isCurrent ? (
-                    /* Highlighted current item */
-                    <div className="bg-[rgba(167,139,250,0.04)] border border-[rgba(167,139,250,0.1)] rounded-xl p-4 -ml-1">
-                      {/* Current item indicator */}
-                      <div className="flex items-center gap-1.5 mb-3">
-                        <div
-                          style={{
-                            width: 6,
-                            height: 6,
-                            borderRadius: "50%",
-                            backgroundColor: "#a78bfa",
-                            flexShrink: 0,
-                          }}
-                        />
-                        <span className="text-[11px] text-[#a78bfa] font-semibold">
+                    <div className="rounded-[24px] border border-[rgba(140,127,159,0.18)] bg-[#ffffff05] p-4 sm:p-5">
+                      <div className="mb-3 flex items-center gap-1.5">
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#c7bad6]" />
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#c7bad6]">
                           You&apos;re viewing this post
                         </span>
                       </div>
 
-                    {/* Author row */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="font-heading font-semibold text-sm text-[#f0f0f5] truncate">
-                        {displayName}
-                      </span>
-                      {entry.author_handle && (
-                        <span className="text-[12px] text-[#8888aa] truncate">
-                          @{entry.author_handle}
+                      <div className="mb-3 flex items-center gap-2">
+                        <span className="truncate font-heading text-sm font-semibold text-[#f2ede5]">
+                          {displayName}
                         </span>
-                      )}
-                      {entry.posted_at && (
-                        <>
-                          <span className="text-[#555566] text-[12px]">&middot;</span>
-                          <span className="text-[12px] text-[#555566] flex-shrink-0">
-                            {formatTimeAgo(entry.posted_at)}
+                        {entry.author_handle && (
+                          <span className="truncate text-[12px] text-[#9c9387]">
+                            @{entry.author_handle}
                           </span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Body text - full, no clamp */}
-                    {entry.body_text && (
-                      <p className="text-sm leading-[1.7] text-[#d8d8e8] whitespace-pre-wrap">
-                        {entry.body_text}
-                      </p>
-                    )}
-
-                    {/* Media */}
-                    {entry.media_items && entry.media_items.length > 0 && (
-                      <div className="mt-3">
-                        <MediaRenderer
-                          mediaItems={entry.media_items as DetailItem["media_items"]}
-                          onMediaClick={(itemIndex) => setLightboxIndex(galleryStartIndex + itemIndex)}
-                        />
+                        )}
+                        {entry.posted_at && (
+                          <>
+                            <span className="text-[#7d7569] text-[12px]">
+                              &middot;
+                            </span>
+                            <span className="shrink-0 text-[12px] text-[#7d7569]">
+                              {formatTimeAgo(entry.posted_at)}
+                            </span>
+                          </>
+                        )}
                       </div>
-                    )}
+
+                      {entry.body_text && (
+                        <p className="whitespace-pre-wrap text-sm leading-[1.8] text-[#ddd4c7]">
+                          {entry.body_text}
+                        </p>
+                      )}
+
+                      {entry.media_items && entry.media_items.length > 0 && (
+                        <div className="mt-4">
+                          <MediaRenderer
+                            mediaItems={entry.media_items as DetailItem["media_items"]}
+                            onMediaClick={(itemIndex) =>
+                              setLightboxIndex(galleryStartIndex + itemIndex)
+                            }
+                          />
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    /* Non-current (sibling) items */
-                    <div>
-                    {/* Author row */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-heading font-semibold text-sm text-[#d8d8e8] truncate">
-                        {displayName}
-                      </span>
-                      {entry.author_handle && (
-                        <span className="text-[12px] text-[#8888aa] truncate">
-                          @{entry.author_handle}
+                    <div className="border-l border-[#d6c9b214] pl-4">
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className="truncate font-heading text-sm font-semibold text-[#ddd4c7]">
+                          {displayName}
                         </span>
-                      )}
-                      {entry.posted_at && (
-                        <>
-                          <span className="text-[#555566] text-[12px]">&middot;</span>
-                          <span className="text-[12px] text-[#555566] flex-shrink-0">
-                            {formatTimeAgo(entry.posted_at)}
+                        {entry.author_handle && (
+                          <span className="truncate text-[12px] text-[#9c9387]">
+                            @{entry.author_handle}
                           </span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Body text - condensed, dimmed */}
-                    {entry.body_text && (
-                      <p
-                        className="text-sm leading-[1.7] text-[#8888aa]"
-                        style={{
-                          display: "-webkit-box",
-                          WebkitLineClamp: 3,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                        }}
-                      >
-                        {entry.body_text}
-                      </p>
-                    )}
-
-                    {/* Media (compact) */}
-                    {entry.media_items && entry.media_items.length > 0 && (
-                      <div className="mt-2">
-                        <MediaRenderer
-                          mediaItems={entry.media_items as DetailItem["media_items"]}
-                          onMediaClick={(itemIndex) => setLightboxIndex(galleryStartIndex + itemIndex)}
-                        />
+                        )}
+                        {entry.posted_at && (
+                          <>
+                            <span className="text-[#7d7569] text-[12px]">
+                              &middot;
+                            </span>
+                            <span className="shrink-0 text-[12px] text-[#7d7569]">
+                              {formatTimeAgo(entry.posted_at)}
+                            </span>
+                          </>
+                        )}
                       </div>
-                    )}
+
+                      {entry.body_text && (
+                        <p
+                          className="text-sm leading-[1.75] text-[#9c9387]"
+                          style={{
+                            display: "-webkit-box",
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {entry.body_text}
+                        </p>
+                      )}
+
+                      {entry.media_items && entry.media_items.length > 0 && (
+                        <div className="mt-3">
+                          <MediaRenderer
+                            mediaItems={entry.media_items as DetailItem["media_items"]}
+                            onMediaClick={(itemIndex) =>
+                              setLightboxIndex(galleryStartIndex + itemIndex)
+                            }
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

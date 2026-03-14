@@ -55,33 +55,22 @@ export function ItemDetailPage({ item, threadSiblings = [], isAuthed = false }: 
   const isThread = cardType === "thread";
 
   return (
-    <div className="max-w-[960px] mx-auto px-5 py-6 relative z-[1]">
+    <div className="relative z-[1] mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
       <motion.div
         variants={containerVariants}
-        initial="hidden"
+        initial={false}
         animate="visible"
       >
-        {/* Back navigation */}
         <motion.div variants={itemVariants}>
           <BackNavigation />
         </motion.div>
 
-        {/* Two-column layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8 items-start">
-          {/* Left column: content card */}
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <motion.div variants={itemVariants}>
-            <div
-              className={`rounded-[16px] p-px border-gradient-${cardType}`}
-            >
-              <div
-                className={`rounded-[15px] overflow-hidden card-gradient-${cardType}${isArticle ? "" : " p-8"}`}
-              >
+            <div className="overflow-hidden rounded-[30px] border border-[#d6c9b214] bg-[linear-gradient(180deg,rgba(24,29,37,0.96),rgba(14,18,24,0.98))] shadow-[0_34px_90px_rgba(2,6,12,0.32)]">
+              <div className={isArticle ? "p-8 sm:p-10" : "p-6 sm:p-8"}>
                 {isThread ? (
                   <ThreadChain currentItem={item} siblings={threadSiblings} />
-                ) : isArticle ? (
-                  <div className="p-8">
-                    <DetailContent item={item} cardType={cardType} />
-                  </div>
                 ) : (
                   <DetailContent item={item} cardType={cardType} />
                 )}
@@ -89,13 +78,11 @@ export function ItemDetailPage({ item, threadSiblings = [], isAuthed = false }: 
             </div>
           </motion.div>
 
-          {/* Right column: sidebar */}
           <motion.div variants={itemVariants}>
             <DetailSidebar item={item} cardType={cardType} isAuthed={isAuthed} />
           </motion.div>
         </div>
 
-        {/* Related items (full width, below the two-column grid) */}
         <motion.div variants={itemVariants} className="mt-10">
           <RelatedItems itemId={item.id} />
         </motion.div>

@@ -31,30 +31,30 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
   };
 
   return (
-    <div className="rounded-[14px] border border-[#ffffff0a] bg-[#111118] p-6">
+    <div className="rounded-[24px] border border-[#d6c9b214] bg-[#ffffff05] p-6">
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="mb-4 flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-[10px] bg-[#1a1a24] border border-[#ffffff0a] flex items-center justify-center shrink-0">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-[#d6c9b214] bg-[#0f141b]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-thread)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2L2 7l10 5 10-5-10-5z" />
               <path d="M2 17l10 5 10-5" />
               <path d="M2 12l10 5 10-5" />
             </svg>
           </div>
           <div>
-            <h3 className="font-heading font-semibold text-[15px] text-[#f0f0f5]">
+            <h3 className="font-heading text-[15px] font-semibold text-[#f2ede5]">
               Gemini AI
             </h3>
-            <p className="text-xs text-[#8888aa]">
+            <p className="text-xs text-[#a49b8b]">
               Summaries, tags, image descriptions, semantic search
             </p>
           </div>
         </div>
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
           hasKey
-            ? "bg-[#00ffc815] text-[#00ffc8] border border-[#00ffc830]"
-            : "bg-[#ffffff08] text-[#8888aa] border border-[#ffffff12]"
+            ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
+            : "border border-[#d6c9b214] bg-[#ffffff08] text-[#a49b8b]"
         }`}>
           {hasKey ? "Active" : "Not configured"}
         </span>
@@ -63,10 +63,10 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[hsl(var(--muted-foreground))]">API Key</label>
-            {hasKey && (
-              <span className="text-xs text-emerald-400">configured</span>
-            )}
+              <label className="text-xs text-[#8a8174]">API Key</label>
+              {hasKey && (
+                <span className="text-xs text-emerald-300">configured</span>
+              )}
           </div>
           <div className="flex gap-2">
             <input
@@ -74,24 +74,24 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder={hasKey ? "••••••••" : "AIza..."}
-              className="flex-1 h-10 px-4 rounded-[10px] bg-[#0a0a0f] border border-[#ffffff12] text-[#f0f0f5] text-sm placeholder:text-[hsl(var(--muted))] focus:outline-none focus:border-[#ffffff30] transition-colors"
+              className="flex-1 h-10 rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#6f695f] focus:outline-none focus:border-[#d6c9b24d] transition-colors"
             />
             <button
               onClick={() => setShowKey(!showKey)}
-              className="h-10 px-3 rounded-[10px] text-xs text-[hsl(var(--muted-foreground))] border border-[#ffffff12] hover:border-[#ffffff24] transition-colors cursor-pointer"
+              className="h-10 rounded-[12px] border border-[#d6c9b214] px-3 text-xs text-[#a49b8b] transition-colors cursor-pointer hover:border-[#d6c9b233]"
             >
               {showKey ? "Hide" : "Show"}
             </button>
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-[10px] text-[#8888aa]">
+            <p className="text-[10px] text-[#8a8174]">
               Model: <code className="text-[var(--accent-tweet)]">gemini-embedding-001</code>
             </p>
             <a
               href="https://aistudio.google.com/apikey"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[10px] text-[var(--accent-thread)] hover:underline"
+              className="text-[10px] text-[var(--accent-article)] hover:underline"
             >
               Get a free key &rarr;
             </a>
@@ -102,15 +102,15 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
           <button
             onClick={handleSave}
             disabled={saving}
-            className="h-9 px-4 rounded-[10px] text-sm font-medium bg-[var(--accent-thread)] text-[#0a0a0f] font-heading hover:brightness-110 transition-all duration-200 cursor-pointer self-start disabled:opacity-50"
+            className="h-9 self-start rounded-[12px] bg-[var(--accent-article)] px-4 text-sm font-medium text-[#090c11] transition-all duration-200 cursor-pointer hover:brightness-110 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save API Key"}
           </button>
         )}
 
-        <div className="border-t border-[#ffffff0a] pt-4">
-          <h4 className="text-sm font-medium text-[#f0f0f5] mb-2">Generate Missing Embeddings</h4>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+        <div className="border-t border-[#d6c9b214] pt-4">
+          <h4 className="mb-2 text-sm font-medium text-[#f2ede5]">Generate Missing Embeddings</h4>
+          <p className="mb-3 text-xs text-[#a49b8b]">
             Generate vector embeddings for items that don&apos;t have them yet. Requires an API key.
           </p>
           <ProgressBar

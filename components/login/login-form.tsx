@@ -11,7 +11,7 @@ function SubmitButton() {
   return (
     <button
       type="submit"
-      className="h-12 px-8 rounded-[14px] bg-[var(--accent-thread)] text-[#0a0a0f] font-heading font-semibold text-[15px] hover:brightness-110 transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-default mt-2"
+      className="mt-2 inline-flex h-12 items-center justify-center rounded-[16px] border border-[#cfb28a55] bg-[#b89462] px-8 font-heading text-[15px] font-semibold text-[#10141a] shadow-[0_16px_40px_rgba(184,148,98,0.24)] transition-all duration-200 hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d8c0a0] disabled:cursor-default disabled:opacity-30 disabled:hover:brightness-100"
       disabled={pending}
     >
       {pending ? "Signing in..." : "Sign In"}
@@ -26,25 +26,29 @@ export function LoginForm() {
   const error = errorParam ? "Invalid email or password" : "";
 
   return (
-    <div className="w-full max-w-[400px] bg-[var(--surface)] border border-[hsl(var(--border))] rounded-[14px] p-8">
-      {/* Logo — links back to home */}
-      <div className="text-center mb-6">
-        <Link href="/" className="font-heading font-extrabold text-2xl tracking-tight text-[#f0f0f5] hover:opacity-80 transition-opacity">
+    <div className="w-full rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 sm:p-7">
+      <div className="mb-6 text-center">
+        <Link
+          href="/"
+          className="font-heading text-2xl font-semibold tracking-[-0.05em] text-[#f2ede5] transition-opacity hover:opacity-80"
+        >
           feed
-          <span className="text-[var(--accent-thread)]">.</span>
+          <span className="text-[var(--accent-article)]">.</span>
           silo
         </Link>
       </div>
 
-      {/* Heading */}
-      <h1 className="font-heading font-extrabold text-2xl tracking-tight text-[#f0f0f5] text-center mb-6">
-        Login
+      <h1 className="text-center font-heading text-[2rem] font-semibold tracking-[-0.05em] text-[#f2ede5]">
+        Sign in
       </h1>
+      <p className="mt-2 text-center text-sm leading-7 text-[#b4ab9d]">
+        Unlock settings and admin surfaces for this local instance.
+      </p>
 
-      <form action={loginAction} className="flex flex-col gap-4">
+      <form action={loginAction} className="mt-6 flex flex-col gap-4">
         <input type="hidden" name="callbackUrl" value={callbackUrl} />
         <div>
-          <label className="text-[13px] font-medium text-[#f0f0f5] mb-2 block">
+          <label className="mb-2 block text-[13px] font-medium text-[#e7e0d5]">
             Email
           </label>
           <input
@@ -52,12 +56,12 @@ export function LoginForm() {
             type="email"
             placeholder="you@example.com"
             required
-            className="w-full h-10 px-4 rounded-[10px] bg-[#0a0a0f] border border-[#ffffff12] text-[#f0f0f5] text-sm placeholder:text-[hsl(var(--muted))] focus:outline-none focus:border-[#ffffff30] transition-colors"
+            className="h-11 w-full rounded-[16px] border border-[#d6c9b21f] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
           />
         </div>
 
         <div>
-          <label className="text-[13px] font-medium text-[#f0f0f5] mb-2 block">
+          <label className="mb-2 block text-[13px] font-medium text-[#e7e0d5]">
             Password
           </label>
           <input
@@ -65,12 +69,14 @@ export function LoginForm() {
             type="password"
             placeholder="Enter your password"
             required
-            className="w-full h-10 px-4 rounded-[10px] bg-[#0a0a0f] border border-[#ffffff12] text-[#f0f0f5] text-sm placeholder:text-[hsl(var(--muted))] focus:outline-none focus:border-[#ffffff30] transition-colors"
+            className="h-11 w-full rounded-[16px] border border-[#d6c9b21f] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
           />
         </div>
 
         {error && (
-          <p className="text-[#ff4444] text-sm text-center">{error}</p>
+          <p className="rounded-[14px] border border-red-500/20 bg-red-500/10 px-4 py-3 text-center text-sm text-red-300">
+            {error}
+          </p>
         )}
 
         <SubmitButton />

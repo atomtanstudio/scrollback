@@ -1,6 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import {
+  onboardingHeadingClass,
+  onboardingInputClass,
+  onboardingLabelClass,
+  onboardingNoteClass,
+  onboardingPrimaryButtonClass,
+  onboardingSubheadingClass,
+  onboardingTextButtonClass,
+  StepBadge,
+} from "../ui";
 
 interface AccountStepProps {
   onContinue: () => void;
@@ -45,24 +55,16 @@ export function AccountStep({ onContinue }: AccountStepProps) {
 
   return (
     <div className="flex flex-col items-center text-center">
-      {/* Badge */}
-      <span className="text-xs font-medium px-3 py-1 rounded-full bg-[#a78bfa20] text-[#a78bfa] border border-[#a78bfa30] mb-4">
-        Optional
-      </span>
+      <StepBadge tone="optional">Optional</StepBadge>
 
-      <h2 className="font-heading font-extrabold text-2xl md:text-3xl tracking-tight text-[#f0f0f5] mb-2">
-        Create Admin Account
-      </h2>
-      <p className="text-[hsl(var(--muted-foreground))] text-sm mb-8 max-w-[480px]">
+      <h2 className={onboardingHeadingClass}>Create Admin Account</h2>
+      <p className={`${onboardingSubheadingClass} mb-8 mt-4 max-w-[480px]`}>
         Set up your login credentials to protect settings and admin features.
       </p>
 
-      {/* Form */}
-      <div className="w-full max-w-[480px] mb-4 flex flex-col gap-4">
+      <div className="mb-4 flex w-full max-w-[480px] flex-col gap-4">
         <div>
-          <label className="text-[13px] font-medium text-[#f0f0f5] mb-2 block text-left">
-            Email
-          </label>
+          <label className={onboardingLabelClass}>Email</label>
           <input
             type="email"
             value={email}
@@ -71,14 +73,12 @@ export function AccountStep({ onContinue }: AccountStepProps) {
               setError("");
             }}
             placeholder="you@example.com"
-            className="w-full h-10 px-4 rounded-[10px] bg-[#0a0a0f] border border-[#ffffff12] text-[#f0f0f5] text-sm placeholder:text-[hsl(var(--muted))] focus:outline-none focus:border-[#ffffff30] transition-colors"
+            className={onboardingInputClass}
           />
         </div>
 
         <div>
-          <label className="text-[13px] font-medium text-[#f0f0f5] mb-2 block text-left">
-            Password
-          </label>
+          <label className={onboardingLabelClass}>Password</label>
           <input
             type="password"
             value={password}
@@ -87,19 +87,17 @@ export function AccountStep({ onContinue }: AccountStepProps) {
               setError("");
             }}
             placeholder="Minimum 8 characters"
-            className="w-full h-10 px-4 rounded-[10px] bg-[#0a0a0f] border border-[#ffffff12] text-[#f0f0f5] text-sm placeholder:text-[hsl(var(--muted))] focus:outline-none focus:border-[#ffffff30] transition-colors"
+            className={onboardingInputClass}
           />
           {password && !passwordLongEnough && (
-            <p className="text-xs mt-1 text-left text-[#ff4444]">
+            <p className="mt-1 text-left text-xs text-red-300">
               Password must be at least 8 characters
             </p>
           )}
         </div>
 
         <div>
-          <label className="text-[13px] font-medium text-[#f0f0f5] mb-2 block text-left">
-            Confirm Password
-          </label>
+          <label className={onboardingLabelClass}>Confirm Password</label>
           <input
             type="password"
             value={confirmPassword}
@@ -108,40 +106,32 @@ export function AccountStep({ onContinue }: AccountStepProps) {
               setError("");
             }}
             placeholder="Re-enter your password"
-            className="w-full h-10 px-4 rounded-[10px] bg-[#0a0a0f] border border-[#ffffff12] text-[#f0f0f5] text-sm placeholder:text-[hsl(var(--muted))] focus:outline-none focus:border-[#ffffff30] transition-colors"
+            className={onboardingInputClass}
           />
           {confirmPassword && !passwordsMatch && (
-            <p className="text-xs mt-1 text-left text-[#ff4444]">
+            <p className="mt-1 text-left text-xs text-red-300">
               Passwords do not match
             </p>
           )}
         </div>
       </div>
 
-      {/* Error */}
-      {error && (
-        <p className="text-sm text-[#ff4444] mb-4">{error}</p>
-      )}
+      {error && <p className="mb-4 text-sm text-red-300">{error}</p>}
 
-      {/* Privacy note */}
-      <p className="text-xs text-[#8888aa] mb-6 max-w-[400px]">
+      <p className={`${onboardingNoteClass} mb-6 max-w-[400px]`}>
         Your credentials are stored locally in your database. Passwords are
         hashed with bcrypt and never stored in plain text.
       </p>
 
-      {/* Actions */}
       <div className="flex flex-col items-center gap-3">
         <button
           onClick={handleSubmit}
           disabled={!canSubmit || saving}
-          className="h-12 px-8 rounded-[14px] bg-[var(--accent-thread)] text-[#0a0a0f] font-heading font-semibold text-[15px] hover:brightness-110 transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-default"
+          className={onboardingPrimaryButtonClass}
         >
           {saving ? "Creating..." : "Create Account & Continue"}
         </button>
-        <button
-          onClick={onContinue}
-          className="text-sm text-[hsl(var(--muted-foreground))] hover:text-[#f0f0f5] transition-colors cursor-pointer"
-        >
+        <button onClick={onContinue} className={onboardingTextButtonClass}>
           Skip for now
         </button>
       </div>

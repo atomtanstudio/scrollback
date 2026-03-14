@@ -31,7 +31,7 @@ function getOptimizedImageUrl(item: MediaItem, size: "small" | "medium" | "large
 function MediaCaption({ item }: { item: MediaItem }) {
   if (!item.ai_description) return null;
   return (
-    <p className="text-xs text-[#8888aa] italic mt-1.5 px-1 leading-relaxed">
+    <p className="mt-1.5 px-1 text-xs italic leading-relaxed text-[#9c9387]">
       {item.ai_description}
     </p>
   );
@@ -54,7 +54,7 @@ export function MediaRenderer({ mediaItems, onMediaClick }: MediaRendererProps) 
           <img
             src={getOptimizedImageUrl(images[0], "medium")}
             alt={images[0].alt_text || ""}
-            className="w-full max-h-[480px] object-contain rounded-xl bg-[#0c0c14] cursor-pointer"
+            className="w-full max-h-[480px] cursor-pointer rounded-xl bg-[#10151c] object-contain"
             onClick={() => onMediaClick?.(mediaItems.indexOf(images[0]))}
           />
           <MediaCaption item={images[0]} />
@@ -117,14 +117,14 @@ export function MediaRenderer({ mediaItems, onMediaClick }: MediaRendererProps) 
           key={item.id}
           type="button"
           onClick={() => onMediaClick?.(mediaItems.indexOf(item))}
-          className="group relative block w-full overflow-hidden rounded-xl bg-[#0c0c14] text-left"
+          className="group relative block w-full overflow-hidden rounded-xl bg-[#10151c] text-left"
           aria-label="Open video in gallery"
         >
           <video
             preload="metadata"
             muted
             playsInline
-            className="w-full max-h-[480px] rounded-xl bg-[#0c0c14] cursor-pointer"
+            className="w-full max-h-[480px] cursor-pointer rounded-xl bg-[#10151c]"
           >
             <source src={getMediaUrl(item)} />
           </video>
@@ -148,7 +148,7 @@ export function MediaRenderer({ mediaItems, onMediaClick }: MediaRendererProps) 
           key={item.id}
           type="button"
           onClick={() => onMediaClick?.(mediaItems.indexOf(item))}
-          className="group relative block w-full overflow-hidden rounded-xl bg-[#0c0c14] text-left"
+          className="group relative block w-full overflow-hidden rounded-xl bg-[#10151c] text-left"
           aria-label="Open GIF in gallery"
         >
           <video
@@ -156,7 +156,7 @@ export function MediaRenderer({ mediaItems, onMediaClick }: MediaRendererProps) 
             muted
             loop
             playsInline
-            className="w-full max-h-[480px] rounded-xl bg-[#0c0c14] cursor-pointer"
+            className="w-full max-h-[480px] cursor-pointer rounded-xl bg-[#10151c]"
           >
             <source src={getMediaUrl(item)} />
           </video>

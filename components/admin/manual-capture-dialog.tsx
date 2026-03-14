@@ -98,42 +98,42 @@ export function ManualCaptureDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-[#ffffff12] bg-[#111118] sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-[24px] border-[#d6c9b214] bg-[#171b22] sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="font-heading text-[#f0f0f5]">
+          <DialogTitle className="font-heading text-[#f2ede5]">
             Manual Capture
           </DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label className="text-[#8888aa]">Source URL</Label>
+            <Label className="text-[#8a8174]">Source URL</Label>
             <Input
               value={sourceUrl}
               onChange={(e) => setSourceUrl(e.target.value)}
               placeholder="https://..."
-              className="h-10 rounded-[10px] border-[#ffffff12] bg-[#0a0a0f] px-4 text-sm text-[#f0f0f5]"
+              className="h-10 rounded-[12px] border-[#d6c9b214] bg-[#0f141b] px-4 text-sm text-[#f2ede5]"
             />
           </div>
 
           <div className="grid gap-2">
-            <Label className="text-[#8888aa]">Body Text</Label>
+            <Label className="text-[#8a8174]">Body Text</Label>
             <Textarea
               value={bodyText}
               onChange={(e) => setBodyText(e.target.value)}
               placeholder="Paste or type content..."
               rows={4}
-              className="rounded-[10px] border-[#ffffff12] bg-[#0a0a0f] px-4 py-2 text-sm text-[#f0f0f5]"
+              className="rounded-[12px] border-[#d6c9b214] bg-[#0f141b] px-4 py-2 text-sm text-[#f2ede5]"
             />
           </div>
 
           <div className="grid gap-2">
-            <Label className="text-[#8888aa]">Source Type</Label>
+            <Label className="text-[#8a8174]">Source Type</Label>
             <Select value={sourceType} onValueChange={setSourceType}>
-              <SelectTrigger className="h-10 rounded-[10px] border-[#ffffff12] bg-[#0a0a0f] text-sm text-[#f0f0f5]">
+              <SelectTrigger className="h-10 rounded-[12px] border-[#d6c9b214] bg-[#0f141b] text-sm text-[#f2ede5]">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="border-[#ffffff12] bg-[#111118]">
+              <SelectContent className="border-[#d6c9b214] bg-[#171b22] text-[#f2ede5]">
                 <SelectItem value="tweet">Tweet</SelectItem>
                 <SelectItem value="thread">Thread</SelectItem>
                 <SelectItem value="article">Article</SelectItem>
@@ -144,37 +144,37 @@ export function ManualCaptureDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label className="text-[#8888aa]">Author Handle</Label>
+            <Label className="text-[#8a8174]">Author Handle</Label>
             <Input
               value={authorHandle}
               onChange={(e) => setAuthorHandle(e.target.value)}
               placeholder="@handle"
-              className="h-10 rounded-[10px] border-[#ffffff12] bg-[#0a0a0f] px-4 text-sm text-[#f0f0f5]"
+              className="h-10 rounded-[12px] border-[#d6c9b214] bg-[#0f141b] px-4 text-sm text-[#f2ede5]"
             />
           </div>
 
           <div className="grid gap-2">
-            <Label className="text-[#8888aa]">Title</Label>
+            <Label className="text-[#8a8174]">Title</Label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Optional title"
-              className="h-10 rounded-[10px] border-[#ffffff12] bg-[#0a0a0f] px-4 text-sm text-[#f0f0f5]"
+              className="h-10 rounded-[12px] border-[#d6c9b214] bg-[#0f141b] px-4 text-sm text-[#f2ede5]"
             />
           </div>
 
           <div className="grid gap-2">
-            <Label className="text-[#8888aa]">Posted At</Label>
+            <Label className="text-[#8a8174]">Posted At</Label>
             <Input
               type="datetime-local"
               value={postedAt}
               onChange={(e) => setPostedAt(e.target.value)}
-              className="h-10 rounded-[10px] border-[#ffffff12] bg-[#0a0a0f] px-4 text-sm text-[#f0f0f5]"
+              className="h-10 rounded-[12px] border-[#d6c9b214] bg-[#0f141b] px-4 text-sm text-[#f2ede5]"
             />
           </div>
 
           {error && (
-            <div className="rounded-[10px] bg-red-500/10 px-4 py-2 text-sm text-red-400">
+            <div className="rounded-[12px] bg-red-500/10 px-4 py-2 text-sm text-red-300">
               {error}
             </div>
           )}
@@ -184,14 +184,14 @@ export function ManualCaptureDialog({
           <Button
             variant="outline"
             onClick={handleClose}
-            className="rounded-[10px] border-[#ffffff12] bg-transparent text-[#f0f0f5] hover:bg-[#ffffff0a]"
+            className="rounded-[12px] border-[#d6c9b214] bg-[#ffffff05] text-[#f2ede5] hover:border-[#d6c9b233] hover:bg-[#ffffff08]"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={saving}
-            className="rounded-[14px] bg-[var(--accent-thread)] text-[#0a0a0f] font-heading font-semibold hover:bg-[var(--accent-thread)]/90"
+            className="rounded-[14px] bg-[var(--accent-article)] text-[#090c11] font-heading font-semibold hover:brightness-110"
           >
             {saving ? "Creating..." : "Create Item"}
           </Button>

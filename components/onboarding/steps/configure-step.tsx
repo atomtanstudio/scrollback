@@ -3,6 +3,16 @@
 import { useState } from "react";
 import { ConnectionTester } from "@/components/shared/connection-tester";
 import type { DatabaseChoice } from "../database-card";
+import {
+  onboardingHeadingClass,
+  onboardingInputClass,
+  onboardingLabelClass,
+  onboardingNoteClass,
+  onboardingPrimaryButtonClass,
+  onboardingSubheadingClass,
+  onboardingTextButtonClass,
+  StepBadge,
+} from "../ui";
 
 interface ConfigureStepProps {
   dbType: DatabaseChoice;
@@ -12,11 +22,12 @@ interface ConfigureStepProps {
 export function ConfigureStep({ dbType, onContinue }: ConfigureStepProps) {
   return (
     <div className="flex flex-col items-center">
-      <h2 className="font-heading font-extrabold text-2xl md:text-3xl tracking-tight text-[#f0f0f5] mb-2 text-center">
+      <StepBadge tone="recommended">Connection</StepBadge>
+      <h2 className={`${onboardingHeadingClass} text-center`}>
         Configure your connection
       </h2>
-      <p className="text-[hsl(var(--muted-foreground))] text-sm mb-8 text-center">
-        {dbType === "sqlite" && "Almost there — SQLite needs no external database"}
+      <p className={`${onboardingSubheadingClass} mb-8 mt-4 text-center`}>
+        {dbType === "sqlite" && "Almost there - SQLite needs no external database"}
         {dbType === "postgresql" && "Enter your PostgreSQL connection details"}
         {dbType === "supabase" && "Enter your Supabase project details"}
       </p>
@@ -28,7 +39,6 @@ export function ConfigureStep({ dbType, onContinue }: ConfigureStepProps) {
   );
 }
 
-// ─── Input helper ────────────────────────────────────────
 function InputField({
   label,
   value,
@@ -45,21 +55,20 @@ function InputField({
   note?: string;
 }) {
   return (
-    <div className="flex flex-col gap-1.5 w-full">
-      <label className="text-[13px] font-medium text-[#f0f0f5]">{label}</label>
+    <div className="flex w-full flex-col gap-1.5">
+      <label className={onboardingLabelClass}>{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-11 px-4 rounded-[10px] bg-[#0a0a0f] border border-[#ffffff12] text-[#f0f0f5] text-sm placeholder:text-[hsl(var(--muted))] focus:outline-none focus:border-[#ffffff30] transition-colors"
+        className={onboardingInputClass}
       />
-      {note && <p className="text-xs text-[hsl(var(--muted-foreground))]">{note}</p>}
+      {note && <p className={onboardingNoteClass}>{note}</p>}
     </div>
   );
 }
 
-// ─── SQLite Form ─────────────────────────────────────────
 function SqliteForm({ onContinue }: { onContinue: () => void }) {
   const [filePath, setFilePath] = useState("./feedsilo.db");
   const [migrating, setMigrating] = useState(false);
@@ -90,7 +99,7 @@ function SqliteForm({ onContinue }: { onContinue: () => void }) {
   };
 
   return (
-    <div className="flex flex-col gap-4 w-full">
+    <div className="flex w-full flex-col gap-4">
       <InputField
         label="Database file path"
         value={filePath}
@@ -100,7 +109,7 @@ function SqliteForm({ onContinue }: { onContinue: () => void }) {
       />
 
       {error && (
-        <p className="text-xs text-red-400/80 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+        <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300/90">
           {error}
         </p>
       )}
@@ -108,7 +117,7 @@ function SqliteForm({ onContinue }: { onContinue: () => void }) {
       <button
         onClick={handleContinue}
         disabled={migrating || !filePath}
-        className="h-12 px-8 rounded-[14px] bg-[var(--accent-thread)] text-[#0a0a0f] font-heading font-semibold text-[15px] hover:brightness-110 transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed self-center mt-2"
+        className={`${onboardingPrimaryButtonClass} mt-2 self-center`}
       >
         {migrating ? "Setting up..." : "Continue"}
       </button>
@@ -116,7 +125,6 @@ function SqliteForm({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-// ─── PostgreSQL Form ─────────────────────────────────────
 function PostgresForm({ onContinue }: { onContinue: () => void }) {
   const [connectionString, setConnectionString] = useState("");
   const [showFields, setShowFields] = useState(false);
@@ -178,7 +186,7 @@ function PostgresForm({ onContinue }: { onContinue: () => void }) {
   };
 
   return (
-    <div className="flex flex-col gap-4 w-full">
+    <div className="flex w-full flex-col gap-4">
       {!showFields ? (
         <>
           <InputField
@@ -189,7 +197,7 @@ function PostgresForm({ onContinue }: { onContinue: () => void }) {
           />
           <button
             onClick={() => setShowFields(true)}
-            className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[#f0f0f5] transition-colors self-start cursor-pointer"
+            className={`${onboardingTextButtonClass} self-start text-xs`}
           >
             Enter fields separately
           </button>
@@ -197,17 +205,43 @@ function PostgresForm({ onContinue }: { onContinue: () => void }) {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3">
-            <InputField label="Host" value={host} onChange={setHost} placeholder="localhost" />
-            <InputField label="Port" value={port} onChange={setPort} placeholder="5432" />
+            <InputField
+              label="Host"
+              value={host}
+              onChange={setHost}
+              placeholder="localhost"
+            />
+            <InputField
+              label="Port"
+              value={port}
+              onChange={setPort}
+              placeholder="5432"
+            />
           </div>
-          <InputField label="Database" value={database} onChange={setDatabase} placeholder="feedsilo" />
+          <InputField
+            label="Database"
+            value={database}
+            onChange={setDatabase}
+            placeholder="feedsilo"
+          />
           <div className="grid grid-cols-2 gap-3">
-            <InputField label="Username" value={username} onChange={setUsername} placeholder="postgres" />
-            <InputField label="Password" value={password} onChange={setPassword} type="password" placeholder="password" />
+            <InputField
+              label="Username"
+              value={username}
+              onChange={setUsername}
+              placeholder="postgres"
+            />
+            <InputField
+              label="Password"
+              value={password}
+              onChange={setPassword}
+              type="password"
+              placeholder="password"
+            />
           </div>
           <button
             onClick={() => setShowFields(false)}
-            className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[#f0f0f5] transition-colors self-start cursor-pointer"
+            className={`${onboardingTextButtonClass} self-start text-xs`}
           >
             Use connection string instead
           </button>
@@ -217,7 +251,7 @@ function PostgresForm({ onContinue }: { onContinue: () => void }) {
       {hasInput && <ConnectionTester onTest={handleTest} />}
 
       {error && (
-        <p className="text-xs text-red-400/80 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+        <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300/90">
           {error}
         </p>
       )}
@@ -226,7 +260,7 @@ function PostgresForm({ onContinue }: { onContinue: () => void }) {
         <button
           onClick={handleMigrate}
           disabled={migrating}
-          className="h-12 px-8 rounded-[14px] bg-[var(--accent-thread)] text-[#0a0a0f] font-heading font-semibold text-[15px] hover:brightness-110 transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed self-center mt-2"
+          className={`${onboardingPrimaryButtonClass} mt-2 self-center`}
         >
           {migrating ? "Setting up database..." : "Continue"}
         </button>
@@ -235,7 +269,6 @@ function PostgresForm({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-// ─── Supabase Form ───────────────────────────────────────
 function SupabaseForm({ onContinue }: { onContinue: () => void }) {
   const [connectionString, setConnectionString] = useState("");
   const [tested, setTested] = useState(false);
@@ -278,28 +311,28 @@ function SupabaseForm({ onContinue }: { onContinue: () => void }) {
   };
 
   return (
-    <div className="flex flex-col gap-4 w-full">
+    <div className="flex w-full flex-col gap-4">
       <InputField
         label="PostgreSQL connection string"
         value={connectionString}
         onChange={setConnectionString}
         placeholder="postgresql://postgres.[ref]:[pass]@[host]:5432/postgres"
-        note="Find this in your Supabase dashboard under Project Settings → Database → Connection string (URI)"
+        note="Find this in your Supabase dashboard under Project Settings -> Database -> Connection string (URI)"
       />
 
       <a
         href="https://supabase.com/dashboard"
         target="_blank"
         rel="noopener noreferrer"
-        className="text-xs text-[var(--accent-article)] hover:underline self-start"
+        className={`${onboardingTextButtonClass} self-start text-xs`}
       >
-        Open Supabase Dashboard →
+        Open Supabase Dashboard -&gt;
       </a>
 
       {connectionString && <ConnectionTester onTest={handleTest} />}
 
       {error && (
-        <p className="text-xs text-red-400/80 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+        <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300/90">
           {error}
         </p>
       )}
@@ -308,7 +341,7 @@ function SupabaseForm({ onContinue }: { onContinue: () => void }) {
         <button
           onClick={handleMigrate}
           disabled={migrating}
-          className="h-12 px-8 rounded-[14px] bg-[var(--accent-thread)] text-[#0a0a0f] font-heading font-semibold text-[15px] hover:brightness-110 transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed self-center mt-2"
+          className={`${onboardingPrimaryButtonClass} mt-2 self-center`}
         >
           {migrating ? "Setting up database..." : "Continue"}
         </button>

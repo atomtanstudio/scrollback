@@ -17,19 +17,19 @@ export function Header({ captureCount, isAuthed, currentPath = "/" }: HeaderProp
       : `/login?callbackUrl=${encodeURIComponent(currentPath)}`;
 
   return (
-    <header className="flex items-center justify-between py-6">
+    <header className="flex flex-wrap items-center justify-between gap-4 py-6">
       <Link
         href="/"
-        className="font-heading font-semibold text-[21px] tracking-tight text-[#f0f0f5] flex items-center hover:opacity-80 transition-opacity"
+        className="font-heading flex items-center text-[clamp(1.7rem,2vw,2.15rem)] font-semibold tracking-[-0.05em] text-[#f2ede5] transition-opacity hover:opacity-80"
       >
         feed
-        <span className="inline-block w-[5px] h-[5px] rounded-full bg-[var(--accent-thread)] mx-[1px] relative top-[1px]" />
+        <span className="relative top-[1px] mx-[1px] inline-block h-[5px] w-[5px] rounded-full bg-[var(--accent-article)]" />
         silo
       </Link>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center justify-end gap-2 text-[13px] text-[#a49b8b]">
         {captureCount !== undefined && (
-          <span className="text-[13px] text-[#555566]">
+          <span className="rounded-full border border-[#d6c9b21a] bg-[#ffffff08] px-4 py-2">
             {captureCount.toLocaleString()} captures
           </span>
         )}
@@ -39,7 +39,7 @@ export function Header({ captureCount, isAuthed, currentPath = "/" }: HeaderProp
                 cache serving stale auth state after login/logout */}
             <a
               href="/admin"
-              className="text-[#555566] hover:text-[#f0f0f5] transition-colors"
+              className="rounded-full border border-[#d6c9b21a] bg-[#ffffff08] px-3 py-2 text-[#a49b8b] transition-colors hover:text-[#f2ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
               aria-label="Admin"
             >
               <Shield size={18} />
@@ -47,7 +47,7 @@ export function Header({ captureCount, isAuthed, currentPath = "/" }: HeaderProp
             <form action={logoutAction}>
               <button
                 type="submit"
-                className="text-[#555566] hover:text-[#f0f0f5] transition-colors cursor-pointer"
+                className="cursor-pointer rounded-full border border-[#d6c9b21a] bg-[#ffffff08] px-3 py-2 text-[#a49b8b] transition-colors hover:text-[#f2ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
                 aria-label="Logout"
               >
                 <LogOut size={18} />
@@ -58,14 +58,14 @@ export function Header({ captureCount, isAuthed, currentPath = "/" }: HeaderProp
         {!isAuthed && (
           <a
             href={loginHref}
-            className="text-[13px] text-[#555566] hover:text-[#f0f0f5] transition-colors"
+            className="rounded-full border border-[#d6c9b21a] bg-[#ffffff08] px-4 py-2 text-[#a49b8b] transition-colors hover:text-[#f2ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
           >
             Login
           </a>
         )}
         <a
           href="/settings"
-          className="text-[#555566] hover:text-[#f0f0f5] transition-colors"
+          className="rounded-full border border-[#d6c9b21a] bg-[#ffffff08] px-3 py-2 text-[#a49b8b] transition-colors hover:text-[#f2ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
           aria-label="Settings"
         >
           <Settings size={18} />

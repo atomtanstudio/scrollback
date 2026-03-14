@@ -88,7 +88,7 @@ export function ProgressBar({ endpoint, buttonLabel, className }: ProgressBarPro
       {state === "idle" && (
         <button
           onClick={handleStart}
-          className="h-10 px-5 rounded-[10px] text-sm font-medium bg-[#1a1a24] text-[#f0f0f5] border border-[#ffffff12] hover:border-[#ffffff24] transition-all duration-200 cursor-pointer self-start"
+          className="h-10 self-start rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-5 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233]"
         >
           {buttonLabel}
         </button>
@@ -96,22 +96,22 @@ export function ProgressBar({ endpoint, buttonLabel, className }: ProgressBarPro
 
       {(state === "running" || state === "done") && (
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between text-xs text-[hsl(var(--muted-foreground))]">
+          <div className="flex items-center justify-between text-xs text-[#8a8174]">
             <span>{data?.current || "Starting..."}</span>
             <span>{percent}%</span>
           </div>
-          <div className="h-2 bg-[#1a1a24] rounded-full overflow-hidden">
+          <div className="h-2 overflow-hidden rounded-full bg-[#0f141b]">
             <div
               className={cn(
                 "h-full rounded-full transition-all duration-300",
-                state === "done" ? "bg-emerald-500" : "bg-[var(--accent-thread)]"
+                state === "done" ? "bg-emerald-400" : "bg-[var(--accent-article)]"
               )}
               style={{ width: `${percent}%` }}
             />
           </div>
           {state === "done" && (
-            <p className="text-xs text-emerald-400">
-              Done — {data?.processed} items processed
+            <p className="text-xs text-emerald-300">
+              Done: {data?.processed} items processed
             </p>
           )}
         </div>
@@ -119,12 +119,12 @@ export function ProgressBar({ endpoint, buttonLabel, className }: ProgressBarPro
 
       {state === "error" && (
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-red-400/80 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+          <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300/90">
             {error}
           </p>
           <button
             onClick={handleStart}
-            className="h-9 px-4 rounded-[10px] text-sm font-medium bg-[#1a1a24] text-[#f0f0f5] border border-[#ffffff12] hover:border-[#ffffff24] transition-all duration-200 cursor-pointer self-start"
+            className="h-9 self-start rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233]"
           >
             Retry
           </button>

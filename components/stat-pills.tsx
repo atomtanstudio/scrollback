@@ -11,14 +11,16 @@ export function StatPills({ stats }: StatPillsProps) {
   ];
 
   return (
-    <div className="flex gap-3 flex-wrap justify-center">
+    <div className="flex flex-wrap justify-center gap-3">
       {pills.map((pill) => (
         <div
           key={pill.label}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#111118] border border-[#ffffff12] text-[13px] text-[#8888aa]"
+          className="flex items-center gap-2 rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-4 py-2 text-[13px] text-[#a49b8b]"
         >
           <span className={`w-2 h-2 rounded-full ${pill.color}`} />
-          <span className="font-semibold text-[#f0f0f5]">{pill.count.toLocaleString()}</span>
+          <span className="font-semibold text-[#f2ede5]">
+            {pill.count.toLocaleString()}
+          </span>
           {pill.label}
         </div>
       ))}

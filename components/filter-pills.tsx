@@ -17,16 +17,16 @@ const filters = [
 
 export function FilterPills({ activeType, onTypeChange }: FilterPillsProps) {
   return (
-    <div className="flex gap-2 justify-center">
+    <div className="flex justify-center gap-2">
       {filters.map((f) => (
         <button
           key={f.value}
           onClick={() => onTypeChange(f.value)}
           className={cn(
-            "px-4 py-1.5 rounded-2xl text-[13px] border transition-all cursor-pointer",
+            "cursor-pointer rounded-full border px-4 py-2 text-[13px] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]",
             activeType === f.value
-              ? "bg-[#1a1a24] border-[#ffffff24] text-[#f0f0f5]"
-              : "bg-[#111118] border-[#ffffff12] text-[#8888aa] hover:border-[#ffffff18]"
+              ? "border-[#d6c9b242] bg-[#f2ede50a] text-[#f2ede5]"
+              : "border-[#d6c9b214] bg-[#ffffff05] text-[#a49b8b] hover:border-[#d6c9b233] hover:text-[#f2ede5]"
           )}
         >
           {f.label}

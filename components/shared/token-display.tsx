@@ -19,15 +19,15 @@ export function TokenDisplay({ token, className }: TokenDisplayProps) {
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <code className="flex-1 bg-[#0a0a0f] border border-[#ffffff12] rounded-lg px-4 py-3 font-mono text-sm text-[var(--accent-tweet)] select-all break-all">
+      <code className="flex-1 select-all break-all rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-4 py-3 font-mono text-sm text-[var(--accent-tweet)]">
         {token}
       </code>
       <button
         onClick={handleCopy}
-        className="shrink-0 h-10 px-4 rounded-[10px] text-sm font-medium bg-[#1a1a24] border border-[#ffffff12] text-[#f0f0f5] hover:border-[#ffffff24] transition-all duration-200 cursor-pointer"
+        className="h-10 shrink-0 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233]"
       >
         {copied ? (
-          <span className="text-emerald-400">Copied!</span>
+          <span className="text-emerald-300">Copied!</span>
         ) : (
           "Copy"
         )}

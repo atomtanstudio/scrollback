@@ -1,6 +1,12 @@
 "use client";
 
 import { DatabaseCard, type DatabaseChoice } from "../database-card";
+import {
+  onboardingHeadingClass,
+  onboardingPrimaryButtonClass,
+  onboardingSubheadingClass,
+  StepBadge,
+} from "../ui";
 
 export type { DatabaseChoice };
 
@@ -23,7 +29,7 @@ const DATABASE_OPTIONS: Array<{
     description:
       "Zero infrastructure. Everything stored locally. Best for personal use and quick setup.",
     badge: "Fastest Setup",
-    accentColor: "#22d3ee",
+    accentColor: "#6e98a0",
   },
   {
     type: "postgresql",
@@ -31,7 +37,7 @@ const DATABASE_OPTIONS: Array<{
     description:
       "Self-hosted database. Full control, best performance, supports semantic search via pgvector.",
     badge: "Recommended",
-    accentColor: "#a78bfa",
+    accentColor: "#8c7f9f",
   },
   {
     type: "supabase",
@@ -39,7 +45,7 @@ const DATABASE_OPTIONS: Array<{
     description:
       "Managed PostgreSQL with built-in vector search. Easiest cloud option with generous free tier.",
     badge: "Best for Cloud",
-    accentColor: "#fb923c",
+    accentColor: "#b89462",
   },
 ];
 
@@ -50,14 +56,15 @@ export function DatabaseStep({
 }: DatabaseStepProps) {
   return (
     <div className="flex flex-col items-center">
-      <h2 className="font-heading font-extrabold text-2xl md:text-3xl tracking-tight text-[#f0f0f5] mb-2 text-center">
+      <StepBadge tone="recommended">Choose storage</StepBadge>
+      <h2 className={onboardingHeadingClass}>
         Where should FeedSilo store your data?
       </h2>
-      <p className="text-[hsl(var(--muted-foreground))] text-sm mb-8 text-center">
+      <p className={`${onboardingSubheadingClass} mb-8 mt-4 text-center`}>
         You can always switch later from the settings page
       </p>
 
-      <div className="flex flex-col gap-3 w-full mb-8">
+      <div className="mb-8 flex w-full flex-col gap-3">
         {DATABASE_OPTIONS.map((opt) => (
           <DatabaseCard
             key={opt.type}
@@ -75,7 +82,7 @@ export function DatabaseStep({
       <button
         onClick={onContinue}
         disabled={!selected}
-        className="h-12 px-8 rounded-[14px] bg-[var(--accent-thread)] text-[#0a0a0f] font-heading font-semibold text-[15px] hover:brightness-110 transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:brightness-100"
+        className={onboardingPrimaryButtonClass}
       >
         Continue
       </button>

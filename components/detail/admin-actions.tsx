@@ -21,7 +21,7 @@ interface AdminActionsProps {
 }
 
 const btnClass =
-  "flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-medium bg-[#111118] border border-[#ffffff0a] text-[#8888aa] hover:text-[#f0f0f5] hover:border-[#ffffff24] transition-colors cursor-pointer";
+  "flex cursor-pointer items-center gap-1.5 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2 text-xs font-medium text-[#a49b8b] transition-colors hover:border-[#d6c9b233] hover:text-[#f2ede5]";
 
 export function AdminActions({ item }: AdminActionsProps) {
   const router = useRouter();
@@ -90,14 +90,14 @@ export function AdminActions({ item }: AdminActionsProps) {
 
   return (
     <>
-      <div className="bg-[var(--surface)] border border-[hsl(var(--border))] rounded-[14px] p-4 px-5">
+      <div className="rounded-[24px] border border-[#d6c9b214] bg-[#ffffff08] p-5">
         <p
-          className="font-heading font-semibold text-[13px] text-[#8888aa] mb-3"
+          className="mb-3 font-heading text-[13px] font-semibold text-[#a49b8b]"
           style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}
         >
           Admin
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button className={btnClass} onClick={() => setEditOpen(true)}>
             <Pencil className="h-3.5 w-3.5" />
             Edit

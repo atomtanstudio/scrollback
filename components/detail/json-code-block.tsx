@@ -7,7 +7,14 @@ interface JsonCodeBlockProps {
   onCopy?: () => void;
 }
 
-type TokenType = "key" | "string" | "number" | "boolean" | "null" | "punctuation" | "whitespace";
+type TokenType =
+  | "key"
+  | "string"
+  | "number"
+  | "boolean"
+  | "null"
+  | "punctuation"
+  | "whitespace";
 
 interface Token {
   type: TokenType;
@@ -15,12 +22,12 @@ interface Token {
 }
 
 const tokenColors: Record<TokenType, string | undefined> = {
-  key: "#22d3ee",
-  string: "#a78bfa",
-  number: "#fb923c",
-  boolean: "#ec4899",
-  null: "#ec4899",
-  punctuation: "#555566",
+  key: "#8fb1b8",
+  string: "#d6bd9d",
+  number: "#c99272",
+  boolean: "#c49aa2",
+  null: "#c49aa2",
+  punctuation: "#6f675e",
   whitespace: undefined,
 };
 
@@ -31,7 +38,6 @@ function tokenizeLine(line: string): Token[] {
   while (i < line.length) {
     const char = line[i];
 
-    // Whitespace
     if (/\s/.test(char)) {
       let ws = "";
       while (i < line.length && /\s/.test(line[i])) {
@@ -41,7 +47,6 @@ function tokenizeLine(line: string): Token[] {
       continue;
     }
 
-    // String (key or value)
     if (char === '"') {
       let str = '"';
       i++;
@@ -54,9 +59,8 @@ function tokenizeLine(line: string): Token[] {
         }
       }
       str += '"';
-      i++; // closing quote
+      i++;
 
-      // Look ahead past whitespace to check for ':'
       let j = i;
       while (j < line.length && /\s/.test(line[j])) j++;
 
@@ -68,7 +72,6 @@ function tokenizeLine(line: string): Token[] {
       continue;
     }
 
-    // Number (including negative and floats)
     if (/[-\d]/.test(char) && (char !== "-" || /\d/.test(line[i + 1] || ""))) {
       let num = "";
       while (i < line.length && /[-\d.eE+]/.test(line[i])) {
@@ -78,7 +81,6 @@ function tokenizeLine(line: string): Token[] {
       continue;
     }
 
-    // Boolean true/false
     if (line.startsWith("true", i)) {
       tokens.push({ type: "boolean", value: "true" });
       i += 4;
@@ -90,14 +92,12 @@ function tokenizeLine(line: string): Token[] {
       continue;
     }
 
-    // null
     if (line.startsWith("null", i)) {
       tokens.push({ type: "null", value: "null" });
       i += 4;
       continue;
     }
 
-    // Punctuation
     tokens.push({ type: "punctuation", value: char });
     i++;
   }
@@ -119,26 +119,22 @@ export function JsonCodeBlock({ code, onCopy }: JsonCodeBlockProps) {
   const lines = code.split("\n");
 
   return (
-    <div className="bg-[#0c0c14] border border-[rgba(255,255,255,0.06)] rounded-xl p-5 overflow-x-auto relative">
+    <div className="relative overflow-x-auto rounded-[22px] border border-[#d6c9b214] bg-[#0f141a] p-5">
       <button
         onClick={handleCopy}
-        className="absolute top-3 right-3 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] rounded-md px-2.5 py-1 text-[11px] text-[#8888aa] hover:text-[#f0f0f5] hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+        className="absolute right-3 top-3 rounded-full border border-[#d6c9b21f] bg-[#171d24] px-3 py-1 text-[11px] text-[#9c9387] transition-colors hover:text-[#f2ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
       >
         {copied ? "Copied!" : "Copy"}
       </button>
 
-      <pre className="font-mono text-[13px] leading-[1.65] m-0 whitespace-pre-wrap break-words">
+      <pre className="m-0 whitespace-pre-wrap break-words font-mono text-[13px] leading-[1.7]">
         {lines.map((line, lineIndex) => {
           const tokens = tokenizeLine(line);
           return (
             <div key={lineIndex} className="flex">
               <span
-                className="select-none text-right mr-4 flex-shrink-0"
-                style={{
-                  color: "#555566",
-                  width: "28px",
-                  display: "inline-block",
-                }}
+                className="mr-4 inline-block w-[28px] shrink-0 select-none text-right"
+                style={{ color: "#6f675e" }}
               >
                 {lineIndex + 1}
               </span>
@@ -146,9 +142,7 @@ export function JsonCodeBlock({ code, onCopy }: JsonCodeBlockProps) {
                 {tokens.map((token, tokenIndex) => {
                   const color = tokenColors[token.type];
                   if (!color) {
-                    return (
-                      <span key={tokenIndex}>{token.value}</span>
-                    );
+                    return <span key={tokenIndex}>{token.value}</span>;
                   }
                   return (
                     <span key={tokenIndex} style={{ color }}>

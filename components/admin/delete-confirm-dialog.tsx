@@ -26,12 +26,12 @@ export function DeleteConfirmDialog({
 }: DeleteConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={(o) => !o && onCancel()}>
-      <AlertDialogContent className="border-[#ffffff12] bg-[#111118]">
+      <AlertDialogContent className="rounded-[24px] border-[#d6c9b214] bg-[#171b22]">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-[#f0f0f5]">
+          <AlertDialogTitle className="text-[#f2ede5]">
             Delete {count} item{count !== 1 ? "s" : ""}?
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-[#8888aa]">
+          <AlertDialogDescription className="text-[#a49b8b]">
             This action cannot be undone. The selected item{count !== 1 ? "s" : ""} will
             be permanently deleted.
           </AlertDialogDescription>
@@ -39,13 +39,13 @@ export function DeleteConfirmDialog({
         <AlertDialogFooter>
           <AlertDialogCancel
             onClick={onCancel}
-            className="rounded-[10px] border-[#ffffff12] bg-transparent text-[#f0f0f5] hover:bg-[#ffffff0a] hover:text-[#f0f0f5]"
+            className="rounded-[12px] border-[#d6c9b214] bg-[#ffffff05] text-[#f2ede5] hover:border-[#d6c9b233] hover:bg-[#ffffff08] hover:text-[#f2ede5]"
           >
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            className="rounded-[10px] bg-red-600 text-white hover:bg-red-700"
+            className="rounded-[12px] bg-red-600 text-white hover:bg-red-700"
           >
             Delete
           </AlertDialogAction>

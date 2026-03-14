@@ -48,9 +48,9 @@ export function SearchBar({ onSearch, onClear }: SearchBarProps) {
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-[640px]">
-      <div className="p-px rounded-[14px] search-border-gradient opacity-50 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
-        <div className="flex items-center bg-[#1a1a24] rounded-[13px] h-14 px-5 gap-3 w-full">
-          <svg className="text-[#555566] flex-shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <div className="rounded-[20px] border border-[#d6c9b233] bg-[linear-gradient(180deg,rgba(244,234,216,0.05),rgba(244,234,216,0.015))] p-[1px] shadow-[0_18px_42px_rgba(0,0,0,0.22)] transition-colors duration-300 hover:border-[#d6c9b24d] focus-within:border-[#d6c9b266]">
+        <div className="flex h-16 w-full items-center gap-3 rounded-[19px] bg-[#171b22]/95 px-5">
+          <svg className="shrink-0 text-[#8a8174]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.35-4.35" />
           </svg>
@@ -59,13 +59,14 @@ export function SearchBar({ onSearch, onClear }: SearchBarProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search your captures..."
-            className="flex-1 bg-transparent border-none outline-none text-[#f0f0f5] font-sans text-base placeholder:text-[#555566]"
+            className="flex-1 border-none bg-transparent font-sans text-base text-[#f2ede5] outline-none placeholder:text-[#7d7569]"
           />
           {query && (
             <button
               type="button"
               onClick={handleClear}
-              className="text-[#555566] hover:text-[#8888aa] transition-colors cursor-pointer"
+              className="cursor-pointer text-[#8a8174] transition-colors hover:text-[#f2ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+              aria-label="Clear search"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -73,7 +74,7 @@ export function SearchBar({ onSearch, onClear }: SearchBarProps) {
               </svg>
             </button>
           )}
-          <span className="text-xs text-[#555566] bg-[#0a0a0f] px-2 py-1 rounded-md border border-[#ffffff12]">
+          <span className="rounded-full border border-[#d6c9b21f] bg-[#0f1319] px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-[#8a8174]">
             &#8984;K
           </span>
         </div>

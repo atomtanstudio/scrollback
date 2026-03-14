@@ -4,35 +4,35 @@
 
 @layer base {
   :root {
-    --background: 240 20% 4%;       /* #0a0a0f */
-    --surface: 240 18% 8%;          /* #111118 */
-    --surface-elevated: 240 15% 12%; /* #1a1a24 */
-    --foreground: 240 10% 95%;      /* #f0f0f5 */
-    --muted: 240 10% 35%;           /* #555566 */
-    --muted-foreground: 240 12% 60%; /* #8888aa */
+    --background: 223 24% 7%;
+    --surface: 222 21% 11%;
+    --surface-elevated: 223 18% 15%;
+    --foreground: 36 31% 94%;
+    --muted: 34 12% 48%;
+    --muted-foreground: 34 18% 66%;
     --border: 0 0% 15%;
     --border-hover: 0 0% 22%;
-    --card: 240 18% 8%;
-    --card-foreground: 240 10% 95%;
-    --primary: 186 78% 53%;         /* #22d3ee cyan */
-    --primary-foreground: 240 20% 4%;
-    --accent-tweet: #22d3ee;
-    --accent-thread: #a78bfa;
-    --accent-article: #fb923c;
-    --accent-art: #ec4899;
+    --card: 222 21% 11%;
+    --card-foreground: 36 31% 94%;
+    --primary: 39 38% 54%;
+    --primary-foreground: 223 24% 7%;
+    --accent-tweet: #6e98a0;
+    --accent-thread: #8c7f9f;
+    --accent-article: #b89462;
+    --accent-art: #b66f78;
     --radius: 0.75rem;
 
     /* shadcn compatibility variables */
-    --popover: 240 18% 8%;
-    --popover-foreground: 240 10% 95%;
-    --secondary: 240 15% 12%;
-    --secondary-foreground: 240 10% 95%;
-    --accent: 240 15% 12%;
-    --accent-foreground: 240 10% 95%;
+    --popover: 222 21% 11%;
+    --popover-foreground: 36 31% 94%;
+    --secondary: 223 18% 15%;
+    --secondary-foreground: 36 31% 94%;
+    --accent: 223 18% 15%;
+    --accent-foreground: 36 31% 94%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 240 10% 95%;
-    --input: 240 15% 12%;
-    --ring: 186 78% 53%;
+    --destructive-foreground: 36 31% 94%;
+    --input: 223 18% 15%;
+    --ring: 39 38% 54%;
   }
 }
 
@@ -41,7 +41,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-[#0a0a0f] text-[#f0f0f5] antialiased;
+    @apply bg-[#090c11] text-[#f2ede5] antialiased;
     font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 }
@@ -50,69 +50,69 @@
 
 .card-gradient-tweet {
   background:
-    linear-gradient(to top, #0e1018 0%, #0e101880 18%, transparent 40%),
-    radial-gradient(ellipse at 0% 0%, #0e1018 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, #0e1018 0%, transparent 8%),
-    radial-gradient(circle at 97% 3%, #c47a30 0%, #8a5030 3%, transparent 14%),
-    radial-gradient(ellipse at 78% 15%, #5a2870 0%, #3a1858 15%, transparent 45%),
-    radial-gradient(ellipse at 50% 40%, #1e3068 0%, transparent 55%),
-    radial-gradient(ellipse at 40% 60%, #184058 0%, transparent 55%),
-    #0e1018;
+    linear-gradient(to top, #11161d 0%, #11161d80 18%, transparent 40%),
+    radial-gradient(ellipse at 0% 0%, #11161d 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, #11161d 0%, transparent 8%),
+    radial-gradient(circle at 94% 6%, #8f6a46 0%, #6c5138 4%, transparent 16%),
+    radial-gradient(ellipse at 78% 18%, #314759 0%, #22384a 16%, transparent 46%),
+    radial-gradient(ellipse at 48% 44%, #203243 0%, transparent 58%),
+    radial-gradient(ellipse at 32% 68%, #1a2735 0%, transparent 58%),
+    #11161d;
 }
 
 .card-gradient-thread {
   background:
-    linear-gradient(to top, #0e1018 0%, #0e101880 18%, transparent 40%),
-    radial-gradient(ellipse at 0% 0%, #0e1018 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, #0e1018 0%, transparent 8%),
-    radial-gradient(circle at 97% 3%, #a04858 0%, #7a3858 3%, transparent 14%),
-    radial-gradient(ellipse at 78% 15%, #5a2878 0%, #3a1860 15%, transparent 45%),
-    radial-gradient(ellipse at 50% 40%, #1e2870 0%, transparent 55%),
-    radial-gradient(ellipse at 40% 60%, #184a60 0%, transparent 55%),
-    #0e1018;
+    linear-gradient(to top, #11161d 0%, #11161d80 18%, transparent 40%),
+    radial-gradient(ellipse at 0% 0%, #11161d 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, #11161d 0%, transparent 8%),
+    radial-gradient(circle at 94% 6%, #8d655f 0%, #694f4e 4%, transparent 16%),
+    radial-gradient(ellipse at 78% 18%, #433755 0%, #2f2844 16%, transparent 46%),
+    radial-gradient(ellipse at 48% 44%, #273248 0%, transparent 58%),
+    radial-gradient(ellipse at 32% 68%, #1b2c39 0%, transparent 58%),
+    #11161d;
 }
 
 .card-gradient-article {
   background:
-    linear-gradient(to top, #0e1018 0%, #0e101880 18%, transparent 40%),
-    radial-gradient(ellipse at 0% 0%, #0e1018 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, #0e1018 0%, transparent 8%),
-    radial-gradient(circle at 97% 3%, #c48a30 0%, #8a7028 3%, transparent 14%),
-    radial-gradient(ellipse at 78% 15%, #3a5a40 0%, #2a4a38 15%, transparent 45%),
-    radial-gradient(ellipse at 50% 40%, #1e3060 0%, transparent 55%),
-    radial-gradient(ellipse at 40% 60%, #1a2a58 0%, transparent 55%),
-    #0e1018;
+    linear-gradient(to top, #11161d 0%, #11161d80 18%, transparent 40%),
+    radial-gradient(ellipse at 0% 0%, #11161d 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, #11161d 0%, transparent 8%),
+    radial-gradient(circle at 94% 6%, #a78455 0%, #7f6544 4%, transparent 16%),
+    radial-gradient(ellipse at 78% 18%, #30463e 0%, #253a34 16%, transparent 46%),
+    radial-gradient(ellipse at 48% 44%, #233449 0%, transparent 58%),
+    radial-gradient(ellipse at 32% 68%, #1a2939 0%, transparent 58%),
+    #11161d;
 }
 
 .card-gradient-art {
   background:
-    linear-gradient(to top, #0e1018 0%, #0e101880 18%, transparent 40%),
-    radial-gradient(ellipse at 0% 0%, #0e1018 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, #0e1018 0%, transparent 8%),
-    radial-gradient(circle at 97% 3%, #ec4899 0%, #c0387a 3%, transparent 14%),
-    radial-gradient(ellipse at 78% 15%, #7a1858 0%, #5a1048 15%, transparent 45%),
-    radial-gradient(ellipse at 50% 40%, #2a1860 0%, transparent 55%),
-    radial-gradient(ellipse at 40% 60%, #1a2858 0%, transparent 55%),
-    #0e1018;
+    linear-gradient(to top, #11161d 0%, #11161d80 18%, transparent 40%),
+    radial-gradient(ellipse at 0% 0%, #11161d 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, #11161d 0%, transparent 8%),
+    radial-gradient(circle at 94% 6%, #b06f74 0%, #87585d 4%, transparent 16%),
+    radial-gradient(ellipse at 78% 18%, #5a3049 0%, #422539 16%, transparent 46%),
+    radial-gradient(ellipse at 48% 44%, #2b3048 0%, transparent 58%),
+    radial-gradient(ellipse at 32% 68%, #1c293a 0%, transparent 58%),
+    #11161d;
 }
 
 /* Border gradient wrappers */
 .border-gradient-tweet {
-  background: linear-gradient(135deg, #22d3ee50 0%, #22d3ee20 30%, #22d3ee10 50%, #22d3ee20 70%, #22d3ee40 100%);
+  background: linear-gradient(135deg, #6e98a040 0%, #6e98a018 30%, #b8946212 60%, #6e98a030 100%);
 }
 .border-gradient-thread {
-  background: linear-gradient(135deg, #a78bfa50 0%, #a78bfa20 30%, #a78bfa10 50%, #a78bfa20 70%, #a78bfa40 100%);
+  background: linear-gradient(135deg, #8c7f9f40 0%, #8c7f9f18 30%, #b66f7812 60%, #8c7f9f30 100%);
 }
 .border-gradient-article {
-  background: linear-gradient(135deg, #fb923c50 0%, #fb923c20 30%, #fb923c10 50%, #fb923c20 70%, #fb923c40 100%);
+  background: linear-gradient(135deg, #b8946245 0%, #b8946218 30%, #6e98a012 60%, #b8946230 100%);
 }
 .border-gradient-art {
-  background: linear-gradient(135deg, #ec489950 0%, #ec489920 30%, #ec489910 50%, #ec489920 70%, #ec489940 100%);
+  background: linear-gradient(135deg, #b66f7845 0%, #b66f7818 30%, #8c7f9f12 60%, #b66f7830 100%);
 }
 
 /* Search bar gradient */
 .search-border-gradient {
-  background: linear-gradient(135deg, var(--accent-tweet), var(--accent-thread), var(--accent-art), var(--accent-article));
+  background: linear-gradient(135deg, var(--accent-article), var(--accent-tweet), var(--accent-thread), var(--accent-art));
 }
 
 /* Background glow effects */
@@ -124,7 +124,7 @@
   transform: translateX(-50%);
   width: 800px;
   height: 800px;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.07) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(184, 148, 98, 0.05) 0%, transparent 70%);
   border-radius: 50%;
   pointer-events: none;
   z-index: 0;
@@ -136,7 +136,7 @@
   left: 60%;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(8, 145, 178, 0.06) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(73, 108, 128, 0.05) 0%, transparent 70%);
   border-radius: 50%;
   pointer-events: none;
   z-index: 0;

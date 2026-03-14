@@ -16,10 +16,10 @@ interface DetailContentProps {
 }
 
 const accentColors: Record<CardType, string> = {
-  tweet: "#22d3ee",
-  thread: "#a78bfa",
-  article: "#fb923c",
-  art: "#ec4899",
+  tweet: "var(--accent-tweet)",
+  thread: "var(--accent-thread)",
+  article: "var(--accent-article)",
+  art: "var(--accent-art)",
 };
 
 function BodySegments({ bodyText }: { bodyText: string }) {
@@ -31,7 +31,7 @@ function BodySegments({ bodyText }: { bodyText: string }) {
           return (
             <div
               key={i}
-              className="whitespace-pre-wrap text-base leading-[1.7] text-[#d8d8e8]"
+              className="whitespace-pre-wrap text-base leading-[1.75] text-[#cdc4b7]"
             >
               {segment.content}
             </div>
@@ -44,7 +44,7 @@ function BodySegments({ bodyText }: { bodyText: string }) {
           return (
             <div
               key={i}
-              className="bg-[#0c0c14] rounded-xl p-5 font-mono text-sm text-[#8888aa] overflow-x-auto"
+              className="overflow-x-auto rounded-[18px] border border-[#d6c9b214] bg-[#0f141b] p-5 font-mono text-sm text-[#b4ab9d]"
             >
               <pre className="m-0 whitespace-pre-wrap">{segment.content}</pre>
             </div>
@@ -101,27 +101,27 @@ function AuthorHeader({ item }: { item: DetailItem }) {
           />
         ) : (
           <div
-            className="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold text-white"
+            className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-[#f2ede5]"
             style={{
-              background: "linear-gradient(135deg, #22d3ee 0%, #a78bfa 100%)",
+              background: "linear-gradient(135deg, var(--accent-tweet) 0%, var(--accent-thread) 100%)",
             }}
           >
             {initials}
           </div>
         )}
         <div className="min-w-0">
-          <p className="font-heading font-semibold text-base text-[#f0f0f5] truncate leading-tight">
+          <p className="truncate font-heading text-base font-semibold leading-tight text-[#f2ede5]">
             {displayName}
           </p>
           {item.author_handle && (
-            <p className="text-[13px] text-[#8888aa] truncate leading-tight mt-0.5">
+            <p className="mt-0.5 truncate text-[13px] leading-tight text-[#a49b8b]">
               @{item.author_handle}
             </p>
           )}
         </div>
       </div>
       {item.posted_at && (
-        <p className="text-[12px] text-[#555566] flex-shrink-0">
+        <p className="flex-shrink-0 text-[12px] text-[#8a8174]">
           {formatFullDate(item.posted_at)}
         </p>
       )}
@@ -141,8 +141,8 @@ function TweetThreadContent({
   return (
     <div>
       <AuthorHeader item={item} />
-      <div className="border-t border-[rgba(255,255,255,0.07)] my-6" />
-      <div className="space-y-4 text-base leading-[1.7] text-[#d8d8e8]">
+      <div className="my-6 border-t border-[#d6c9b214]" />
+      <div className="space-y-4 text-base leading-[1.75] text-[#cdc4b7]">
         {item.body_text ? (
           <BodySegments bodyText={item.body_text} />
         ) : null}
@@ -158,19 +158,18 @@ function TweetThreadContent({
       {item.has_prompt && item.prompt_text && cardType === "art" && (
         <div className="mt-6">
           <p
-            className="text-[11px] text-[#8888aa] mb-2 font-semibold"
+            className="mb-2 text-[11px] font-semibold text-[#a49b8b]"
             style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}
           >
             Generation Prompt
           </p>
           <blockquote
-            className="pl-4 py-3 rounded-r-lg text-sm text-[#d8d8e8] italic"
+            className="rounded-[18px] bg-[#ffffff05] px-4 py-4 text-sm italic text-[#cdc4b7]"
             style={{
-              borderLeft: "3px solid #ec4899",
-              background: "rgba(236,72,153,0.05)",
+              borderLeft: "3px solid var(--accent-art)",
             }}
           >
-            <span className="text-[#ec4899] text-xl leading-none mr-1">&ldquo;</span>
+            <span className="mr-1 text-xl leading-none text-[var(--accent-art)]">&ldquo;</span>
             {item.prompt_text}
           </blockquote>
         </div>
@@ -207,13 +206,13 @@ function ArticleContent({
       {domain && (
         <p
           className="text-[12px] text-[--accent-article] font-semibold mb-3"
-          style={{ textTransform: "uppercase", letterSpacing: "0.1em", color: "#fb923c" }}
+          style={{ textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--accent-article)" }}
         >
           {domain}
         </p>
       )}
       {item.title && (
-        <h1 className="font-heading font-extrabold text-[28px] leading-tight tracking-tight mb-4 text-[#f0f0f5]">
+        <h1 className="mb-4 font-heading text-[28px] font-extrabold leading-tight tracking-tight text-[#f2ede5]">
           {item.title}
         </h1>
       )}
@@ -228,29 +227,29 @@ function ArticleContent({
           />
         ) : displayName ? (
           <div
-            className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-white"
+            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-[#f2ede5]"
             style={{
-              background: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
+              background: "linear-gradient(135deg, var(--accent-article) 0%, #9b7345 100%)",
             }}
           >
             {initials}
           </div>
         ) : null}
         {displayName && (
-          <span className="text-[13px] text-[#8888aa]">{displayName}</span>
+          <span className="text-[13px] text-[#a49b8b]">{displayName}</span>
         )}
         {(displayName || item.posted_at) && (
-          <span className="text-[#555566] text-[13px]">&middot;</span>
+          <span className="text-[13px] text-[#8a8174]">&middot;</span>
         )}
         {item.posted_at && (
-          <span className="text-[13px] text-[#8888aa]">
+          <span className="text-[13px] text-[#a49b8b]">
             {formatFullDate(item.posted_at)}
           </span>
         )}
-        <span className="text-[#555566] text-[13px]">&middot;</span>
-        <span className="text-[13px] text-[#8888aa]">{readMinutes} min read</span>
+        <span className="text-[13px] text-[#8a8174]">&middot;</span>
+        <span className="text-[13px] text-[#a49b8b]">{readMinutes} min read</span>
       </div>
-      <div className="border-t border-[rgba(255,255,255,0.07)] my-6" />
+      <div className="my-6 border-t border-[#d6c9b214]" />
       {item.media_items && item.media_items.length > 0 && (
         <div className="mb-6">
           <MediaRenderer
@@ -262,14 +261,14 @@ function ArticleContent({
       {item.body_html ? (
         <div
           className="prose prose-invert prose-sm max-w-none
-            prose-headings:font-heading prose-headings:text-[#f0f0f5]
-            prose-p:text-[#d8d8e8] prose-p:leading-[1.7]
-            prose-a:text-[#fb923c] prose-a:no-underline hover:prose-a:underline
-            prose-strong:text-[#f0f0f5]
-            prose-code:text-[#a78bfa] prose-code:bg-[#0c0c14] prose-code:rounded prose-code:px-1
-            prose-blockquote:border-[#fb923c] prose-blockquote:text-[#8888aa]
-            prose-ul:text-[#d8d8e8] prose-ol:text-[#d8d8e8]
-            prose-hr:border-[rgba(255,255,255,0.07)]
+            prose-headings:font-heading prose-headings:text-[#f2ede5]
+            prose-p:text-[#cdc4b7] prose-p:leading-[1.75]
+            prose-a:text-[var(--accent-article)] prose-a:no-underline hover:prose-a:underline
+            prose-strong:text-[#f2ede5]
+            prose-code:text-[var(--accent-thread)] prose-code:bg-[#0f141b] prose-code:rounded prose-code:px-1
+            prose-blockquote:border-[var(--accent-article)] prose-blockquote:text-[#b4ab9d]
+            prose-ul:text-[#cdc4b7] prose-ol:text-[#cdc4b7]
+            prose-hr:border-[#d6c9b214]
             prose-img:rounded-xl"
           dangerouslySetInnerHTML={{ __html: item.body_html }}
         />
@@ -303,34 +302,33 @@ function ArtContent({
         style={{
           textTransform: "uppercase",
           letterSpacing: "0.08em",
-          color: "#ec4899",
-          backgroundColor: "rgba(236,72,153,0.1)",
-          borderColor: "rgba(236,72,153,0.2)",
+          color: "var(--accent-art)",
+          backgroundColor: "rgba(182,111,120,0.12)",
+          borderColor: "rgba(182,111,120,0.18)",
         }}
       >
         {promptTypeLabel}
       </span>
       {item.body_text && (
-        <div className="space-y-4 mb-6 text-base leading-[1.7] text-[#d8d8e8]">
+        <div className="mb-6 space-y-4 text-base leading-[1.75] text-[#cdc4b7]">
           <BodySegments bodyText={item.body_text} />
         </div>
       )}
       {item.has_prompt && item.prompt_text && (
         <div className="mb-6">
           <p
-            className="text-[11px] text-[#8888aa] mb-2 font-semibold"
+            className="mb-2 text-[11px] font-semibold text-[#a49b8b]"
             style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}
           >
             Generation Prompt
           </p>
           <blockquote
-            className="pl-4 py-3 rounded-r-lg text-sm text-[#d8d8e8] italic"
+            className="rounded-[18px] bg-[#ffffff05] px-4 py-4 text-sm italic text-[#cdc4b7]"
             style={{
-              borderLeft: "3px solid #ec4899",
-              background: "rgba(236,72,153,0.05)",
+              borderLeft: "3px solid var(--accent-art)",
             }}
           >
-            <span className="text-[#ec4899] text-xl leading-none mr-1">&ldquo;</span>
+            <span className="mr-1 text-xl leading-none text-[var(--accent-art)]">&ldquo;</span>
             {hasJsonInText ? (
               <BodySegments bodyText={item.prompt_text} />
             ) : (

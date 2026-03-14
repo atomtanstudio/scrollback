@@ -251,7 +251,7 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, initialHas
 
       {!hasMore && items.length > 0 && (
         <div className="flex justify-center py-8">
-          <span className="text-sm text-[#555566]">You&apos;ve reached the end</span>
+          <span className="text-sm text-[#7d7569]">You&apos;ve reached the end</span>
         </div>
       )}
     </>

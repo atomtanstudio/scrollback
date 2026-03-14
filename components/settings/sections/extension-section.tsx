@@ -26,11 +26,11 @@ export function ExtensionSection({ settings, onRefresh }: ExtensionSectionProps)
   };
 
   return (
-    <div className="rounded-[14px] border border-[#ffffff0a] bg-[#111118] p-6">
+    <div className="rounded-[24px] border border-[#d6c9b214] bg-[#ffffff05] p-6">
       {/* Header with branding */}
-      <div className="flex items-start justify-between mb-5">
+      <div className="mb-5 flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[var(--accent-thread)] to-[var(--accent-tweet)] flex items-center justify-center shrink-0">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[linear-gradient(135deg,rgba(184,148,98,0.92),rgba(110,152,160,0.92))]">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0a0f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
               <polyline points="15 3 21 3 21 9" />
@@ -38,36 +38,36 @@ export function ExtensionSection({ settings, onRefresh }: ExtensionSectionProps)
             </svg>
           </div>
           <div>
-            <h3 className="font-heading font-semibold text-[15px] text-[#f0f0f5]">
+            <h3 className="font-heading text-[15px] font-semibold text-[#f2ede5]">
               FeedSilo Browser Extension
             </h3>
-            <p className="text-xs text-[#8888aa]">
+            <p className="text-xs text-[#a49b8b]">
               Capture content from X/Twitter and the web
             </p>
           </div>
         </div>
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
           token
-            ? "bg-[#00ffc815] text-[#00ffc8] border border-[#00ffc830]"
-            : "bg-[#ff6b3515] text-[#ff6b35] border border-[#ff6b3530]"
+            ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
+            : "border border-amber-500/25 bg-amber-500/10 text-amber-300"
         }`}>
           {token ? "Paired" : "Not paired"}
         </span>
       </div>
 
       {/* Features */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        <div className="rounded-[8px] bg-[#0a0a0f] border border-[#ffffff06] px-3 py-2.5 text-center">
-          <p className="text-xs font-medium text-[#f0f0f5]">Tweets & Threads</p>
-          <p className="text-[10px] text-[#8888aa] mt-0.5">One-click save</p>
+      <div className="mb-5 grid grid-cols-3 gap-3">
+        <div className="rounded-[14px] border border-[#d6c9b214] bg-[#0f141b] px-3 py-3 text-center">
+          <p className="text-xs font-medium text-[#f2ede5]">Tweets & Threads</p>
+          <p className="mt-0.5 text-[10px] text-[#8a8174]">One-click save</p>
         </div>
-        <div className="rounded-[8px] bg-[#0a0a0f] border border-[#ffffff06] px-3 py-2.5 text-center">
-          <p className="text-xs font-medium text-[#f0f0f5]">Articles</p>
-          <p className="text-[10px] text-[#8888aa] mt-0.5">Full page capture</p>
+        <div className="rounded-[14px] border border-[#d6c9b214] bg-[#0f141b] px-3 py-3 text-center">
+          <p className="text-xs font-medium text-[#f2ede5]">Articles</p>
+          <p className="mt-0.5 text-[10px] text-[#8a8174]">Full page capture</p>
         </div>
-        <div className="rounded-[8px] bg-[#0a0a0f] border border-[#ffffff06] px-3 py-2.5 text-center">
-          <p className="text-xs font-medium text-[#f0f0f5]">Media</p>
-          <p className="text-[10px] text-[#8888aa] mt-0.5">Images & video</p>
+        <div className="rounded-[14px] border border-[#d6c9b214] bg-[#0f141b] px-3 py-3 text-center">
+          <p className="text-xs font-medium text-[#f2ede5]">Media</p>
+          <p className="mt-0.5 text-[10px] text-[#8a8174]">Images & video</p>
         </div>
       </div>
 
@@ -80,7 +80,7 @@ export function ExtensionSection({ settings, onRefresh }: ExtensionSectionProps)
           {token ? (
             <TokenDisplay token={token} />
           ) : (
-            <p className="text-sm text-[#8888aa]">
+            <p className="text-sm text-[#a49b8b]">
               Generate a token to connect your browser extension.
             </p>
           )}
@@ -92,8 +92,8 @@ export function ExtensionSection({ settings, onRefresh }: ExtensionSectionProps)
             disabled={regenerating}
             className={`h-9 px-4 rounded-[10px] text-sm font-medium transition-all duration-200 cursor-pointer disabled:opacity-50 ${
               token
-                ? "bg-[#1a1a24] text-[#f0f0f5] border border-[#ffffff12] hover:border-[#ffffff24]"
-                : "bg-[var(--accent-thread)] text-[#0a0a0f] font-heading hover:brightness-110"
+                ? "border border-[#d6c9b214] bg-[#ffffff05] text-[#f2ede5] hover:border-[#d6c9b233]"
+                : "bg-[var(--accent-article)] text-[#090c11] font-heading hover:brightness-110"
             }`}
           >
             {regenerating
@@ -101,7 +101,7 @@ export function ExtensionSection({ settings, onRefresh }: ExtensionSectionProps)
               : (token ? "Regenerate Token" : "Generate Token")}
           </button>
 
-          <p className="text-[10px] text-[#8888aa]">
+          <p className="text-[10px] text-[#8a8174]">
             Copy this token into the extension&apos;s settings to pair it with this instance
           </p>
         </div>

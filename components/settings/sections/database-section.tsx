@@ -23,27 +23,27 @@ export function DatabaseSection({ settings, onRefresh }: DatabaseSectionProps) {
   const typeLabel = db?.type === "postgresql" ? "PostgreSQL" : db?.type === "supabase" ? "Supabase" : db?.type === "sqlite" ? "SQLite" : "Not configured";
 
   return (
-    <div className="rounded-[14px] border border-[#ffffff0a] bg-[#111118] p-6">
+    <div className="rounded-[24px] border border-[#d6c9b214] bg-[#ffffff05] p-6">
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="mb-4 flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-[10px] bg-[#1a1a24] border border-[#ffffff0a] flex items-center justify-center shrink-0">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-[#d6c9b214] bg-[#0f141b]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-tweet)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <ellipse cx="12" cy="5" rx="9" ry="3" />
               <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
               <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
             </svg>
           </div>
           <div>
-            <h3 className="font-heading font-semibold text-[15px] text-[#f0f0f5]">
+            <h3 className="font-heading text-[15px] font-semibold text-[#f2ede5]">
               Database
             </h3>
-            <p className="text-xs text-[#8888aa]">
+            <p className="text-xs text-[#a49b8b]">
               {typeLabel}{db?.type === "postgresql" ? " with pgvector" : ""}
             </p>
           </div>
         </div>
-        <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-[#00ffc815] text-[#00ffc8] border border-[#00ffc830]">
+        <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
           Connected
         </span>
       </div>
@@ -52,15 +52,15 @@ export function DatabaseSection({ settings, onRefresh }: DatabaseSectionProps) {
         {db?.url && (
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
-              <label className="text-xs text-[hsl(var(--muted-foreground))]">Connection string</label>
+              <label className="text-xs text-[#8a8174]">Connection string</label>
               <button
                 onClick={() => setShowUrl(!showUrl)}
-                className="text-xs text-[var(--accent-tweet)] hover:underline cursor-pointer"
+                className="cursor-pointer text-xs text-[var(--accent-article)] hover:underline"
               >
                 {showUrl ? "Hide" : "Show"}
               </button>
             </div>
-            <code className="text-xs font-mono text-[hsl(var(--muted-foreground))] bg-[#0a0a0f] border border-[#ffffff06] rounded-[8px] px-3 py-2 break-all">
+            <code className="break-all rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-3 py-2 text-xs font-mono text-[#b4ab9d]">
               {showUrl ? db.url : "••••••••••••"}
             </code>
           </div>

@@ -41,10 +41,10 @@ export function ConnectionTester({ onTest, className }: ConnectionTesterProps) {
         className={cn(
           "h-10 px-5 rounded-[10px] text-sm font-medium transition-all duration-200 cursor-pointer",
           state === "success"
-            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+            ? "border border-emerald-500/30 bg-emerald-500/15 text-emerald-300"
             : state === "error"
-              ? "bg-red-500/20 text-red-400 border border-red-500/30"
-              : "bg-[#1a1a24] text-[#f0f0f5] border border-[#ffffff12] hover:border-[#ffffff24]",
+              ? "border border-red-500/30 bg-red-500/15 text-red-300"
+              : "border border-[#d6c9b214] bg-[#ffffff05] text-[#f2ede5] hover:border-[#d6c9b233]",
           state === "testing" && "opacity-70"
         )}
       >
@@ -71,7 +71,7 @@ export function ConnectionTester({ onTest, className }: ConnectionTesterProps) {
 
       {/* pgvector status */}
       {state === "success" && !pgvector && (
-        <div className="flex items-start gap-2 text-xs text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+        <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-300/90">
           <svg className="w-4 h-4 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
             <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
@@ -86,12 +86,12 @@ export function ConnectionTester({ onTest, className }: ConnectionTesterProps) {
       )}
 
       {state === "success" && pgvector && (
-        <p className="text-xs text-emerald-400/80">pgvector detected — semantic search enabled</p>
+        <p className="text-xs text-emerald-300/90">pgvector detected: semantic search enabled</p>
       )}
 
       {/* Error message */}
       {state === "error" && error && (
-        <p className="text-xs text-red-400/80 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+        <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300/90">
           {error}
         </p>
       )}
