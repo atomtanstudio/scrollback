@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, DM_Sans } from "next/font/google";
-import { AuthProvider } from "@/components/session-provider";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -28,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${plusJakarta.variable} ${dmSans.variable} font-sans bg-glow`}>
-        <AuthProvider>{children}</AuthProvider>
+        {children}
       </body>
     </html>
   );

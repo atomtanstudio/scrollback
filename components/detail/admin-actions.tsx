@@ -1,7 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Trash2, RefreshCw } from "lucide-react";
 import { ItemEditDialog } from "@/components/admin/item-edit-dialog";
@@ -22,17 +21,24 @@ interface AdminActionsProps {
 }
 
 const btnClass =
-  "flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-medium bg-[#111118] border border-[#ffffff0a] text-[#8888aa] hover:text-[#f0f0f5] hover:border-[#ffffff24] transition-colors";
+  "flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-medium bg-[#111118] border border-[#ffffff0a] text-[#8888aa] hover:text-[#f0f0f5] hover:border-[#ffffff24] transition-colors cursor-pointer";
 
 export function AdminActions({ item }: AdminActionsProps) {
-  const { status } = useSession();
   const router = useRouter();
+  const [isAuthed, setIsAuthed] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
   const [reprocessStatus, setReprocessStatus] = useState<string | null>(null);
 
-  if (status !== "authenticated") return null;
+  useEffect(() => {
+    fetch("/api/auth/session", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => setIsAuthed(!!d?.user))
+      .catch(() => setIsAuthed(false));
+  }, []);
+
+  if (!isAuthed) return null;
 
   const adminItem: AdminItem = {
     id: item.id,

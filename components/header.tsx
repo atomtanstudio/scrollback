@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
+import { useState, useEffect } from "react";
 import { Settings, LogOut, Shield } from "lucide-react";
 
 interface HeaderProps {
@@ -9,7 +9,27 @@ interface HeaderProps {
 }
 
 export function Header({ captureCount }: HeaderProps) {
-  const { data: session } = useSession();
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/session", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => setIsAuthed(!!d?.user))
+      .catch(() => setIsAuthed(false));
+  }, []);
+
+  const handleLogout = async () => {
+    // Get CSRF token and sign out
+    const csrfRes = await fetch("/api/auth/csrf");
+    const { csrfToken } = await csrfRes.json();
+    await fetch("/api/auth/signout", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ csrfToken }),
+      credentials: "include",
+    });
+    window.location.href = "/";
+  };
 
   return (
     <header className="flex items-center justify-between py-6">
@@ -28,7 +48,7 @@ export function Header({ captureCount }: HeaderProps) {
             {captureCount.toLocaleString()} captures
           </span>
         )}
-        {session ? (
+        {isAuthed && (
           <>
             <Link
               href="/admin"
@@ -38,14 +58,15 @@ export function Header({ captureCount }: HeaderProps) {
               <Shield size={18} />
             </Link>
             <button
-              onClick={() => signOut()}
-              className="text-[#555566] hover:text-[#f0f0f5] transition-colors"
+              onClick={handleLogout}
+              className="text-[#555566] hover:text-[#f0f0f5] transition-colors cursor-pointer"
               aria-label="Logout"
             >
               <LogOut size={18} />
             </button>
           </>
-        ) : (
+        )}
+        {isAuthed === false && (
           <Link
             href="/login"
             className="text-[13px] text-[#555566] hover:text-[#f0f0f5] transition-colors"
