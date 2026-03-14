@@ -16,7 +16,7 @@ document.addEventListener('feedsilo-api-response', (event) => {
   try {
     const data = JSON.parse(event.detail);
     extractTweetsFromApiResponse(data);
-  } catch (e) {
+  } catch {
     // Silently ignore parse errors
   }
 });
@@ -278,18 +278,29 @@ const VIDEO_TOOLS = [
   "ltx\\s*(?:video|studio)", "domo\\s*ai", "viggle(?:\\s*ai)?",
 ];
 
-const ALL_TOOLS = [...IMAGE_TOOLS, ...VIDEO_TOOLS];
-const GEN_BEFORE = "(?:generated|created|made|built|rendered|produced|powered)\\s+(?:with|using|by|in|via|on|from)";
-const GEN_AFTER = "(?:generation|generated\\s+(?:this|image|video|clip|art|photo|animation)|prompt|output|render(?:ed)?|result)";
 const PROMPT_LANG = [
   /\bprompt\s*:/i,
   /\b(?:image|video)\s+prompt\b/i,
   /\bhere(?:'s| is) (?:the|my) prompt\b/i,
   /\bprompt (?:I |i )used\b/i,
   /\bsharing (?:the|my) prompt\b/i,
-  /\bai[\s-]?(?:generated|art|image|video|animation)\b/i,
-  /\btext[\s-]?to[\s-]?(?:image|video)\b/i,
 ];
+
+function hasExplicitPromptSnippet(text) {
+  const normalized = (text || '').replace(/\s+/g, ' ').trim();
+  const directPatterns = [
+    /(?:^|\b)(?:image|video)?\s*prompt\s*:\s*(.{20,400})/i,
+    /\bhere(?:'s| is) (?:the|my) prompt\b[:\s-]*(.{20,400})/i,
+    /\bprompt (?:i|I) used\b[:\s-]*(.{20,400})/i,
+    /\bsharing (?:the|my) prompt\b[:\s-]*(.{20,400})/i,
+  ];
+
+  return directPatterns.some((pattern) => {
+    const match = normalized.match(pattern);
+    if (!match || !match[1]) return false;
+    return match[1].trim().split(/\s+/).filter(Boolean).length >= 5;
+  });
+}
 
 function detectSourceType(bodyText, mediaUrls, isArticle, isThread) {
   if (isArticle) return 'article';
@@ -305,27 +316,13 @@ function detectSourceType(bodyText, mediaUrls, isArticle, isThread) {
     }
   }
 
-  // Level 2: Tool name + generation context
+  // Level 2: Explicit prompt-sharing
   const imageGroup = IMAGE_TOOLS.join('|');
   const videoGroup = VIDEO_TOOLS.join('|');
-  const allGroup = ALL_TOOLS.join('|');
-
-  // Video tools with context
-  if (hasVideo) {
-    if (new RegExp(`(?:${GEN_BEFORE})\\s+(?:${videoGroup})`, 'i').test(bodyText) ||
-        new RegExp(`\\b(?:${videoGroup})\\s+(?:${GEN_AFTER})`, 'i').test(bodyText)) {
-      return 'video_prompt';
-    }
-  }
-  // Image tools with context
-  if (new RegExp(`(?:${GEN_BEFORE})\\s+(?:${imageGroup})`, 'i').test(bodyText) ||
-      new RegExp(`\\b(?:${imageGroup})\\s+(?:${GEN_AFTER})`, 'i').test(bodyText)) {
-    return 'image_prompt';
-  }
-  // Any tool with context
-  if (new RegExp(`(?:${GEN_BEFORE})\\s+(?:${allGroup})`, 'i').test(bodyText) ||
-      new RegExp(`\\b(?:${allGroup})\\s+(?:${GEN_AFTER})`, 'i').test(bodyText)) {
-    return hasVideo ? 'video_prompt' : 'image_prompt';
+  if (hasExplicitPromptSnippet(bodyText)) {
+    return (hasVideo || new RegExp(`\\b(?:${videoGroup})\\b`, 'i').test(bodyText))
+      ? 'video_prompt'
+      : 'image_prompt';
   }
 
   // Level 3: Prompt-sharing language + tool mention
@@ -336,8 +333,8 @@ function detectSourceType(bodyText, mediaUrls, isArticle, isThread) {
     if (new RegExp(`\\b(?:${videoGroup})\\b`, 'i').test(bodyText)) return hasVideo ? 'video_prompt' : 'image_prompt';
   }
 
-  // Level 4: Bare tool mentions are NOT enough.
-  // "I used Kling video animations" in a tutorial ≠ video_prompt
+  // Level 4: Tool mentions/showcase language are NOT enough.
+  // "Generated with Midjourney" or "made with Kling" without the prompt ≠ art prompt
   return 'tweet';
 }
 
@@ -1078,7 +1075,7 @@ async function startBulkCapture(useApi = false) {
   bulkStats = { total: 0, captured: 0, skipped: 0, errors: 0 };
   processedIds.clear();
 
-  const hud = createHUD();
+  createHUD();
 
   // Show API mode indicator in HUD
   if (useApi) {

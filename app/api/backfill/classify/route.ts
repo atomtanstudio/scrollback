@@ -3,6 +3,7 @@ import { getSearchProvider } from "@/lib/db/search-provider";
 import { generateEmbedding, classifyContent, describeImage } from "@/lib/embeddings/gemini";
 import { isR2Configured } from "@/lib/storage/r2";
 import { downloadAndStoreMedia } from "@/lib/storage/download";
+import { isLikelyVisualPromptText } from "@/lib/visual-prompt";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 min max for serverless
@@ -95,6 +96,12 @@ export async function GET(request: Request) {
                 ai_summary: classification.ai_summary || null,
               };
 
+              const canPromoteToArt =
+                classification.has_prompt &&
+                !!classification.prompt_text &&
+                isLikelyVisualPromptText(classification.prompt_text) &&
+                classification.confidence >= 0.7;
+
               if (classification.has_prompt) {
                 updateData.has_prompt = true;
                 updateData.prompt_text = classification.prompt_text;
@@ -102,7 +109,7 @@ export async function GET(request: Request) {
                   updateData.prompt_type = classification.prompt_type;
                 }
                 // Only upgrade source_type with high confidence
-                if (classification.confidence >= 0.7) {
+                if (canPromoteToArt) {
                   if (classification.prompt_type === "image" && item.source_type === "tweet") {
                     updateData.source_type = "image_prompt";
                   } else if (classification.prompt_type === "video" && item.source_type === "tweet") {

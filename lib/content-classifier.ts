@@ -4,12 +4,12 @@
  * Determines whether a tweet/post is a regular tweet, an AI image prompt,
  * or an AI video prompt based on body text + media presence.
  *
- * Key principle: bare tool name mentions are NOT enough. We require either:
- *   1. Strong prompt syntax (Midjourney --ar, /imagine, etc.)
- *   2. Tool name + generation context ("made with Kling", "Sora generated this")
- *   3. Tool name + prompt-sharing language ("prompt:", JSON with prompt keys)
- *   4. Technical generation parameters (CFG scale, seed, sampler, etc.)
+ * Key principle: "generated with Tool X" is NOT the same as an actual prompt.
+ * We only classify visual prompt posts when the post shows prompt syntax or
+ * explicitly shares the prompt text.
  */
+
+import { hasExplicitPromptSnippet } from "@/lib/visual-prompt";
 
 // --- Tool name lists (keep alphabetical within tiers) ---
 
@@ -79,8 +79,6 @@ const VIDEO_TOOLS_TIER2 = [
 // Combine for regex building
 const ALL_IMAGE_TOOLS = [...IMAGE_TOOLS_TIER1, ...IMAGE_TOOLS_TIER2];
 const ALL_VIDEO_TOOLS = [...VIDEO_TOOLS_TIER1, ...VIDEO_TOOLS_TIER2];
-const ALL_TOOLS = [...ALL_IMAGE_TOOLS, ...ALL_VIDEO_TOOLS];
-
 // --- Strong prompt syntax (high confidence, no context needed) ---
 
 const STRONG_PROMPT_PATTERNS = [
@@ -111,29 +109,6 @@ const STRONG_PROMPT_PATTERNS = [
   /\bt2v\b/,
 ];
 
-// --- Generation context phrases ---
-// These must appear near a tool name to trigger classification
-
-const GEN_CONTEXT_BEFORE = [
-  "generated\\s+(?:with|using|by|in|via|on|from)",
-  "created\\s+(?:with|using|by|in|via|on)",
-  "made\\s+(?:with|using|by|in|via|on)",
-  "built\\s+(?:with|using|by|in|via)",
-  "rendered\\s+(?:with|using|by|in|via)",
-  "produced\\s+(?:with|using|by|in|via)",
-  "powered\\s+by",
-  "prompt(?:ed)?\\s+(?:with|in|on|for|using)",
-];
-
-const GEN_CONTEXT_AFTER = [
-  "generation",
-  "generated\\s+(?:this|image|video|clip|art|photo|animation)",
-  "prompt",
-  "output",
-  "render(?:ed)?",
-  "result",
-];
-
 // Prompt-sharing language (standalone indicators when combined with media)
 const PROMPT_SHARING_PATTERNS = [
   /\bprompt\s*:/i,
@@ -141,31 +116,7 @@ const PROMPT_SHARING_PATTERNS = [
   /\bhere(?:'s| is) (?:the|my) prompt\b/i,
   /\bprompt (?:I |i )used\b/i,
   /\bsharing (?:the|my) prompt\b/i,
-  /\bai[\s-]?generated\s+(?:art|image|video|animation|photo|picture)\b/i,
-  /\btext[\s-]?to[\s-]?(?:image|video)\b/i,
 ];
-
-/**
- * Build a regex that matches: <generation context> ... <tool name>
- * or: <tool name> ... <generation context>
- * with up to ~60 chars between them (roughly same sentence).
- */
-function buildContextualToolRegex(toolPatterns: string[], contextBefore: string[], contextAfter: string[]): RegExp[] {
-  const toolGroup = toolPatterns.join("|");
-  const beforeGroup = contextBefore.join("|");
-  const afterGroup = contextAfter.join("|");
-
-  return [
-    // Context before tool: "generated with Midjourney"
-    new RegExp(`(?:${beforeGroup})\\s+(?:${toolGroup})`, "i"),
-    // Tool before context: "Midjourney generation", "Sora generated this"
-    new RegExp(`\\b(?:${toolGroup})\\s+(?:${afterGroup})`, "i"),
-  ];
-}
-
-const IMAGE_CONTEXTUAL = buildContextualToolRegex(ALL_IMAGE_TOOLS, GEN_CONTEXT_BEFORE, GEN_CONTEXT_AFTER);
-const VIDEO_CONTEXTUAL = buildContextualToolRegex(ALL_VIDEO_TOOLS, GEN_CONTEXT_BEFORE, GEN_CONTEXT_AFTER);
-const ANY_CONTEXTUAL = buildContextualToolRegex(ALL_TOOLS, GEN_CONTEXT_BEFORE, GEN_CONTEXT_AFTER);
 
 /**
  * Detect if text contains a tool name (bare mention — used only as a secondary signal).
@@ -213,22 +164,10 @@ export function classifySourceType(
     }
   }
 
-  // --- Level 2: Tool name + generation context ---
-  // Check video tools first (if has video media)
-  if (hasVideo) {
-    for (const re of VIDEO_CONTEXTUAL) {
-      if (re.test(bodyText)) return "video_prompt";
-    }
-  }
-  // Check image tools
-  for (const re of IMAGE_CONTEXTUAL) {
-    if (re.test(bodyText)) return "image_prompt";
-  }
-  // Any tool with generation context
-  for (const re of ANY_CONTEXTUAL) {
-    if (re.test(bodyText)) {
-      return hasVideo ? "video_prompt" : "image_prompt";
-    }
+  // --- Level 2: Explicit prompt-sharing ---
+  if (hasExplicitPromptSnippet(bodyText)) {
+    if (hasVideo || mentionsVideoTool(bodyText)) return "video_prompt";
+    return "image_prompt";
   }
 
   // --- Level 3: Prompt-sharing language + tool mention ---
@@ -239,9 +178,9 @@ export function classifySourceType(
     if (mentionsVideoTool(bodyText)) return hasVideo ? "video_prompt" : "image_prompt";
   }
 
-  // --- Level 4: Bare tool mentions are NOT enough ---
-  // A tweet saying "I used Kling video animations" in a tutorial is NOT a video_prompt.
-  // We intentionally do NOT match bare tool names without generation context.
+  // --- Level 4: Tool mentions/showcase language are NOT enough ---
+  // "Generated with Midjourney" or "made with Kling" without the actual prompt
+  // is still just a tweet for this classifier.
 
   return "tweet";
 }

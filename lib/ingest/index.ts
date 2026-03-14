@@ -7,6 +7,7 @@ import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { CapturePayload, CaptureResult } from "@/lib/db/types";
 import { isR2Configured } from "@/lib/storage/r2";
 import { downloadAndStoreMedia } from "@/lib/storage/download";
+import { isLikelyVisualPromptText } from "@/lib/visual-prompt";
 
 function sanitizeText(s: string | null | undefined): string | null {
   if (!s) return null;
@@ -303,6 +304,12 @@ async function indexAndClassifyInBackground(
           processing_status: "indexed",
         };
 
+        const canPromoteToArt =
+          classification.has_prompt &&
+          !!classification.prompt_text &&
+          isLikelyVisualPromptText(classification.prompt_text) &&
+          classification.confidence >= 0.7;
+
         if (classification.has_prompt) {
           updateData.has_prompt = true;
           updateData.prompt_text = classification.prompt_text;
@@ -310,7 +317,7 @@ async function indexAndClassifyInBackground(
             updateData.prompt_type = classification.prompt_type;
           }
           // Reclassify source_type if Gemini detected an image/video prompt with high confidence
-          if (classification.confidence >= 0.7) {
+          if (canPromoteToArt) {
             if (classification.prompt_type === "image" && sourceType === "tweet") {
               updateData.source_type = "image_prompt";
             } else if (classification.prompt_type === "video" && sourceType === "tweet") {

@@ -63,6 +63,7 @@ Instructions:
    - Marketing prompts, business strategy prompts, or content calendar prompts
    - General instructions or tips for using AI tools (unless they include an actual image/video generation prompt)
    - Tweets that merely DISCUSS or REVIEW AI image/video tools without sharing an actual generation prompt
+   - Showcase posts that say things like "generated with Midjourney/Flux/Kling/Sora" or "AI-generated image/video" but do NOT include the actual prompt text
 6. If it contains an actual image/video generation prompt, extract the prompt text and classify its type as "image" or "video" only
 7. Rate your confidence (0.0-1.0) in the prompt detection specifically
 

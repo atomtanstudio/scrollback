@@ -24,6 +24,10 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
   }
 
   const excludeFilter = excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {};
+  const nonThreadWhere = {
+    ...excludeFilter,
+    ...(Object.keys(baseWhere).length > 0 ? { AND: [baseWhere, { source_type: { not: "thread" } }] } : { source_type: { not: "thread" } }),
+  };
 
   const include = {
     media_items: true,
@@ -41,7 +45,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
     type === "thread"
       ? Promise.resolve([])
       : prisma.contentItem.findMany({
-          where: { ...baseWhere, source_type: { not: "thread" }, ...excludeFilter },
+          where: nonThreadWhere,
           include,
           orderBy: { created_at: "desc" },
           take: batchSize,

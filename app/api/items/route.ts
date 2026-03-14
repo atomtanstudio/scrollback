@@ -24,7 +24,11 @@ export async function GET(request: NextRequest) {
   const where: Record<string, unknown> = {
     processing_status: { not: "error" },
   };
-  if (type) where.source_type = type;
+  if (type === "art") {
+    where.source_type = { in: ["image_prompt", "video_prompt"] };
+  } else if (type) {
+    where.source_type = type;
+  }
 
   const prisma = await getClient();
   const [items, total] = await Promise.all([
