@@ -163,12 +163,21 @@ export function DataTable({
               </TableCell>
               <TableCell>
                 {item.thumbnail ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={getMediaDisplayUrl(item.thumbnail, "")}
-                    alt=""
-                    className="h-10 w-10 rounded-md object-cover"
-                  />
+                  item.thumbnail.endsWith(".mp4") ? (
+                    <video
+                      src={getMediaDisplayUrl(item.thumbnail, "")}
+                      muted
+                      preload="metadata"
+                      className="h-10 w-10 rounded-md object-cover"
+                    />
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={getMediaDisplayUrl(item.thumbnail, "")}
+                      alt=""
+                      className="h-10 w-10 rounded-md object-cover"
+                    />
+                  )
                 ) : (
                   <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[#0a0a0f]">
                     <FileText className="h-4 w-4 text-[#555566]" />

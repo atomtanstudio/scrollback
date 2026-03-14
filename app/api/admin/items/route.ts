@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         original_url: true,
         posted_at: true,
         created_at: true,
-        media_items: { take: 1, select: { original_url: true, stored_path: true, media_type: true } },
+        media_items: { select: { original_url: true, stored_path: true, media_type: true } },
       },
       orderBy: { created_at: "desc" },
       skip,
@@ -54,7 +54,13 @@ export async function GET(request: NextRequest) {
     items: items.map((item: any) => ({
       ...item,
       body_preview: item.body_text?.substring(0, 150) || "",
-      thumbnail: item.media_items[0]?.stored_path || item.media_items[0]?.original_url || null,
+      thumbnail: (() => {
+        // Prefer an image over a video for the thumbnail
+        const img = item.media_items.find((m: any) => m.media_type === "image" || m.media_type === "gif");
+        const first = img || item.media_items[0];
+        if (!first) return null;
+        return first.stored_path || first.original_url || null;
+      })(),
     })),
     total,
     page,
