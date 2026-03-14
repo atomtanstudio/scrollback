@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { getClient } from "@/lib/db/client";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
   providers: [
     Credentials({
       credentials: {
@@ -13,25 +14,46 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const db = await getClient();
-        const user = await db.user.findUnique({
-          where: { email: credentials.email as string },
-        });
+        try {
+          const db = await getClient();
+          const user = await db.user.findUnique({
+            where: { email: credentials.email as string },
+          });
 
-        if (!user) return null;
+          if (!user) return null;
 
-        const valid = await bcrypt.compare(
-          credentials.password as string,
-          user.password_hash
-        );
+          const valid = await bcrypt.compare(
+            credentials.password as string,
+            user.password_hash
+          );
 
-        if (!valid) return null;
+          if (!valid) return null;
 
-        return { id: user.id, email: user.email };
+          return { id: user.id, email: user.email };
+        } catch (err) {
+          console.error("Auth error:", err);
+          return null;
+        }
       },
     }),
   ],
   session: { strategy: "jwt" },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.email = token.email as string;
+      }
+      return session;
+    },
+  },
   pages: {
     signIn: "/login",
   },

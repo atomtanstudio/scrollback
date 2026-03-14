@@ -29,7 +29,8 @@ export function LoginForm() {
       if (result?.error) {
         setError("Invalid email or password");
       } else {
-        router.push(callbackUrl);
+        // Full page navigation to ensure session cookie is picked up
+        window.location.href = callbackUrl;
       }
     } catch {
       setError("Something went wrong. Please try again.");
