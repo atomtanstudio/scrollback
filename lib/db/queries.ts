@@ -22,42 +22,61 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
     }
   }
 
-  const where = excludeIds.length > 0
-    ? { ...baseWhere, id: { notIn: excludeIds } }
-    : baseWhere;
+  const excludeFilter = excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {};
 
-  // Fetch more than needed so we have enough after thread deduplication
-  const [rawItems, totalCount] = await Promise.all([
-    prisma.contentItem.findMany({
-      where,
-      include: {
-        media_items: true,
-        categories: { include: { category: true } },
-        tags: { include: { tag: true } },
-      },
-      orderBy: { created_at: "desc" },
-      take: limit * 3,
-    }),
+  const include = {
+    media_items: true,
+    categories: { include: { category: true } },
+    tags: { include: { tag: true } },
+  };
+
+  // Fetch non-thread items and deduplicated thread items separately, then merge.
+  // This avoids the problem where a single thread with 100 replies drowns out
+  // all other content when fetching a flat list.
+  const isThreadFilter = type === "thread" || !type;
+
+  const [nonThreadItems, threadItems, totalCount] = await Promise.all([
+    // Non-thread items (skip if filtering to threads only)
+    type === "thread"
+      ? Promise.resolve([])
+      : prisma.contentItem.findMany({
+          where: { ...baseWhere, source_type: { not: "thread" }, ...excludeFilter },
+          include,
+          orderBy: { created_at: "desc" },
+          take: limit,
+        }),
+    // One representative item per thread (via DISTINCT ON conversation_id)
+    isThreadFilter
+      ? (prisma.$queryRawUnsafe(
+          `SELECT DISTINCT ON (conversation_id) id
+           FROM content_items
+           WHERE source_type = 'thread'
+             ${excludeIds.length > 0 ? `AND id NOT IN (${excludeIds.map((_, i) => `$${i + 1}`).join(",")})` : ""}
+           ORDER BY conversation_id, created_at DESC
+           LIMIT $${excludeIds.length + 1}`,
+          ...excludeIds,
+          limit,
+        ) as Promise<Array<{ id: string }>>).then(async (rows) => {
+          if (rows.length === 0) return [];
+          return prisma.contentItem.findMany({
+            where: { id: { in: rows.map((r) => r.id) } },
+            include,
+            orderBy: { created_at: "desc" },
+          });
+        })
+      : Promise.resolve([]),
     prisma.contentItem.count({ where: baseWhere }),
   ]);
 
-  // Deduplicate threads: for items sharing a conversation_id, keep only the
-  // earliest one (the root tweet). Non-thread items pass through unchanged.
-  const seenConversations = new Set<string>();
-  const items = [];
-  for (const item of rawItems) {
-    if (item.conversation_id && item.source_type === "thread") {
-      if (seenConversations.has(item.conversation_id)) continue;
-      seenConversations.add(item.conversation_id);
-    }
-    items.push(item);
-    if (items.length >= limit) break;
-  }
+  // Merge and sort by created_at descending, then take the requested limit
+  const merged = [...nonThreadItems, ...threadItems]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, limit);
 
-  const loadedCount = excludeIds.length + items.length;
+  const loadedCount = excludeIds.length + merged.length;
   const hasMore = loadedCount < totalCount;
 
-  return { items, hasMore, totalCount };
+  return { items: merged, hasMore, totalCount };
 }
 
 export async function fetchStats() {
