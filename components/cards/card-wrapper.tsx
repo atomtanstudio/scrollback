@@ -58,7 +58,7 @@ export function CardWrapper({ type, children, className, noPadding, href }: Card
 
   if (href) {
     return (
-      <Link href={href} className={cn(outerClasses, "block no-underline text-inherit")}>
+      <Link href={href} prefetch={false} className={cn(outerClasses, "block no-underline text-inherit")}>
         {content}
       </Link>
     );

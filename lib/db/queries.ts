@@ -10,6 +10,7 @@ export interface FetchItemsOptions {
 export async function fetchItems(options: FetchItemsOptions = {}) {
   const prisma = await getClient();
   const { limit = 50, type, excludeIds = [] } = options;
+  const batchSize = limit + 1;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const baseWhere: any = {};
@@ -43,7 +44,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
           where: { ...baseWhere, source_type: { not: "thread" }, ...excludeFilter },
           include,
           orderBy: { created_at: "desc" },
-          take: limit,
+          take: batchSize,
         }),
     // One thread per author: the same thread can be captured multiple times
     // from different entry points, yielding different conversation_ids.
@@ -63,7 +64,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
            ORDER BY author_handle, created_at DESC
            LIMIT $${excludeIds.length + 1}`,
           ...excludeIds,
-          limit,
+          batchSize,
         ) as Promise<Array<{ id: string }>>).then(async (rows) => {
           if (rows.length === 0) return [];
           return prisma.contentItem.findMany({
@@ -76,13 +77,12 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
     prisma.contentItem.count({ where: baseWhere }),
   ]);
 
-  // Merge and sort by created_at descending, then take the requested limit
-  const merged = [...nonThreadItems, ...threadItems]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, limit);
-
-  const loadedCount = excludeIds.length + merged.length;
-  const hasMore = loadedCount < totalCount;
+  // Merge and sort by created_at descending, then trim to the requested batch size.
+  // `hasMore` must be based on the deduplicated feed result, not raw content row counts.
+  const mergedCandidates = [...nonThreadItems, ...threadItems]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const hasMore = mergedCandidates.length > limit;
+  const merged = mergedCandidates.slice(0, limit);
 
   return { items: merged, hasMore, totalCount };
 }

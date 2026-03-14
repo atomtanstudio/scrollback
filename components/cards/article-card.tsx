@@ -1,6 +1,7 @@
 "use client";
 
 import { CardWrapper } from "./card-wrapper";
+import { VideoPoster } from "./video-poster";
 import { formatTimeAgo } from "@/lib/format";
 import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { ContentItemWithMedia } from "@/lib/db/types";
@@ -27,9 +28,14 @@ export function ArticleCard({ item, href }: ArticleCardProps) {
         {thumbnail?.stored_path || thumbnail?.original_url ? (
           <>
             {thumbnail.media_type === "video" ? (
-              <video src={getMediaDisplayUrl(thumbnail.stored_path, thumbnail.original_url)} muted preload="metadata" className="w-full h-full object-cover object-top" />
+              <VideoPoster
+                src={getMediaDisplayUrl(thumbnail.stored_path, thumbnail.original_url)}
+                alt={thumbnail.alt_text || item.title}
+                className="w-full h-full object-cover object-top"
+                fallbackClassName="w-full h-full bg-gradient-to-br from-[#1a1a2e] to-[#16213e]"
+              />
             ) : (
-              <img src={getMediaDisplayUrl(thumbnail.stored_path, thumbnail.original_url)} alt={thumbnail.alt_text || item.title} className="w-full h-full object-cover object-top" />
+              <img src={getMediaDisplayUrl(thumbnail.stored_path, thumbnail.original_url)} alt={thumbnail.alt_text || item.title} loading="lazy" decoding="async" className="w-full h-full object-cover object-top" />
             )}
             {thumbnail.media_type === "video" && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

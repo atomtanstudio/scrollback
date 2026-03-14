@@ -21,7 +21,7 @@ export function ThreadCard({ item, href }: ThreadCardProps) {
     <CardWrapper type="thread" href={href}>
       <div className="flex items-center gap-2.5 mb-3">
         {item.author_avatar_url ? (
-          <img src={item.author_avatar_url} alt="" className="w-9 h-9 rounded-full flex-shrink-0" />
+          <img src={item.author_avatar_url} alt="" loading="lazy" decoding="async" className="w-9 h-9 rounded-full flex-shrink-0" />
         ) : (
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2a2a3a] to-[#3a3a4a] flex-shrink-0 flex items-center justify-center text-sm text-[#555566]">
             {initials}

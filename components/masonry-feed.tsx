@@ -9,6 +9,7 @@ import type { ContentItemWithMedia } from "@/lib/db/types";
 interface MasonryFeedProps {
   initialItems: ContentItemWithMedia[];
   totalCount: number;
+  initialHasMore?: boolean;
   type?: string;
 }
 
@@ -20,11 +21,14 @@ function filterByType(items: ContentItemWithMedia[], type?: string): ContentItem
   return items.filter(i => i.source_type === type);
 }
 
-export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: MasonryFeedProps) {
-  const [items, setItems] = useState(() => filterByType(initialItems, type));
+export function MasonryFeed({ initialItems, totalCount: initialTotal, initialHasMore, type }: MasonryFeedProps) {
+  const filteredInitialItems = filterByType(initialItems, type);
+  const [items, setItems] = useState(() => filteredInitialItems);
   const [, setTotalCount] = useState(initialTotal);
-  const [hasMore, setHasMore] = useState(initialItems.length < initialTotal);
+  const [hasMore, setHasMore] = useState(initialHasMore ?? (filteredInitialItems.length < initialTotal));
   const [isLoading, setIsLoading] = useState(false);
+  const [hasMeasuredLayout, setHasMeasuredLayout] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(0);
@@ -35,8 +39,9 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: Ma
 
   const { ref, inView } = useInView({
     threshold: 0,
-    rootMargin: "1000px",
+    rootMargin: "400px",
   });
+  const abortRef = useRef<AbortController | null>(null);
 
   // Responsive column count
   const updateColumnCount = useCallback(() => {
@@ -52,6 +57,27 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: Ma
     window.addEventListener("resize", updateColumnCount);
     return () => window.removeEventListener("resize", updateColumnCount);
   }, [updateColumnCount]);
+
+  useEffect(() => {
+    const markInteracted = () => setHasUserInteracted(true);
+    const markInteractedOnKey = (event: KeyboardEvent) => {
+      if (["ArrowDown", "PageDown", "End", " ", "j"].includes(event.key)) {
+        setHasUserInteracted(true);
+      }
+    };
+
+    window.addEventListener("wheel", markInteracted, { passive: true });
+    window.addEventListener("touchmove", markInteracted, { passive: true });
+    window.addEventListener("scroll", markInteracted, { passive: true });
+    window.addEventListener("keydown", markInteractedOnKey);
+
+    return () => {
+      window.removeEventListener("wheel", markInteracted);
+      window.removeEventListener("touchmove", markInteracted);
+      window.removeEventListener("scroll", markInteracted);
+      window.removeEventListener("keydown", markInteractedOnKey);
+    };
+  }, []);
 
   // Stable ref for item IDs
   const itemIdsRef = useRef<string[]>([]);
@@ -80,6 +106,7 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: Ma
 
     setPositions(newPositions);
     setContainerHeight(Math.max(...columnHeights));
+    setHasMeasuredLayout(true);
   }, [columnCount]);
 
   const layoutKey = `${items.map((i) => i.id).join(",")}_${columnCount}`;
@@ -113,9 +140,21 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: Ma
     };
   }, [calculatePositions]);
 
+  // Cancel in-flight load-more requests on unmount (e.g. during navigation)
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
   // Load more via API with excludeIds
   const loadMore = useCallback(async () => {
     if (!hasMore || isLoading) return;
+
+    // Abort any previous in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     setIsLoading(true);
     try {
@@ -126,7 +165,10 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: Ma
       });
       if (type) params.set("type", type);
 
-      const res = await fetch(`/api/items?${params}`);
+      const res = await fetch(`/api/items?${params}`, {
+        signal: controller.signal,
+      });
+      if (!res.ok) return;
       const data = await res.json();
 
       const newItems = data.items.filter(
@@ -134,30 +176,40 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, type }: Ma
         (item: any) => !loadedIds.includes(item.id)
       );
 
+      if (newItems.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      setHasMeasuredLayout(false);
       setItems((prev) => [...prev, ...newItems]);
-      setHasMore(data.hasMore);
+      setHasMore(Boolean(data.hasMore));
       setTotalCount(data.totalCount);
+    } catch {
+      // Silently ignore fetch errors (e.g. during page navigation/unload)
     } finally {
       setIsLoading(false);
     }
   }, [hasMore, isLoading, items, type]);
 
   useEffect(() => {
-    if (inView && hasMore && !isLoading) loadMore();
-  }, [inView, loadMore, hasMore, isLoading]);
+    if (hasUserInteracted && hasMeasuredLayout && inView && hasMore && !isLoading) loadMore();
+  }, [hasUserInteracted, hasMeasuredLayout, inView, loadMore, hasMore, isLoading]);
 
   // Reset on type filter change
   const prevTypeRef = useRef(type);
   useEffect(() => {
     if (prevTypeRef.current !== type) {
       prevTypeRef.current = type;
-      setItems(initialItems);
-      setHasMore(initialItems.length < initialTotal);
+      setItems(filteredInitialItems);
+      setHasMore(initialHasMore ?? (filteredInitialItems.length < initialTotal));
       setTotalCount(initialTotal);
+      setHasMeasuredLayout(false);
+      setContainerHeight(0);
       setPositions(new Map());
       calculatedIdsRef.current = "";
     }
-  }, [type, initialItems, initialTotal]);
+  }, [type, filteredInitialItems, initialHasMore, initialTotal]);
 
   const setItemRef = useCallback((id: string, el: HTMLDivElement | null) => {
     if (el) itemRefs.current.set(id, el);

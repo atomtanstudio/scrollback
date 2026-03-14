@@ -12,11 +12,12 @@ import type { ContentItemWithMedia } from "@/lib/db/types";
 interface HomePageProps {
   initialItems: ContentItemWithMedia[];
   totalCount: number;
+  initialHasMore: boolean;
   stats: { total: number; tweets: number; threads: number; articles: number; art: number };
   isAuthed: boolean;
 }
 
-export function HomePage({ initialItems, totalCount, stats, isAuthed }: HomePageProps) {
+export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAuthed }: HomePageProps) {
   const [activeType, setActiveType] = useState("");
   const [searchResults, setSearchResults] = useState<ContentItemWithMedia[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -114,6 +115,7 @@ export function HomePage({ initialItems, totalCount, stats, isAuthed }: HomePage
               key={activeType}
               initialItems={initialItems}
               totalCount={totalCount}
+              initialHasMore={initialHasMore}
               type={activeType || undefined}
             />
           </div>

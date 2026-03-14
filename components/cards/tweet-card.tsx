@@ -1,6 +1,7 @@
 "use client";
 
 import { CardWrapper } from "./card-wrapper";
+import { VideoPoster } from "./video-poster";
 import { formatTimeAgo } from "@/lib/format";
 import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { ContentItemWithMedia } from "@/lib/db/types";
@@ -28,9 +29,14 @@ export function TweetCard({ item, href }: TweetCardProps) {
         return (
           <div className="w-full h-[180px] rounded-t-[13px] overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#1a1a2e] to-[#16213e] relative">
             {media!.media_type === "video" ? (
-              <video src={url} muted preload="metadata" className="w-full h-full object-cover object-top" />
+              <VideoPoster
+                src={url}
+                alt={media!.alt_text || ""}
+                className="w-full h-full object-cover object-top"
+                fallbackClassName="w-full h-full bg-gradient-to-br from-[#1a1a2e] to-[#16213e]"
+              />
             ) : (
-              <img src={url} alt={media!.alt_text || ""} className="w-full h-full object-cover object-top" />
+              <img src={url} alt={media!.alt_text || ""} loading="lazy" decoding="async" className="w-full h-full object-cover object-top" />
             )}
             {media!.media_type === "video" && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -45,7 +51,7 @@ export function TweetCard({ item, href }: TweetCardProps) {
       <div className={hasMedia ? "px-5 py-3.5" : "p-5"}>
         <div className="flex items-center gap-2.5 mb-2.5">
           {item.author_avatar_url ? (
-            <img src={item.author_avatar_url} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
+            <img src={item.author_avatar_url} alt="" loading="lazy" decoding="async" className="w-8 h-8 rounded-full flex-shrink-0" />
           ) : (
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2a2a3a] to-[#3a3a4a] flex-shrink-0 flex items-center justify-center text-xs text-[#555566]">
               {initials}
