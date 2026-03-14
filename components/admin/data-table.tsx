@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import Image from "next/image";
+import { getMediaDisplayUrl } from "@/lib/media-url";
 import {
   Table,
   TableBody,
@@ -163,11 +163,10 @@ export function DataTable({
               </TableCell>
               <TableCell>
                 {item.thumbnail ? (
-                  <Image
-                    src={item.thumbnail}
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={getMediaDisplayUrl(item.thumbnail, "")}
                     alt=""
-                    width={40}
-                    height={40}
                     className="h-10 w-10 rounded-md object-cover"
                   />
                 ) : (
