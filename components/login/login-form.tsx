@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -45,13 +46,13 @@ export function LoginForm() {
 
   return (
     <div className="w-full max-w-[400px] bg-[var(--surface)] border border-[hsl(var(--border))] rounded-[14px] p-8">
-      {/* Logo */}
+      {/* Logo — links back to home */}
       <div className="text-center mb-6">
-        <span className="font-heading font-extrabold text-2xl tracking-tight text-[#f0f0f5]">
+        <Link href="/" className="font-heading font-extrabold text-2xl tracking-tight text-[#f0f0f5] hover:opacity-80 transition-opacity">
           feed
           <span className="text-[var(--accent-thread)]">.</span>
           silo
-        </span>
+        </Link>
       </div>
 
       {/* Heading */}

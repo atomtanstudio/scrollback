@@ -17,8 +17,14 @@ import { BulkActionsBar } from "@/components/admin/bulk-actions-bar";
 import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog";
 import { ItemEditDialog } from "@/components/admin/item-edit-dialog";
 import { ManualCaptureDialog } from "@/components/admin/manual-capture-dialog";
+import { Header } from "@/components/header";
 
-export function AdminPage() {
+interface AdminPageProps {
+  isAuthed: boolean;
+  captureCount: number;
+}
+
+export function AdminPage({ isAuthed, captureCount }: AdminPageProps) {
   const [items, setItems] = useState<AdminItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -151,9 +157,12 @@ export function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[var(--bg)] px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        {/* Header */}
+        {/* Site Header */}
+        <Header captureCount={captureCount} isAuthed={isAuthed} currentPath="/admin" />
+
+        {/* Page Header */}
         <div className="mb-8 flex items-center justify-between">
           <h1 className="font-heading text-3xl font-semibold text-[#f0f0f5]">
             Admin
