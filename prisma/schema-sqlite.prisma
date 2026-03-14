@@ -17,6 +17,7 @@ model ContentItem {
   title               String
   body_text           String
   body_html           String?
+  conversation_id     String?
   original_url        String?
   posted_at           DateTime?
   likes               Int?
@@ -36,11 +37,12 @@ model ContentItem {
   created_at          DateTime  @default(now())
   updated_at          DateTime  @default(now()) @updatedAt
 
-  media_items MediaItem[]
+  media_items Media[]
   categories  ContentCategory[]
   tags        ContentTag[]
 
   @@index([external_id])
+  @@index([conversation_id])
   @@index([content_hash])
   @@map("content_items")
 }
@@ -69,7 +71,7 @@ model Tag {
   @@map("tags")
 }
 
-model MediaItem {
+model Media {
   id                  String  @id @default(uuid())
   content_item_id     String
   content_item        ContentItem @relation(fields: [content_item_id], references: [id], onDelete: Cascade)
@@ -104,4 +106,27 @@ model ContentTag {
 
   @@id([content_item_id, tag_id])
   @@map("content_tags")
+}
+
+model XApiConnection {
+  id                String   @id @default(uuid())
+  x_user_id         String   @unique
+  x_username        String
+  access_token_enc  String
+  refresh_token_enc String
+  token_expires_at  DateTime
+  scopes            String
+  created_at        DateTime @default(now())
+  updated_at        DateTime @default(now()) @updatedAt
+
+  @@map("xapi_connections")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password_hash String
+  created_at    DateTime @default(now())
+
+  @@map("users")
 }
