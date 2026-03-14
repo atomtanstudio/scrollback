@@ -6,6 +6,7 @@ import { OnboardingLayout } from "./onboarding-layout";
 import { WelcomeStep } from "./steps/welcome-step";
 import { DatabaseStep, type DatabaseChoice } from "./steps/database-step";
 import { ConfigureStep } from "./steps/configure-step";
+import { AccountStep } from "./steps/account-step";
 import { GeminiStep } from "./steps/gemini-step";
 import { XApiStep } from "./steps/xapi-step";
 import { ExtensionStep } from "./steps/extension-step";
@@ -58,7 +59,7 @@ export function OnboardingPage() {
 
   const goNext = useCallback(() => {
     setDirection(1);
-    setStep((s) => Math.min(s + 1, 6));
+    setStep((s) => Math.min(s + 1, 7));
   }, []);
 
   const goBack = useCallback(() => {
@@ -78,7 +79,7 @@ export function OnboardingPage() {
   return (
     <OnboardingLayout
       currentStep={step}
-      totalSteps={6}
+      totalSteps={7}
       onBack={step > 1 ? goBack : undefined}
     >
       <AnimatePresence mode="wait" custom={direction}>
@@ -102,9 +103,10 @@ export function OnboardingPage() {
           {step === 3 && dbChoice && (
             <ConfigureStep dbType={dbChoice} onContinue={goNext} />
           )}
-          {step === 4 && <GeminiStep onContinue={goNext} />}
-          {step === 5 && <XApiStep onContinue={goNext} />}
-          {step === 6 && <ExtensionStep />}
+          {step === 4 && <AccountStep onContinue={goNext} />}
+          {step === 5 && <GeminiStep onContinue={goNext} />}
+          {step === 6 && <XApiStep onContinue={goNext} />}
+          {step === 7 && <ExtensionStep />}
         </motion.div>
       </AnimatePresence>
     </OnboardingLayout>
