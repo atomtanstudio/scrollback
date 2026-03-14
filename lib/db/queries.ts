@@ -45,14 +45,17 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
           orderBy: { created_at: "desc" },
           take: limit,
         }),
-    // One representative item per thread (via DISTINCT ON conversation_id)
+    // One root tweet per thread: pick the earliest item per conversation_id
+    // (the root tweet, not a reply). Uses posted_at so we get the original
+    // tweet date, falling back to created_at for items without posted_at.
     isThreadFilter
       ? (prisma.$queryRawUnsafe(
           `SELECT DISTINCT ON (conversation_id) id
            FROM content_items
            WHERE source_type = 'thread'
+             AND conversation_id IS NOT NULL
              ${excludeIds.length > 0 ? `AND id NOT IN (${excludeIds.map((_, i) => `$${i + 1}`).join(",")})` : ""}
-           ORDER BY conversation_id, created_at DESC
+           ORDER BY conversation_id, COALESCE(posted_at, created_at) ASC
            LIMIT $${excludeIds.length + 1}`,
           ...excludeIds,
           limit,
