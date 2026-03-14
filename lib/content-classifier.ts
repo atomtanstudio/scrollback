@@ -99,9 +99,9 @@ const STRONG_PROMPT_PATTERNS = [
   /\bsampler[\s:]+\w*(euler|dpm|ddim|uni_pc|heun)/i,
   /\bdenoising[\s_]?strength\b/i,
   /\bnegative[\s_]?prompt\b/i,
-  /\bcheckpoint[\s:]/i,
-  /\blora[\s:]/i,
-  /\bcontrolnet\b/i,
+  /\bcheckpoint[\s:].*(?:model|safetensors|ckpt)/i,
+  /\blora[\s:].*(?:weight|model|trigger|strength)/i,
+  /\bcontrolnet\s+(?:model|preprocessor|canny|depth|openpose)/i,
   /\btxt2img\b/i,
   /\bimg2img\b/i,
   /\btxt2vid\b/i,
@@ -141,7 +141,7 @@ const PROMPT_SHARING_PATTERNS = [
   /\bhere(?:'s| is) (?:the|my) prompt\b/i,
   /\bprompt (?:I |i )used\b/i,
   /\bsharing (?:the|my) prompt\b/i,
-  /\bai[\s-]?(?:generated|art|image|video|animation)\b/i,
+  /\bai[\s-]?generated\s+(?:art|image|video|animation|photo|picture)\b/i,
   /\btext[\s-]?to[\s-]?(?:image|video)\b/i,
 ];
 

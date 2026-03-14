@@ -56,9 +56,15 @@ Instructions:
 1. Assign 1-3 category slugs from the list above that best match this content
 2. Generate 3-8 descriptive tags (lowercase, hyphenated if multi-word)
 3. Write a 1-2 sentence summary for a display card
-4. Determine if this content contains an AI generation prompt (image/video/text generation prompt)
-5. If it contains a prompt, extract the prompt text and classify its type (image, video, or text)
-6. Rate your confidence (0.0-1.0) in the classification
+4. Determine if this content contains an AI IMAGE or VIDEO generation prompt — meaning a prompt specifically used with tools like Midjourney, DALL-E, Stable Diffusion, Flux, Ideogram, Firefly, Sora, Runway, Kling, Seedance, Pika, Luma, etc. to generate visual media.
+5. IMPORTANT: Do NOT mark as has_prompt if the content contains:
+   - Prompts for text AI assistants (ChatGPT, Claude, Gemini chat, OpenClaw/Clawdbot)
+   - Coding prompts or instructions for AI coding tools (Claude Code, Cursor, Copilot)
+   - Marketing prompts, business strategy prompts, or content calendar prompts
+   - General instructions or tips for using AI tools (unless they include an actual image/video generation prompt)
+   - Tweets that merely DISCUSS or REVIEW AI image/video tools without sharing an actual generation prompt
+6. If it contains an actual image/video generation prompt, extract the prompt text and classify its type as "image" or "video" only
+7. Rate your confidence (0.0-1.0) in the prompt detection specifically
 
 Return as JSON with this exact structure:
 {
@@ -104,7 +110,7 @@ Return as JSON with this exact structure:
         : [],
       has_prompt: !!parsed.has_prompt,
       prompt_text: parsed.has_prompt && typeof parsed.prompt_text === "string" ? parsed.prompt_text : null,
-      prompt_type: parsed.has_prompt && ["image", "video", "text"].includes(parsed.prompt_type)
+      prompt_type: parsed.has_prompt && ["image", "video"].includes(parsed.prompt_type)
         ? parsed.prompt_type
         : null,
       confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.5,

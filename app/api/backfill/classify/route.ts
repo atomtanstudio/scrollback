@@ -26,14 +26,20 @@ export async function GET(request: Request) {
   const mediaType = url.searchParams.get("type"); // optional: "image" or "video"
 
   const encoder = new TextEncoder();
+  let cancelled = false;
+
+  request.signal.addEventListener("abort", () => {
+    cancelled = true;
+  });
 
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data: Record<string, unknown>) => {
+        if (cancelled) return;
         try {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
         } catch {
-          // Stream may be closed
+          cancelled = true;
         }
       };
 
@@ -72,6 +78,7 @@ export async function GET(request: Request) {
           const categorySlugs = allCategories.map((c: { slug: string }) => c.slug);
 
           for (let i = 0; i < items.length; i++) {
+            if (cancelled) break;
             const item = items[i];
             try {
               const classification = await classifyContent(
@@ -94,10 +101,13 @@ export async function GET(request: Request) {
                 if (classification.prompt_type) {
                   updateData.prompt_type = classification.prompt_type;
                 }
-                if (classification.prompt_type === "image" && item.source_type === "tweet") {
-                  updateData.source_type = "image_prompt";
-                } else if (classification.prompt_type === "video" && item.source_type === "tweet") {
-                  updateData.source_type = "video_prompt";
+                // Only upgrade source_type with high confidence
+                if (classification.confidence >= 0.7) {
+                  if (classification.prompt_type === "image" && item.source_type === "tweet") {
+                    updateData.source_type = "image_prompt";
+                  } else if (classification.prompt_type === "video" && item.source_type === "tweet") {
+                    updateData.source_type = "video_prompt";
+                  }
                 }
               }
 
@@ -178,6 +188,7 @@ export async function GET(request: Request) {
           send({ phase: "embed", total, status: `Embedding ${total} items...` });
 
           for (let i = 0; i < unembedded.length; i++) {
+            if (cancelled) break;
             const item = unembedded[i];
             try {
               const text = [item.title, item.body_text, item.author_handle, item.author_display_name]
@@ -239,6 +250,7 @@ export async function GET(request: Request) {
           send({ phase: "media", total, status: `Downloading ${total} media items...` });
 
           for (let i = 0; i < mediaItems.length; i++) {
+            if (cancelled) break;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const m = mediaItems[i] as any;
             try {
@@ -284,6 +296,7 @@ export async function GET(request: Request) {
           send({ phase: "describe", total, status: `Describing ${total} images...` });
 
           for (let i = 0; i < images.length; i++) {
+            if (cancelled) break;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const img = images[i] as any;
             try {
@@ -331,8 +344,11 @@ export async function GET(request: Request) {
           done: true,
         });
       } finally {
-        controller.close();
+        try { controller.close(); } catch { /* already closed */ }
       }
+    },
+    cancel() {
+      cancelled = true;
     },
   });
 

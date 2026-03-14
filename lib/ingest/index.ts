@@ -309,11 +309,13 @@ async function indexAndClassifyInBackground(
           if (classification.prompt_type) {
             updateData.prompt_type = classification.prompt_type;
           }
-          // Reclassify source_type if Gemini detected a prompt
-          if (classification.prompt_type === "image" && sourceType === "tweet") {
-            updateData.source_type = "image_prompt";
-          } else if (classification.prompt_type === "video" && sourceType === "tweet") {
-            updateData.source_type = "video_prompt";
+          // Reclassify source_type if Gemini detected an image/video prompt with high confidence
+          if (classification.confidence >= 0.7) {
+            if (classification.prompt_type === "image" && sourceType === "tweet") {
+              updateData.source_type = "image_prompt";
+            } else if (classification.prompt_type === "video" && sourceType === "tweet") {
+              updateData.source_type = "video_prompt";
+            }
           }
         }
 
