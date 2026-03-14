@@ -1,4 +1,6 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
+import { Readable } from "stream";
 
 const REQUIRED_ENV_VARS = [
   "R2_ACCOUNT_ID",
@@ -39,6 +41,34 @@ export async function uploadMedia(
   return key;
 }
 
+/**
+ * Stream upload for large files — uses S3 multipart upload
+ * so we never hold the entire file in memory.
+ */
+export async function uploadMediaStream(
+  key: string,
+  body: Readable | ReadableStream,
+  contentType: string
+): Promise<string> {
+  const client = getClient();
+  const nodeStream = body instanceof Readable ? body : Readable.fromWeb(body as import("stream/web").ReadableStream);
+
+  const upload = new Upload({
+    client,
+    params: {
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: key,
+      Body: nodeStream,
+      ContentType: contentType,
+    },
+    queueSize: 1, // limit concurrency to keep memory low
+    partSize: 10 * 1024 * 1024, // 10MB parts
+  });
+
+  await upload.done();
+  return key;
+}
+
 export async function getR2Object(key: string): Promise<{ body: ReadableStream; contentType: string } | null> {
   const client = getClient();
   try {
@@ -54,7 +84,9 @@ export async function getR2Object(key: string): Promise<{ body: ReadableStream; 
       body: response.Body.transformToWebStream() as any,
       contentType: response.ContentType || "application/octet-stream",
     };
-  } catch {
+  } catch (err) {
+    const code = (err as { Code?: string; name?: string }).Code || (err as { name?: string }).name;
+    console.error(`R2 getObject failed for key="${key}" bucket="${process.env.R2_BUCKET_NAME}":`, code, err instanceof Error ? err.message : err);
     return null;
   }
 }

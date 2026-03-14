@@ -1,7 +1,9 @@
-import { uploadMedia } from "./r2";
+import { uploadMedia, uploadMediaStream } from "./r2";
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-const DOWNLOAD_TIMEOUT = 30_000; // 30 seconds
+const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB (videos can be large)
+const DOWNLOAD_TIMEOUT = 300_000; // 5 minutes (large video downloads)
+// Files above this threshold use streaming upload to avoid OOM
+const STREAM_THRESHOLD = 50 * 1024 * 1024; // 50MB
 
 const CONTENT_TYPE_TO_EXT: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -56,6 +58,16 @@ export async function downloadAndStoreMedia(
     const ext = extractExtension(originalUrl, contentType);
     const key = `media/${contentItemId}/${mediaId}.${ext}`;
 
+    // Use streaming upload for large files to avoid OOM
+    if (contentLength > STREAM_THRESHOLD || (contentLength === 0 && contentType.startsWith("video/"))) {
+      if (!response.body) {
+        console.warn(`No response body for streaming: ${originalUrl}`);
+        return null;
+      }
+      return await uploadMediaStream(key, response.body, contentType);
+    }
+
+    // Small files: buffer in memory (faster)
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
