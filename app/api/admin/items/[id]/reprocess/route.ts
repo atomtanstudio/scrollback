@@ -16,6 +16,7 @@ export async function POST(
     where: { id },
     select: {
       id: true, body_text: true, title: true, author_handle: true,
+      conversation_id: true,
       source_type: true,
       categories: { select: { category: { select: { slug: true } } } },
     },
@@ -28,6 +29,30 @@ export async function POST(
   // Fire and forget — runs in background
   (async () => {
     try {
+      let resolvedSourceType = item.source_type;
+      if (
+        item.author_handle &&
+        item.conversation_id &&
+        (item.source_type === "tweet" || item.source_type === "thread")
+      ) {
+        const siblingCount = await db.contentItem.count({
+          where: {
+            conversation_id: item.conversation_id,
+            author_handle: item.author_handle,
+            source_type: { not: "article" },
+          },
+        });
+
+        resolvedSourceType = siblingCount >= 2 ? "thread" : "tweet";
+        if (resolvedSourceType !== item.source_type) {
+          await db.contentItem.update({
+            where: { id },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            data: { source_type: resolvedSourceType as any },
+          });
+        }
+      }
+
       const text = `${item.title || ""} ${item.body_text || ""}`.trim();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const categorySlugs = item.categories?.map((c: any) => c.category.slug) || [];
@@ -37,7 +62,7 @@ export async function POST(
       const result = await classifyContent(
         item.title || "",
         item.body_text || "",
-        item.source_type,
+        resolvedSourceType,
         categorySlugs,
         item.author_handle
       );

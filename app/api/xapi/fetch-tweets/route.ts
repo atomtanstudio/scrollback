@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
         const tweets = data.data || [];
         const users = data.includes?.users || [];
         const media = data.includes?.media || [];
+        const referencedTweets = data.includes?.tweets || [];
 
         // Tweets not returned by API — send back for DOM fallback
         const returnedIds = new Set(tweets.map((t: { id: string }) => t.id));
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
         const payloads: CapturePayload[] = [];
         for (const tweet of tweets) {
           try {
-            payloads.push(mapTweetToPayload(tweet, users, media));
+            payloads.push(mapTweetToPayload(tweet, users, media, referencedTweets));
           } catch (err) {
             errors++;
             console.error("FeedSilo: tweet map error:", err instanceof Error ? err.message : err);

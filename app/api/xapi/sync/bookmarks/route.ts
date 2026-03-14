@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { fetchBookmarks } from "@/lib/xapi/client";
-import { mapTweetToPayload } from "@/lib/xapi/mapper";
+import { detectSelfThreadsInBatch, mapTweetToPayload } from "@/lib/xapi/mapper";
 import { ingestItem } from "@/lib/ingest";
+import type { CapturePayload } from "@/lib/db/types";
 
 export async function POST() {
   let synced = 0;
@@ -15,10 +16,15 @@ export async function POST() {
       const tweets = data.data || [];
       const users = data.includes?.users || [];
       const media = data.includes?.media || [];
+      const referencedTweets = data.includes?.tweets || [];
 
-      for (const tweet of tweets) {
+      const payloads: CapturePayload[] = (tweets as Array<Parameters<typeof mapTweetToPayload>[0]>).map((tweet) =>
+        mapTweetToPayload(tweet, users, media, referencedTweets)
+      );
+      detectSelfThreadsInBatch(payloads);
+
+      for (const payload of payloads) {
         try {
-          const payload = mapTweetToPayload(tweet, users, media);
           const result = await ingestItem(payload);
           if (result.already_exists) skipped++;
           else synced++;

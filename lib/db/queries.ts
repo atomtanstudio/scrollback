@@ -114,30 +114,30 @@ export async function fetchItemById(id: string) {
   });
 }
 
-export async function fetchThreadChain(item: { source_type: string; author_handle: string | null; posted_at: Date | null; id: string }) {
-  if (item.source_type !== 'thread' || !item.author_handle) {
+export async function fetchThreadChain(item: {
+  source_type: string;
+  author_handle: string | null;
+  conversation_id?: string | null;
+  id: string;
+}) {
+  if (item.source_type !== "thread" || !item.author_handle || !item.conversation_id) {
     return [];
   }
 
   const prisma = await getClient();
-  const timeWindow = 24 * 60 * 60 * 1000; // 24 hours
-  const postedAt = item.posted_at ? new Date(item.posted_at).getTime() : Date.now();
 
   const siblings = await prisma.contentItem.findMany({
     where: {
-      source_type: 'thread',
+      source_type: "thread",
       author_handle: item.author_handle,
+      conversation_id: item.conversation_id,
       id: { not: item.id },
-      posted_at: {
-        gte: new Date(postedAt - timeWindow),
-        lte: new Date(postedAt + timeWindow),
-      },
     },
     include: {
       media_items: true,
     },
-    orderBy: { posted_at: 'asc' },
-    take: 20,
+    orderBy: [{ posted_at: "asc" }, { created_at: "asc" }],
+    take: 50,
   });
 
   return siblings;

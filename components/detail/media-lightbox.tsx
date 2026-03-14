@@ -33,13 +33,10 @@ export function MediaLightbox({
   onClose,
 }: MediaLightboxProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-
-  const images = mediaItems.filter(
-    (item) => item.media_type === "image" || item.media_type === "photo"
-  );
-
-  const total = images.length;
-  const currentImage = images[currentIndex] ?? images[0];
+  const total = mediaItems.length;
+  const currentItem = mediaItems[currentIndex] ?? mediaItems[0];
+  const isVideo = currentItem?.media_type === "video";
+  const isGif = currentItem?.media_type === "gif";
 
   const goPrev = () => {
     setCurrentIndex((prev) => (prev - 1 + total) % total);
@@ -64,7 +61,7 @@ export function MediaLightbox({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose, total]);
 
-  if (!currentImage) return null;
+  if (!currentItem) return null;
 
   return (
     <AnimatePresence>
@@ -112,7 +109,7 @@ export function MediaLightbox({
               goPrev();
             }}
             className="absolute left-4 z-10 w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-            aria-label="Previous image"
+            aria-label="Previous media item"
           >
             <svg
               width="18"
@@ -137,7 +134,7 @@ export function MediaLightbox({
               goNext();
             }}
             className="absolute right-4 z-10 w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-            aria-label="Next image"
+            aria-label="Next media item"
           >
             <svg
               width="18"
@@ -164,19 +161,55 @@ export function MediaLightbox({
           transition={{ duration: 0.2, ease: "easeOut" }}
           onClick={(e) => e.stopPropagation()}
         >
-          <img
-            src={getLargeImageUrl(currentImage)}
-            alt={currentImage.alt_text || ""}
-            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
-          />
+          <div className="flex max-h-[90vh] max-w-[90vw] flex-col items-center gap-4">
+            <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[rgba(10,10,16,0.96)] shadow-[0_30px_100px_rgba(0,0,0,0.45)]">
+              {isVideo || isGif ? (
+                <video
+                  src={getMediaUrl(currentItem)}
+                  controls
+                  autoPlay={isGif}
+                  muted={isGif}
+                  loop={isGif}
+                  playsInline
+                  className="max-w-[90vw] max-h-[78vh] object-contain"
+                />
+              ) : (
+                <img
+                  src={getLargeImageUrl(currentItem)}
+                  alt={currentItem.alt_text || ""}
+                  className="max-w-[90vw] max-h-[78vh] object-contain"
+                />
+              )}
+            </div>
+
+            <div className="flex w-full max-w-[720px] items-center justify-between gap-4 rounded-full border border-white/10 bg-[rgba(12,12,18,0.82)] px-4 py-3 text-white/88 backdrop-blur-md">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">
+                  {isVideo ? "Video" : isGif ? "GIF" : "Image"} · {currentIndex + 1} / {total}
+                </p>
+                {currentItem.alt_text && (
+                  <p className="mt-1 truncate text-sm text-white/86">
+                    {currentItem.alt_text}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="shrink-0 rounded-full border border-white/12 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white/72 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </motion.div>
 
         {/* Index indicator */}
         {total > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
-            {images.map((_, i) => (
+            {mediaItems.map((item, i) => (
               <button
-                key={i}
+                key={item.id}
                 onClick={(e) => {
                   e.stopPropagation();
                   setCurrentIndex(i);
@@ -188,7 +221,7 @@ export function MediaLightbox({
                       ? "rgba(255,255,255,0.9)"
                       : "rgba(255,255,255,0.3)",
                 }}
-                aria-label={`Go to image ${i + 1}`}
+                aria-label={`Go to media item ${i + 1}`}
               />
             ))}
           </div>

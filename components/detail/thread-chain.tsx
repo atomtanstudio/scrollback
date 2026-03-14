@@ -1,7 +1,9 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { formatTimeAgo } from "@/lib/format";
 import { MediaRenderer } from "./media-renderer";
+import { MediaLightbox } from "./media-lightbox";
 import type { DetailItem } from "@/lib/db/types";
 import type { ContentItemWithMedia } from "@/lib/db/types";
 
@@ -29,6 +31,8 @@ function buildInitials(displayName: string | null, handle: string | null): strin
 }
 
 export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
   // Combine current item + siblings, sort by posted_at ascending
   const allEntries: ChainEntry[] = [
     {
@@ -58,28 +62,51 @@ export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
   });
 
   const totalCount = allEntries.length;
+  const mediaStartOffsets = useMemo(() => {
+    let offset = 0;
+    return allEntries.map((entry) => {
+      const start = offset;
+      offset += entry.media_items?.length ?? 0;
+      return start;
+    });
+  }, [allEntries]);
+  const galleryItems = useMemo(
+    () =>
+      allEntries.flatMap((entry) =>
+        (entry.media_items ?? []).map((item) => ({
+          id: item.id,
+          media_type: item.media_type,
+          original_url: item.original_url,
+          stored_path: item.stored_path,
+          alt_text: item.alt_text,
+        }))
+      ),
+    [allEntries]
+  );
 
   return (
-    <div>
-      {/* Thread label */}
-      <div className="inline-flex items-center gap-1.5 bg-[rgba(167,139,250,0.1)] border border-[rgba(167,139,250,0.2)] text-[#a78bfa] font-heading text-xs font-semibold px-3.5 py-1.5 rounded-full mb-6">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <circle cx="6" cy="6" r="5" stroke="#a78bfa" strokeWidth="1.5" />
-          <circle cx="6" cy="6" r="2" fill="#a78bfa" />
-        </svg>
-        Thread &middot; {totalCount} post{totalCount !== 1 ? "s" : ""}
-      </div>
+    <>
+      <div>
+        {/* Thread label */}
+        <div className="inline-flex items-center gap-1.5 bg-[rgba(167,139,250,0.1)] border border-[rgba(167,139,250,0.2)] text-[#a78bfa] font-heading text-xs font-semibold px-3.5 py-1.5 rounded-full mb-6">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <circle cx="6" cy="6" r="5" stroke="#a78bfa" strokeWidth="1.5" />
+            <circle cx="6" cy="6" r="2" fill="#a78bfa" />
+          </svg>
+          Thread &middot; {totalCount} post{totalCount !== 1 ? "s" : ""}
+        </div>
 
-      {/* Thread items */}
-      <div className="space-y-0">
-        {allEntries.map((entry, index) => {
-          const isLast = index === allEntries.length - 1;
-          const initials = buildInitials(entry.author_display_name, entry.author_handle);
-          const displayName = entry.author_display_name || entry.author_handle || "Unknown";
-          const avatarSize = entry.isCurrent ? 42 : 36;
+        {/* Thread items */}
+        <div className="space-y-0">
+          {allEntries.map((entry, index) => {
+            const isLast = index === allEntries.length - 1;
+            const initials = buildInitials(entry.author_display_name, entry.author_handle);
+            const displayName = entry.author_display_name || entry.author_handle || "Unknown";
+            const avatarSize = entry.isCurrent ? 42 : 36;
+            const galleryStartIndex = mediaStartOffsets[index] ?? 0;
 
-          return (
-            <div key={entry.id} className="flex gap-3">
+            return (
+              <div key={entry.id} className="flex gap-3">
               {/* Left connector column */}
               <div
                 className="flex flex-col items-center flex-shrink-0"
@@ -198,7 +225,10 @@ export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
                     {/* Media */}
                     {entry.media_items && entry.media_items.length > 0 && (
                       <div className="mt-3">
-                        <MediaRenderer mediaItems={entry.media_items as DetailItem["media_items"]} />
+                        <MediaRenderer
+                          mediaItems={entry.media_items as DetailItem["media_items"]}
+                          onMediaClick={(itemIndex) => setLightboxIndex(galleryStartIndex + itemIndex)}
+                        />
                       </div>
                     )}
                   </div>
@@ -243,16 +273,27 @@ export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
                     {/* Media (compact) */}
                     {entry.media_items && entry.media_items.length > 0 && (
                       <div className="mt-2">
-                        <MediaRenderer mediaItems={entry.media_items as DetailItem["media_items"]} />
+                        <MediaRenderer
+                          mediaItems={entry.media_items as DetailItem["media_items"]}
+                          onMediaClick={(itemIndex) => setLightboxIndex(galleryStartIndex + itemIndex)}
+                        />
                       </div>
                     )}
                   </div>
                 )}
               </div>
-            </div>
-          );
-        })}
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+      {lightboxIndex !== null && galleryItems.length > 0 && (
+        <MediaLightbox
+          mediaItems={galleryItems}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
+    </>
   );
 }

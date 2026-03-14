@@ -341,6 +341,39 @@ function detectSourceType(bodyText, mediaUrls, isArticle, isThread) {
   return 'tweet';
 }
 
+function unwrapTweetResult(result) {
+  if (!result || typeof result !== 'object') return null;
+  if (result.rest_id && result.legacy) return result;
+  if (result.tweet && result.tweet.rest_id && result.tweet.legacy) return result.tweet;
+  if (result.result) return unwrapTweetResult(result.result);
+  return null;
+}
+
+function appendMediaEntries(mediaEntries, mediaUrls) {
+  let hasUnresolvedVideo = false;
+
+  for (const m of mediaEntries || []) {
+    if (m.type === 'video' || m.type === 'animated_gif') {
+      const variants = m.video_info?.variants || [];
+      const mp4s = variants.filter(v => v.content_type === 'video/mp4' && v.url);
+      if (mp4s.length > 0) {
+        mp4s.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
+        if (!mediaUrls.includes(mp4s[0].url)) mediaUrls.push(mp4s[0].url);
+      } else {
+        hasUnresolvedVideo = true;
+        if (m.media_url_https && !mediaUrls.includes(m.media_url_https)) {
+          mediaUrls.push(m.media_url_https);
+        }
+      }
+    } else {
+      const url = m.media_url_https || m.media_url || '';
+      if (url && !mediaUrls.includes(url)) mediaUrls.push(url);
+    }
+  }
+
+  return hasUnresolvedVideo;
+}
+
 function cacheTweetData(tweet) {
   const tweetId = tweet.rest_id;
   if (!tweetId) return;
@@ -421,22 +454,11 @@ function cacheTweetData(tweet) {
   if (isArticle && articleMediaUrls.length > 0) {
     mediaUrls.push(...articleMediaUrls);
   }
-  const mediaEntries = legacy.extended_entities?.media || [];
-  for (const m of mediaEntries) {
-    if (m.type === 'video' || m.type === 'animated_gif') {
-      const variants = m.video_info?.variants || [];
-      const mp4s = variants.filter(v => v.content_type === 'video/mp4' && v.url);
-      if (mp4s.length > 0) {
-        mp4s.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
-        mediaUrls.push(mp4s[0].url);
-      } else {
-        hasUnresolvedVideo = true;
-      }
-    } else {
-      const url = m.media_url_https || m.media_url || '';
-      // Avoid duplicate with article cover
-      if (url && !mediaUrls.includes(url)) mediaUrls.push(url);
-    }
+  hasUnresolvedVideo = appendMediaEntries(legacy.extended_entities?.media || [], mediaUrls) || hasUnresolvedVideo;
+
+  const quotedTweet = unwrapTweetResult(tweet.quoted_status_result) || unwrapTweetResult(tweet.quoted_tweet);
+  if (quotedTweet) {
+    hasUnresolvedVideo = appendMediaEntries(quotedTweet.legacy?.extended_entities?.media || [], mediaUrls) || hasUnresolvedVideo;
   }
 
   // Determine body text: article body > article preview > note tweet > regular tweet text
@@ -460,9 +482,7 @@ function cacheTweetData(tweet) {
   if (conversationId === tweetId && existingEntry?.conversation_id && existingEntry.conversation_id !== tweetId) {
     conversationId = existingEntry.conversation_id;
   }
-  const isThread = conversationId !== tweetId;
-
-  const sourceType = detectSourceType(bodyText, mediaUrls, isArticle, isThread);
+  const sourceType = detectSourceType(bodyText, mediaUrls, isArticle, false);
 
   // Preserve existing author info if this API response doesn't have it
   const finalScreenName = screenName || existingEntry?.author_handle || null;
@@ -955,43 +975,36 @@ function isThreadReply(tweetElement) {
 // Detect self-threads via DOM: checks if the current page shows multiple
 // tweets from the same author connected in a thread (for fallback when cache misses)
 function isSelfThreadOnPage(tweetElement) {
-  // Get author from the tweet element
-  const link = tweetElement.querySelector('a[href*="/status/"]');
-  if (!link) return false;
-  const match = link.href.match(/\/([^/]+)\/status\//);
-  if (!match) return false;
-  const authorHandle = match[1].toLowerCase();
+  const getAuthorHandle = (el) => {
+    if (!el) return null;
+    const link = el.querySelector('a[href*="/status/"]');
+    const match = link?.href.match(/\/([^/]+)\/status\//);
+    return match ? match[1].toLowerCase() : null;
+  };
+  const hasConnector = (el) => {
+    const cell = el?.closest?.('[data-testid="cellInnerDiv"]');
+    return !!cell?.querySelector('div[style*="width: 2px"]');
+  };
 
-  // Check for thread connector lines within this tweet's cell
-  const cell = tweetElement.closest('[data-testid="cellInnerDiv"]');
-  if (cell) {
-    const connector = cell.querySelector('div[style*="width: 2px"]');
-    if (connector) return true;
-  }
+  const authorHandle = getAuthorHandle(tweetElement);
+  if (!authorHandle) return false;
 
-  // Count visible tweets from this same author on the page
-  const allTweets = document.querySelectorAll('article[data-testid="tweet"]');
-  let sameAuthorCount = 0;
-  let hasAdjacentSameAuthor = false;
-  let prevWasSameAuthor = false;
+  const allTweets = Array.from(document.querySelectorAll('article[data-testid="tweet"]'));
+  const index = allTweets.indexOf(tweetElement);
+  if (index === -1) return false;
 
-  for (const t of allTweets) {
-    const tLink = t.querySelector('a[href*="/status/"]');
-    if (!tLink) continue;
-    const tMatch = tLink.href.match(/\/([^/]+)\/status\//);
-    if (!tMatch) continue;
+  const prevTweet = allTweets[index - 1] || null;
+  const nextTweet = allTweets[index + 1] || null;
+  const prevSameAuthor = getAuthorHandle(prevTweet) === authorHandle;
+  const nextSameAuthor = getAuthorHandle(nextTweet) === authorHandle;
 
-    if (tMatch[1].toLowerCase() === authorHandle) {
-      sameAuthorCount++;
-      if (prevWasSameAuthor) hasAdjacentSameAuthor = true;
-      prevWasSameAuthor = true;
-    } else {
-      prevWasSameAuthor = false;
-    }
-  }
+  if (!prevSameAuthor && !nextSameAuthor) return false;
 
-  // Self-thread: 2+ adjacent tweets from the same author
-  return hasAdjacentSameAuthor && sameAuthorCount >= 2;
+  return (
+    hasConnector(tweetElement) ||
+    (prevSameAuthor && hasConnector(prevTweet)) ||
+    (nextSameAuthor && hasConnector(nextTweet))
+  );
 }
 
 

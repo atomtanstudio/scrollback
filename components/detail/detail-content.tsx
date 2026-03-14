@@ -132,11 +132,11 @@ function AuthorHeader({ item }: { item: DetailItem }) {
 function TweetThreadContent({
   item,
   cardType,
-  onImageClick,
+  onMediaClick,
 }: {
   item: DetailItem;
   cardType: CardType;
-  onImageClick: (index: number) => void;
+  onMediaClick: (index: number) => void;
 }) {
   return (
     <div>
@@ -151,7 +151,7 @@ function TweetThreadContent({
         <div className="mt-6">
           <MediaRenderer
             mediaItems={item.media_items}
-            onImageClick={onImageClick}
+            onMediaClick={onMediaClick}
           />
         </div>
       )}
@@ -182,10 +182,10 @@ function TweetThreadContent({
 
 function ArticleContent({
   item,
-  onImageClick,
+  onMediaClick,
 }: {
   item: DetailItem;
-  onImageClick: (index: number) => void;
+  onMediaClick: (index: number) => void;
 }) {
   const displayName = item.author_display_name || item.author_handle || null;
   const initials = displayName ? displayName.slice(0, 2).toUpperCase() : "??";
@@ -255,7 +255,7 @@ function ArticleContent({
         <div className="mb-6">
           <MediaRenderer
             mediaItems={item.media_items}
-            onImageClick={onImageClick}
+            onMediaClick={onMediaClick}
           />
         </div>
       )}
@@ -284,10 +284,10 @@ function ArticleContent({
 
 function ArtContent({
   item,
-  onImageClick,
+  onMediaClick,
 }: {
   item: DetailItem;
-  onImageClick: (index: number) => void;
+  onMediaClick: (index: number) => void;
 }) {
   const promptTypeLabel =
     item.source_type === "video_prompt" ? "Video Prompt" : "Image Prompt";
@@ -343,7 +343,7 @@ function ArtContent({
         <div className="mb-6">
           <MediaRenderer
             mediaItems={item.media_items}
-            onImageClick={onImageClick}
+            onMediaClick={onMediaClick}
           />
         </div>
       )}
@@ -355,7 +355,7 @@ function ArtContent({
 export function DetailContent({ item, cardType }: DetailContentProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const handleImageClick = (index: number) => {
+  const handleMediaClick = (index: number) => {
     setLightboxIndex(index);
   };
 
@@ -370,17 +370,17 @@ export function DetailContent({ item, cardType }: DetailContentProps) {
           <TweetThreadContent
             item={item}
             cardType={cardType}
-            onImageClick={handleImageClick}
+            onMediaClick={handleMediaClick}
           />
         )}
         {cardType === "article" && (
           <>
-            <ArticleContent item={item} onImageClick={handleImageClick} />
+            <ArticleContent item={item} onMediaClick={handleMediaClick} />
             <TagsSection tags={item.tags} cardType={cardType} />
           </>
         )}
         {cardType === "art" && (
-          <ArtContent item={item} onImageClick={handleImageClick} />
+          <ArtContent item={item} onMediaClick={handleMediaClick} />
         )}
       </div>
 

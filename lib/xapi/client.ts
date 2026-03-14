@@ -4,10 +4,16 @@ import { getConfig } from "@/lib/config";
 
 const BASE_URL = "https://api.x.com/2";
 
-const TWEET_FIELDS = "created_at,public_metrics,conversation_id,entities,note_tweet,attachments";
+const TWEET_FIELDS = "created_at,public_metrics,conversation_id,entities,note_tweet,attachments,referenced_tweets";
 const USER_FIELDS = "name,username,profile_image_url";
 const MEDIA_FIELDS = "url,preview_image_url,type,variants,alt_text";
-const EXPANSIONS = "author_id,attachments.media_keys";
+const EXPANSIONS = [
+  "author_id",
+  "attachments.media_keys",
+  "referenced_tweets.id",
+  "referenced_tweets.id.author_id",
+  "referenced_tweets.id.attachments.media_keys",
+].join(",");
 
 async function getAccessToken(): Promise<string> {
   const tokens = await loadTokens();
