@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { sanitizeErrorMessage } from "@/lib/security/redact";
 
 const requestSchema = z.object({
   type: z.enum(["postgresql", "supabase", "sqlite"]),
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return NextResponse.json(
-      { connected: false, pgvector: false, error: error.message || "Unknown error" },
+      { connected: false, pgvector: false, error: sanitizeErrorMessage(error, "Unknown error") },
       { status: 500 }
     );
   }
@@ -121,7 +122,7 @@ async function testPgConnection(data: z.infer<typeof requestSchema>) {
     return NextResponse.json({
       connected: false,
       pgvector: false,
-      error: error.message || "Connection failed",
+      error: sanitizeErrorMessage(error, "Connection failed"),
     });
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateCaptureSecret } from "@/lib/auth/capture-secret";
 import { ingestItem } from "@/lib/ingest";
 import type { CapturePayload, CaptureResult } from "@/lib/db/types";
+import { sanitizeErrorMessage } from "@/lib/security/redact";
 
 export async function POST(request: NextRequest) {
   const auth = validateCaptureSecret(request);
@@ -42,16 +43,16 @@ export async function POST(request: NextRequest) {
         results.push({
           success: false,
           already_exists: false,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: sanitizeErrorMessage(error, "Unknown error"),
         });
       }
     }
 
     return NextResponse.json({ success: true, captured, skipped, errors, results });
   } catch (error) {
-    console.error("Bulk ingest error:", error);
+    console.error("Bulk ingest error:", sanitizeErrorMessage(error, "Unknown error"));
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Unknown error" },
+      { success: false, error: sanitizeErrorMessage(error, "Unknown error") },
       { status: 500 }
     );
   }

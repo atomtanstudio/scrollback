@@ -4,6 +4,11 @@ import { getClient, disconnectClient } from "@/lib/db/client";
 import { invalidateSearchProvider } from "@/lib/db/search-provider";
 import { isR2Configured } from "@/lib/storage/r2";
 import type { FeedsiloConfig } from "@/lib/config";
+import { sanitizeErrorMessage } from "@/lib/security/redact";
+
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, max-age=0",
+};
 
 function maskUrl(url: string): string {
   try {
@@ -21,7 +26,7 @@ function maskUrl(url: string): string {
 export async function GET() {
   const config = getConfig();
   if (!config) {
-    return NextResponse.json({ configured: false });
+    return NextResponse.json({ configured: false }, { headers: NO_STORE_HEADERS });
   }
 
   // R2 media counts
@@ -42,6 +47,8 @@ export async function GET() {
     }
   }
 
+  const hasPairingToken = !!(process.env.CAPTURE_SECRET || config.extension?.pairingToken);
+
   return NextResponse.json({
     configured: true,
     database: {
@@ -54,7 +61,8 @@ export async function GET() {
       hasKey: !!config.embeddings?.apiKey,
     },
     extension: {
-      pairingToken: config.extension?.pairingToken || null,
+      hasPairingToken,
+      managedByEnv: !!process.env.CAPTURE_SECRET,
     },
     xapi: {
       hasBearerToken: !!config.xapi?.bearerToken,
@@ -64,7 +72,7 @@ export async function GET() {
       semanticWeight: config.search.semanticWeight,
     },
     r2,
-  });
+  }, { headers: NO_STORE_HEADERS });
 }
 
 export async function POST(request: Request) {
@@ -105,7 +113,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Update failed" },
+      { error: sanitizeErrorMessage(err, "Update failed") },
       { status: 500 }
     );
   }

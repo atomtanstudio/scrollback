@@ -8,7 +8,14 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, ArrowRight, Command, Hash, Sparkles, PanelTop } from "lucide-react";
+import {
+  Search,
+  ArrowRight,
+  Command,
+  Sparkles,
+  PanelTop,
+  CircleDot,
+} from "lucide-react";
 import { formatTimeAgo } from "@/lib/format";
 import type { ContentItemWithMedia } from "@/lib/db/types";
 
@@ -35,6 +42,7 @@ interface PaletteAction {
   detail?: string;
   meta?: string;
   icon: "filter" | "search" | "jump" | "recent";
+  tone?: "all" | "tweet" | "thread" | "article" | "art";
   run: () => void;
 }
 
@@ -135,6 +143,7 @@ export function HomeCommandPalette({
         detail: "Reset the feed to the full library",
         meta: currentFilter || currentSearch ? "Reset" : "Current",
         icon: "filter",
+        tone: "all",
         run: () => {
           onClearSearch();
           onApplyFilter("");
@@ -148,6 +157,7 @@ export function HomeCommandPalette({
         detail: "Jump straight into single-post captures",
         meta: currentFilter === "tweet" ? "Current" : undefined,
         icon: "filter",
+        tone: "tweet",
         run: () => {
           onApplyFilter("tweet");
           onOpenChange(false);
@@ -160,6 +170,7 @@ export function HomeCommandPalette({
         detail: "Show only multi-post chains",
         meta: currentFilter === "thread" ? "Current" : undefined,
         icon: "filter",
+        tone: "thread",
         run: () => {
           onApplyFilter("thread");
           onOpenChange(false);
@@ -172,6 +183,7 @@ export function HomeCommandPalette({
         detail: "Long-form captures only",
         meta: currentFilter === "article" ? "Current" : undefined,
         icon: "filter",
+        tone: "article",
         run: () => {
           onApplyFilter("article");
           onOpenChange(false);
@@ -184,6 +196,7 @@ export function HomeCommandPalette({
         detail: "Image and video prompt captures",
         meta: currentFilter === "art" ? "Current" : undefined,
         icon: "filter",
+        tone: "art",
         run: () => {
           onApplyFilter("art");
           onOpenChange(false);
@@ -353,6 +366,9 @@ export function HomeCommandPalette({
               placeholder="Search your captures, jump to admin, or switch lanes..."
               className="h-8 flex-1 border-none bg-transparent text-[15px] text-[#f2ede5] outline-none placeholder:text-[#7d7569]"
             />
+            <span className="hidden text-[11px] uppercase tracking-[0.16em] text-[#8a8174] md:inline">
+              arrows + enter
+            </span>
             {query && (
               <button
                 type="button"
@@ -377,6 +393,16 @@ export function HomeCommandPalette({
               <div className="grid gap-1">
                 {group.items.map((action) => {
                   const selected = action.index === selectedIndex;
+                  const filterToneClass =
+                    action.tone === "tweet"
+                      ? "bg-[var(--accent-tweet)]"
+                      : action.tone === "thread"
+                        ? "bg-[var(--accent-thread)]"
+                        : action.tone === "article"
+                          ? "bg-[var(--accent-article)]"
+                          : action.tone === "art"
+                            ? "bg-[var(--accent-art)]"
+                            : "bg-[#8a8174]";
                   return (
                     <button
                       key={action.id}
@@ -385,7 +411,7 @@ export function HomeCommandPalette({
                       onClick={() => void action.run()}
                       className={`flex w-full items-center justify-between gap-4 rounded-[20px] border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462] ${
                         selected
-                          ? "border-[#d6c9b242] bg-[#f2ede50a]"
+                          ? "border-[#d6c9b242] bg-[#f2ede50a] shadow-[inset_0_0_0_1px_rgba(214,201,178,0.08)]"
                           : "border-transparent bg-transparent hover:border-[#d6c9b214] hover:bg-[#ffffff05]"
                       }`}
                     >
@@ -402,7 +428,12 @@ export function HomeCommandPalette({
                           }`}
                         >
                           {action.icon === "filter" ? (
-                            <Hash size={15} />
+                            <span className="flex items-center gap-1">
+                              <span
+                                className={`h-2.5 w-2.5 rounded-full ${filterToneClass}`}
+                              />
+                              <CircleDot size={13} className="opacity-70" />
+                            </span>
                           ) : action.icon === "search" ? (
                             <Sparkles size={15} />
                           ) : action.icon === "jump" ? (
@@ -437,13 +468,13 @@ export function HomeCommandPalette({
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#d6c9b214] px-5 py-3 text-[11px] uppercase tracking-[0.16em] text-[#8a8174]">
           <div className="flex items-center gap-3">
-            <span>↑↓ move</span>
-            <span>Enter select</span>
-            <span>Esc close</span>
+            <span>Use ↑↓ to move</span>
+            <span>Enter to select</span>
+            <span>Esc to close</span>
           </div>
           <div className="flex items-center gap-3">
-            <span>/ open</span>
-            <span>⌘K open</span>
+            <span>/ to open</span>
+            <span>⌘K to open</span>
           </div>
         </div>
       </DialogContent>

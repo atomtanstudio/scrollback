@@ -25,8 +25,6 @@ const SKIP_PATHS = ["/_next", "/favicon.ico"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const method = request.method;
-  const t0 = Date.now();
 
   // Skip framework paths
   if (SKIP_PATHS.some((p) => pathname.startsWith(p))) {
@@ -52,10 +50,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const protectedApi =
+    pathname.startsWith("/api/") &&
+    !EXTENSION_API_PATHS.some((p) => pathname.startsWith(p)) &&
+    !PUBLIC_API_PATHS.some((p) => pathname.startsWith(p));
+
   // Check if this request needs auth
   const needsAuth =
     PROTECTED_PAGES.some((p) => pathname.startsWith(p)) ||
-    (pathname.startsWith("/api/") && method !== "GET");
+    protectedApi;
 
   if (!needsAuth) {
     return NextResponse.next();
@@ -67,7 +70,6 @@ export async function middleware(request: NextRequest) {
     request.cookies.get("authjs.session-token");
 
   if (!sessionToken) {
-    console.log(`[MW] ${method} ${pathname} → NO SESSION, redirect to login (${Date.now() - t0}ms)`);
     // API routes return 401, pages redirect to login
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -77,7 +79,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  console.log(`[MW] ${method} ${pathname} → AUTHED, pass through (${Date.now() - t0}ms)`);
   return NextResponse.next();
 }
 

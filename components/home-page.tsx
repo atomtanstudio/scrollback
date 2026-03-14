@@ -123,6 +123,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
   const [searchQuery, setSearchQuery] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const feedSectionRef = useRef<HTMLElement | null>(null);
+  const scrollTimeoutRef = useRef<number | null>(null);
 
   const statEntries = [
     { label: "Tweets", count: stats.tweets, dot: "bg-[var(--accent-tweet)]" },
@@ -162,20 +163,34 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
   );
 
   const scrollToFeed = useCallback(() => {
-    feedSectionRef.current?.scrollIntoView({
+    if (!feedSectionRef.current) return;
+    const top =
+      feedSectionRef.current.getBoundingClientRect().top + window.scrollY - 20;
+    window.scrollTo({
+      top: Math.max(0, top),
       behavior: "smooth",
-      block: "start",
     });
   }, []);
+
+  const scheduleScrollToFeed = useCallback(() => {
+    if (scrollTimeoutRef.current) {
+      window.clearTimeout(scrollTimeoutRef.current);
+    }
+    scrollTimeoutRef.current = window.setTimeout(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(scrollToFeed);
+      });
+    }, 140);
+  }, [scrollToFeed]);
 
   const applyFilter = useCallback(
     (type: string) => {
       setActiveType(type);
       setSearchResults(null);
       setSearchQuery("");
-      window.setTimeout(scrollToFeed, 60);
+      scheduleScrollToFeed();
     },
-    [scrollToFeed]
+    [scheduleScrollToFeed]
   );
 
   const handleSearch = useCallback(async (query: string) => {
@@ -190,9 +205,9 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
       setSearchResults([]);
     } finally {
       setIsSearching(false);
-      window.setTimeout(scrollToFeed, 60);
+      scheduleScrollToFeed();
     }
-  }, [scrollToFeed]);
+  }, [scheduleScrollToFeed]);
 
   const handleClearSearch = useCallback(() => {
     setSearchResults(null);
@@ -226,6 +241,14 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        window.clearTimeout(scrollTimeoutRef.current);
+      }
+    };
   }, []);
 
   const feedTitle = searchResults

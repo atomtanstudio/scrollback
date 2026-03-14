@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const STORAGE_KEYS = ['serverUrl', 'captureSecret', 'bearerToken'];
   const serverUrlInput = document.getElementById('serverUrl');
   const captureSecretInput = document.getElementById('captureSecret');
   const bearerTokenInput = document.getElementById('bearerToken');
@@ -13,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const captureModeText = document.getElementById('captureModeText');
 
   // Load saved settings
-  chrome.storage.sync.get(['serverUrl', 'captureSecret', 'bearerToken'], (result) => {
+  loadSettings((result) => {
     if (result.serverUrl) serverUrlInput.value = result.serverUrl;
     if (result.captureSecret) captureSecretInput.value = result.captureSecret;
     if (result.bearerToken) {
@@ -38,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    chrome.storage.sync.set({ serverUrl: url, captureSecret: secret }, () => {
+    saveSettings({ serverUrl: url, captureSecret: secret }, () => {
       showStatus(statusMsg, 'Settings saved', 'success');
       if (url && secret) testConnection();
     });
@@ -73,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    chrome.storage.sync.set({ bearerToken: token }, () => {
+    saveSettings({ bearerToken: token }, () => {
       showStatus(xapiStatusMsg, 'Token saved', 'success');
       xapiBadge.textContent = 'Active';
       xapiBadge.className = 'badge badge-active';
@@ -107,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const useApi = !!bearerTokenInput.value.trim();
-      chrome.tabs.sendMessage(tab.id, { type: 'START_BULK_CAPTURE', useApi }, (response) => {
+      chrome.tabs.sendMessage(tab.id, { type: 'START_BULK_CAPTURE', useApi }, () => {
         if (chrome.runtime.lastError) {
           showStatus(statusMsg, 'Reload the X page and try again', 'error');
           return;
@@ -131,5 +132,28 @@ document.addEventListener('DOMContentLoaded', () => {
   function showStatus(el, text, type) {
     el.textContent = text;
     el.className = `status-msg ${type}`;
+  }
+
+  function loadSettings(callback) {
+    chrome.storage.local.get(STORAGE_KEYS, (localResult) => {
+      chrome.storage.sync.get(STORAGE_KEYS, (syncResult) => {
+        const merged = { ...syncResult, ...localResult };
+        if (STORAGE_KEYS.some((key) => syncResult[key])) {
+          chrome.storage.local.set(merged, () => {
+            chrome.storage.sync.remove(STORAGE_KEYS, () => callback(merged));
+          });
+          return;
+        }
+        callback(merged);
+      });
+    });
+  }
+
+  function saveSettings(values, callback) {
+    chrome.storage.local.set(values, () => {
+      chrome.storage.sync.remove(Object.keys(values), () => {
+        if (callback) callback();
+      });
+    });
   }
 });

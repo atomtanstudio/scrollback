@@ -3,6 +3,7 @@ import { z } from "zod";
 import { writeConfig, invalidateConfigCache, type FeedsiloConfig } from "@/lib/config";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { redactSensitiveText, sanitizeErrorMessage } from "@/lib/security/redact";
 
 const execAsync = promisify(exec);
 
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
     } catch (error: any) {
       return NextResponse.json({
         success: false,
-        error: `Migration failed: ${error.stderr || error.message}`,
+        error: `Migration failed: ${redactSensitiveText(error.stderr || error.message || "Unknown error")}`,
       });
     }
 
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         // Log but don't fail — FTS5 can be created later
-        console.warn("FTS5 table creation failed:", error.message);
+        console.warn("FTS5 table creation failed:", sanitizeErrorMessage(error, "Unknown error"));
       }
     }
 
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: error.message || "Unknown error" },
+      { success: false, error: sanitizeErrorMessage(error, "Unknown error") },
       { status: 500 }
     );
   }

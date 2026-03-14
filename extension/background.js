@@ -25,7 +25,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function getSettings() {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(['serverUrl', 'captureSecret', 'bearerToken'], resolve);
+    const keys = ['serverUrl', 'captureSecret', 'bearerToken'];
+    chrome.storage.local.get(keys, (localResult) => {
+      chrome.storage.sync.get(keys, (syncResult) => {
+        const merged = { ...syncResult, ...localResult };
+        if (keys.some((key) => syncResult[key])) {
+          chrome.storage.local.set(merged, () => {
+            chrome.storage.sync.remove(keys, () => resolve(merged));
+          });
+          return;
+        }
+        resolve(merged);
+      });
+    });
   });
 }
 
@@ -67,7 +79,7 @@ async function resolveVideoUrls(data) {
       data.media_urls.push(...videoUrls);
     }
   } catch (e) {
-    console.warn('FeedSilo: syndication resolve failed', e);
+    console.warn('FeedSilo: syndication resolve failed', e instanceof Error ? e.message : 'Unknown error');
   }
 
   // Clean internal flag before sending to server
@@ -99,7 +111,7 @@ async function resolveArticleContent(data) {
       if (article.preview_text && bodyIsEmpty) data.body_text = article.preview_text;
     }
   } catch (e) {
-    console.warn('FeedSilo: article resolve failed', e);
+    console.warn('FeedSilo: article resolve failed', e instanceof Error ? e.message : 'Unknown error');
   }
 }
 
@@ -123,14 +135,18 @@ async function handleSingleCapture(data) {
     });
 
     if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`HTTP ${response.status}: ${text}`);
+      let message = `HTTP ${response.status}`;
+      const payload = await response.json().catch(() => null);
+      if (payload?.error) {
+        message += `: ${payload.error}`;
+      }
+      throw new Error(message);
     }
 
     return await response.json();
   } catch (error) {
-    console.error('FeedSilo capture error:', error);
-    return { success: false, error: error.message };
+    console.error('FeedSilo capture error:', error instanceof Error ? error.message : 'Unknown error');
+    return { success: false, error: error instanceof Error ? error.message : 'Capture failed' };
   }
 }
 
@@ -156,14 +172,18 @@ async function handleBulkCapture(items) {
     });
 
     if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`HTTP ${response.status}: ${text}`);
+      let message = `HTTP ${response.status}`;
+      const payload = await response.json().catch(() => null);
+      if (payload?.error) {
+        message += `: ${payload.error}`;
+      }
+      throw new Error(message);
     }
 
     return await response.json();
   } catch (error) {
-    console.error('FeedSilo bulk capture error:', error);
-    return { success: false, error: error.message };
+    console.error('FeedSilo bulk capture error:', error instanceof Error ? error.message : 'Unknown error');
+    return { success: false, error: error instanceof Error ? error.message : 'Bulk capture failed' };
   }
 }
 
@@ -184,14 +204,18 @@ async function handleBulkCaptureViaApi(tweetIds) {
     });
 
     if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`HTTP ${response.status}: ${text}`);
+      let message = `HTTP ${response.status}`;
+      const payload = await response.json().catch(() => null);
+      if (payload?.error) {
+        message += `: ${payload.error}`;
+      }
+      throw new Error(message);
     }
 
     return await response.json();
   } catch (error) {
-    console.error('FeedSilo API bulk capture error:', error);
-    return { success: false, error: error.message };
+    console.error('FeedSilo API bulk capture error:', error instanceof Error ? error.message : 'Unknown error');
+    return { success: false, error: error instanceof Error ? error.message : 'Bulk capture failed' };
   }
 }
 
@@ -211,6 +235,6 @@ async function handleCheckConnection() {
     });
     return await response.json();
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : 'Connection failed' };
   }
 }

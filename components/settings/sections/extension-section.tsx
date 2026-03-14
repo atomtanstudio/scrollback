@@ -8,20 +8,40 @@ interface ExtensionSectionProps { settings: any; onRefresh: () => void }
 
 export function ExtensionSection({ settings, onRefresh }: ExtensionSectionProps) {
   const [regenerating, setRegenerating] = useState(false);
-  const token = settings?.extension?.pairingToken;
+  const [token, setToken] = useState<string | null>(null);
+  const [revealing, setRevealing] = useState(false);
+  const hasPairingToken = settings?.extension?.hasPairingToken;
+  const managedByEnv = settings?.extension?.managedByEnv;
 
   const handleRegenerate = async () => {
-    if (token && !confirm("Any connected browser extension will need to be re-paired with the new token. Continue?")) {
+    if (hasPairingToken && !confirm("Any connected browser extension will need to be re-paired with the new token. Continue?")) {
       return;
     }
     setRegenerating(true);
     try {
-      await fetch("/api/settings/regenerate-token", { method: "POST" });
+      const res = await fetch("/api/settings/regenerate-token", { method: "POST" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setToken(data.token || null);
       onRefresh();
     } catch {
       // Silently fail
     } finally {
       setRegenerating(false);
+    }
+  };
+
+  const handleReveal = async () => {
+    setRevealing(true);
+    try {
+      const res = await fetch("/api/settings/reveal-token", { method: "POST" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setToken(data.token || null);
+    } catch {
+      // Silently fail
+    } finally {
+      setRevealing(false);
     }
   };
 
@@ -47,11 +67,11 @@ export function ExtensionSection({ settings, onRefresh }: ExtensionSectionProps)
           </div>
         </div>
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-          token
+          hasPairingToken
             ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
             : "border border-amber-500/25 bg-amber-500/10 text-amber-300"
         }`}>
-          {token ? "Paired" : "Not paired"}
+          {hasPairingToken ? "Paired" : "Not paired"}
         </span>
       </div>
 
@@ -79,6 +99,16 @@ export function ExtensionSection({ settings, onRefresh }: ExtensionSectionProps)
           </label>
           {token ? (
             <TokenDisplay token={token} />
+          ) : managedByEnv ? (
+            <p className="text-sm text-[#a49b8b]">
+              This token is managed by the server environment. Use your deployment&apos;s{" "}
+              <code className="rounded bg-[#0f141b] px-1.5 py-0.5 text-[11px] text-[#cdc4b7]">CAPTURE_SECRET</code>{" "}
+              value when pairing extensions.
+            </p>
+          ) : hasPairingToken ? (
+            <p className="text-sm text-[#a49b8b]">
+              Existing token is hidden by default. Reveal it only when you need to pair a browser.
+            </p>
           ) : (
             <p className="text-sm text-[#a49b8b]">
               Generate a token to connect your browser extension.
@@ -87,22 +117,36 @@ export function ExtensionSection({ settings, onRefresh }: ExtensionSectionProps)
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleRegenerate}
-            disabled={regenerating}
-            className={`h-9 px-4 rounded-[10px] text-sm font-medium transition-all duration-200 cursor-pointer disabled:opacity-50 ${
-              token
-                ? "border border-[#d6c9b214] bg-[#ffffff05] text-[#f2ede5] hover:border-[#d6c9b233]"
-                : "bg-[var(--accent-article)] text-[#090c11] font-heading hover:brightness-110"
-            }`}
-          >
-            {regenerating
-              ? (token ? "Regenerating..." : "Generating...")
-              : (token ? "Regenerate Token" : "Generate Token")}
-          </button>
+          {!managedByEnv && hasPairingToken && !token && (
+            <button
+              onClick={handleReveal}
+              disabled={revealing}
+              className="h-9 rounded-[10px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer disabled:opacity-50 hover:border-[#d6c9b233]"
+            >
+              {revealing ? "Revealing..." : "Reveal Token"}
+            </button>
+          )}
+
+          {!managedByEnv && (
+            <button
+              onClick={handleRegenerate}
+              disabled={regenerating}
+              className={`h-9 px-4 rounded-[10px] text-sm font-medium transition-all duration-200 cursor-pointer disabled:opacity-50 ${
+                hasPairingToken
+                  ? "border border-[#d6c9b214] bg-[#ffffff05] text-[#f2ede5] hover:border-[#d6c9b233]"
+                  : "bg-[var(--accent-article)] text-[#090c11] font-heading hover:brightness-110"
+              }`}
+            >
+              {regenerating
+                ? (hasPairingToken ? "Regenerating..." : "Generating...")
+                : (hasPairingToken ? "Regenerate Token" : "Generate Token")}
+            </button>
+          )}
 
           <p className="text-[10px] text-[#8a8174]">
-            Copy this token into the extension&apos;s settings to pair it with this instance
+            {managedByEnv
+              ? "Environment-managed tokens are intentionally hidden from the settings API."
+              : "Copy this token into the extension&apos;s settings to pair it with this instance"}
           </p>
         </div>
       </div>

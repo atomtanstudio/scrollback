@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { getClient } from "@/lib/db/client";
+import { sanitizeErrorMessage } from "@/lib/security/redact";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
@@ -31,7 +32,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           return { id: user.id, email: user.email };
         } catch (err) {
-          console.error("Auth error:", err);
+          console.error("Auth error:", sanitizeErrorMessage(err, "Unknown error"));
           return null;
         }
       },

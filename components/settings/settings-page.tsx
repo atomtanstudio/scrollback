@@ -13,7 +13,7 @@ interface SettingsData {
   configured: boolean;
   database?: { type: string; url: string };
   embeddings?: { provider: string; apiKey: string | null; hasKey: boolean };
-  extension?: { pairingToken: string | null };
+  extension?: { hasPairingToken: boolean; managedByEnv: boolean };
   xapi?: { hasBearerToken: boolean };
   search?: { keywordWeight: number; semanticWeight: number };
   r2?: { configured: boolean; mediaWithStored: number; mediaWithoutStored: number };

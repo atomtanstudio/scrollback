@@ -4,7 +4,13 @@ const { Client } = pg;
 const id = process.argv[2];
 if (!id) { console.error('Usage: node scripts/delete-item.mjs <item-id>'); process.exit(1); }
 
-const client = new Client({ connectionString: 'postgresql://basex:basex@localhost:5432/basex' });
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  console.error('DATABASE_URL is required');
+  process.exit(1);
+}
+
+const client = new Client({ connectionString });
 await client.connect();
 
 const r1 = await client.query('DELETE FROM media WHERE content_item_id = $1', [id]);
