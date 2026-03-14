@@ -115,7 +115,13 @@ export async function ingestItem(payload: CapturePayload): Promise<CaptureResult
 
   // Fire-and-forget background indexing + AI classification
   indexAndClassifyInBackground(
-    itemId, itemTitle, bodyText, payload.source_type || "tweet", cleanHandle, authorDisplayName
+    itemId,
+    itemTitle,
+    bodyText,
+    payload.source_type || "tweet",
+    cleanHandle,
+    authorDisplayName,
+    payload.media_urls || []
   ).catch(err =>
     console.error(`Background indexing failed for ${itemId}:`, err)
   );
@@ -266,7 +272,8 @@ async function indexAndClassifyInBackground(
   body: string,
   sourceType: string,
   authorHandle: string | null,
-  authorDisplayName: string | null
+  authorDisplayName: string | null,
+  mediaUrls: string[]
 ): Promise<void> {
   const prisma = await getClient();
   try {
@@ -311,7 +318,7 @@ async function indexAndClassifyInBackground(
             bodyText: body,
             promptText: classification.prompt_text,
             promptType: classification.prompt_type,
-            hasVideo: payload.media_urls.some((url) => detectMediaType(url) === "video"),
+            hasVideo: mediaUrls.some((url) => detectMediaType(url) === "video"),
           });
 
         if (classification.has_prompt) {

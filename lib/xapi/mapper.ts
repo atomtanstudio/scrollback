@@ -121,8 +121,8 @@ export function mapTweetToPayload(
   const mediaUrls = new Set<string>();
   resolveMediaUrlsFromTweet(tweet, mediaByKey, mediaUrls);
 
-  const quotedRef = (tweet.referenced_tweets || []).find((ref) => ref.type === "quoted");
-  const quotedTweet = quotedRef ? referencedById.get(quotedRef.id) : null;
+  const quotedRef = (tweet.referenced_tweets || []).find((ref) => ref.type === "quoted" && !!ref.id);
+  const quotedTweet = quotedRef?.id ? referencedById.get(quotedRef.id) : null;
   if (quotedTweet) {
     resolveMediaUrlsFromTweet(quotedTweet, mediaByKey, mediaUrls);
   }

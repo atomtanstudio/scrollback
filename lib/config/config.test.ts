@@ -7,6 +7,7 @@ describe('configSchema', () => {
       database: { type: 'postgresql', url: 'postgresql://user:pass@localhost:5432/db' },
       embeddings: { provider: 'gemini', apiKey: 'test-key' },
       extension: { pairingToken: 'abc-123' },
+      xapi: {},
       search: { keywordWeight: 0.4, semanticWeight: 0.6 },
     };
     const result = configSchema.safeParse(config);
@@ -109,6 +110,7 @@ describe('writeConfig', () => {
       database: { type: 'postgresql' as const, url: 'postgresql://localhost/db' },
       embeddings: { provider: 'gemini' as const, apiKey: 'key123' },
       extension: { pairingToken: 'token456' },
+      xapi: {},
       search: { keywordWeight: 0.4, semanticWeight: 0.6 },
     };
     const envPath = path.join(tmpDir, '.env.local');
@@ -143,6 +145,7 @@ describe('resolveConfig', () => {
       database: { type: 'sqlite' as const, url: 'file:./test.db' },
       embeddings: { provider: 'gemini' as const },
       extension: {},
+      xapi: {},
       search: { keywordWeight: 0.4, semanticWeight: 0.6 },
     };
     const resolved = resolveConfig(fileConfig);
@@ -173,6 +176,7 @@ describe('resolveConfig', () => {
       database: { type: 'sqlite' as const, url: 'file:./test.db' },
       embeddings: { provider: 'gemini' as const },
       extension: {},
+      xapi: {},
       search: { keywordWeight: 0.4, semanticWeight: 0.6 },
     };
     const resolved = resolveConfig(fileConfig);
@@ -191,6 +195,7 @@ describe('isConfigured', () => {
       database: { type: 'sqlite' as const, url: 'file:./test.db' },
       embeddings: { provider: 'gemini' as const },
       extension: {},
+      xapi: {},
       search: { keywordWeight: 0.4, semanticWeight: 0.6 },
     };
     expect(isConfigured(config)).toBe(true);
