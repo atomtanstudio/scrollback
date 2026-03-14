@@ -120,6 +120,10 @@
   color: #ff6b35;
 }
 
+.feedsilo-hud-stats .stat-errors {
+  color: #ff4444;
+}
+
 .feedsilo-hud-stats span {
   font-weight: 700;
   color: inherit;

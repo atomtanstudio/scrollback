@@ -229,47 +229,115 @@ function formatContentStateBlocks(contentState) {
 }
 
 // --- Source Type Detection ---
+// Comprehensive AI tool detection with context-aware matching.
+// Bare tool name mentions are NOT enough — requires generation context.
+
+const STRONG_PROMPT_PATTERNS = [
+  /--ar\s+\d+:\d+/,
+  /--v\s+[\d.]+/,
+  /--style\s+\w+/,
+  /--q\s+[\d.]+/,
+  /--s\s+\d+/,
+  /--c\s+\d+/,
+  /--niji\b/,
+  /\/imagine\b/,
+  /\bcfg[\s_]?scale\b/i,
+  /\bsampler[\s:]+\w*(euler|dpm|ddim|uni_pc|heun)/i,
+  /\bdenoising[\s_]?strength\b/i,
+  /\bnegative[\s_]?prompt\b/i,
+  /\bcheckpoint[\s:]/i,
+  /\blora[\s:]/i,
+  /\bcontrolnet\b/i,
+  /\btxt2img\b/i,
+  /\bimg2img\b/i,
+  /\btxt2vid\b/i,
+  /\bimg2vid\b/i,
+  /\bt2i\b/,
+  /\bi2v\b/,
+  /\bt2v\b/,
+];
+
+const IMAGE_TOOLS = [
+  "midjourney", "dall-?e(?:\\s*[23])?", "stable\\s*diffusion", "sdxl", "sd3",
+  "flux", "grok\\s*(?:imagine|aurora)", "aurora", "imagen(?:\\s*[234])?",
+  "ideogram", "firefly", "reve\\s*image",
+  "leonardo\\.?ai", "leonardo\\s+ai", "playground\\s*(?:ai|v[23])?",
+  "nightcafe", "nano\\s*banana", "bing\\s*image\\s*creator", "seedream",
+  "recraft", "krea(?:\\s*ai)?", "comfyui", "a1111", "automatic1111",
+  "dreamstudio", "tensor\\.?art", "civitai",
+];
+
+const VIDEO_TOOLS = [
+  "sora", "veo(?:\\s*[23])?", "runway(?:\\s*(?:gen-?[1234]|ml))?",
+  "kling(?:\\s*(?:ai|[12]\\.[05]))?", "pika(?:\\s*(?:labs|[12]\\.[05]))?",
+  "luma(?:\\s*(?:dream\\s*machine|ai|labs|ray2?))?", "dream\\s*machine",
+  "hailuo(?:\\s*ai)?", "minimax(?:\\s*video)?", "seedance",
+  "wan(?:\\s*2\\.[12])?", "hunyuan(?:\\s*video)?",
+  "stable\\s*video(?:\\s*diffusion)?", "pixverse", "jimeng", "genmo",
+  "mochi", "movie\\s*gen", "haiper", "animatediff", "cogvideo(?:x)?",
+  "ltx\\s*(?:video|studio)", "domo\\s*ai", "viggle(?:\\s*ai)?",
+];
+
+const ALL_TOOLS = [...IMAGE_TOOLS, ...VIDEO_TOOLS];
+const GEN_BEFORE = "(?:generated|created|made|built|rendered|produced|powered)\\s+(?:with|using|by|in|via|on|from)";
+const GEN_AFTER = "(?:generation|generated\\s+(?:this|image|video|clip|art|photo|animation)|prompt|output|render(?:ed)?|result)";
+const PROMPT_LANG = [
+  /\bprompt\s*:/i,
+  /\b(?:image|video)\s+prompt\b/i,
+  /\bhere(?:'s| is) (?:the|my) prompt\b/i,
+  /\bprompt (?:I |i )used\b/i,
+  /\bsharing (?:the|my) prompt\b/i,
+  /\bai[\s-]?(?:generated|art|image|video|animation)\b/i,
+  /\btext[\s-]?to[\s-]?(?:image|video)\b/i,
+];
+
 function detectSourceType(bodyText, mediaUrls, isArticle, isThread) {
   if (isArticle) return 'article';
   if (isThread) return 'thread';
+  if (mediaUrls.length === 0 || !bodyText) return 'tweet';
 
-  // Art prompt detection (only if tweet has media)
-  if (mediaUrls.length > 0 && bodyText) {
-    const text = bodyText.toLowerCase();
+  const hasVideo = mediaUrls.some(u => u.includes('.mp4') || u.includes('video'));
 
-    // Midjourney patterns
-    if (/--ar\s+\d+:\d+/.test(text) || /--v\s+[\d.]+/.test(text) ||
-        /--style\s+\w+/.test(text) || /\/imagine\b/.test(text) ||
-        /\bmidjourney\b/.test(text)) {
-      return 'image_prompt';
-    }
-
-    // DALL-E
-    if (/\bdall[-·\s]?e\b/i.test(bodyText)) return 'image_prompt';
-
-    // Stable Diffusion / SDXL / ComfyUI
-    if (/\bstable\s*diffusion\b/i.test(bodyText) || /\bsdxl\b/i.test(bodyText) ||
-        /\bcomfyui\b/i.test(bodyText)) {
-      return 'image_prompt';
-    }
-
-    // Flux
-    if (/\bflux\b/i.test(bodyText) && /\b(pro|dev|schnell|1\.1)\b/i.test(bodyText)) {
-      return 'image_prompt';
-    }
-
-    // Generic "generated with/using/by [tool]"
-    if (/\b(generated|created|made)\s+(with|using|by|in)\s+(midjourney|dall-?e|stable.?diffusion|flux|leonardo|firefly)/i.test(bodyText)) {
-      return 'image_prompt';
-    }
-
-    // Video generation tools
-    if (/\b(sora|runway|pika|kling|hailuo|luma\s*dream\s*machine)\b/i.test(bodyText)) {
-      const hasVideo = mediaUrls.some(u => u.includes('.mp4') || u.includes('video'));
+  // Level 1: Strong prompt syntax (high confidence, no context needed)
+  for (const pat of STRONG_PROMPT_PATTERNS) {
+    if (pat.test(bodyText)) {
       return hasVideo ? 'video_prompt' : 'image_prompt';
     }
   }
 
+  // Level 2: Tool name + generation context
+  const imageGroup = IMAGE_TOOLS.join('|');
+  const videoGroup = VIDEO_TOOLS.join('|');
+  const allGroup = ALL_TOOLS.join('|');
+
+  // Video tools with context
+  if (hasVideo) {
+    if (new RegExp(`(?:${GEN_BEFORE})\\s+(?:${videoGroup})`, 'i').test(bodyText) ||
+        new RegExp(`\\b(?:${videoGroup})\\s+(?:${GEN_AFTER})`, 'i').test(bodyText)) {
+      return 'video_prompt';
+    }
+  }
+  // Image tools with context
+  if (new RegExp(`(?:${GEN_BEFORE})\\s+(?:${imageGroup})`, 'i').test(bodyText) ||
+      new RegExp(`\\b(?:${imageGroup})\\s+(?:${GEN_AFTER})`, 'i').test(bodyText)) {
+    return 'image_prompt';
+  }
+  // Any tool with context
+  if (new RegExp(`(?:${GEN_BEFORE})\\s+(?:${allGroup})`, 'i').test(bodyText) ||
+      new RegExp(`\\b(?:${allGroup})\\s+(?:${GEN_AFTER})`, 'i').test(bodyText)) {
+    return hasVideo ? 'video_prompt' : 'image_prompt';
+  }
+
+  // Level 3: Prompt-sharing language + tool mention
+  const hasPromptLang = PROMPT_LANG.some(p => p.test(bodyText));
+  if (hasPromptLang) {
+    if (hasVideo && new RegExp(`\\b(?:${videoGroup})\\b`, 'i').test(bodyText)) return 'video_prompt';
+    if (new RegExp(`\\b(?:${imageGroup})\\b`, 'i').test(bodyText)) return 'image_prompt';
+    if (new RegExp(`\\b(?:${videoGroup})\\b`, 'i').test(bodyText)) return hasVideo ? 'video_prompt' : 'image_prompt';
+  }
+
+  // Level 4: Bare tool mentions are NOT enough.
+  // "I used Kling video animations" in a tutorial ≠ video_prompt
   return 'tweet';
 }
 
@@ -278,7 +346,12 @@ function cacheTweetData(tweet) {
   if (!tweetId) return;
 
   const legacy = tweet.legacy || {};
-  const user = tweet.core?.user_results?.result?.legacy || {};
+  // User data can be nested differently depending on the API response shape
+  const userResult = tweet.core?.user_results?.result;
+  const user = userResult?.legacy
+    || userResult?.result?.legacy  // wrapped in extra result
+    || tweet.user?.legacy          // alternate path
+    || {};
   const noteTweet = tweet.note_tweet?.note_tweet_results?.result;
 
   // Get avatar URL - upgrade to full size by removing _normal suffix
@@ -421,6 +494,40 @@ function extractTweetFromDOM(tweetElement) {
       const fullBody = extractArticleBodyFromDOM();
       if (fullBody && fullBody.length > (cached.body_text?.length || 0)) {
         cached.body_text = fullBody;
+      }
+    }
+    // Backfill missing author info from DOM (API sometimes omits user data)
+    if (!cached.author_handle || !cached.author_display_name || !cached.author_avatar_url) {
+      const nameContainer = tweetElement.querySelector('[data-testid="User-Name"]');
+      if (nameContainer) {
+        if (!cached.author_handle) {
+          const handleEl = nameContainer.querySelector('a[href*="/"]');
+          if (handleEl) {
+            const href = handleEl.getAttribute('href');
+            const handleMatch = href?.match(/^\/([^/]+)/);
+            if (handleMatch) cached.author_handle = handleMatch[1];
+          }
+        }
+        if (!cached.author_display_name) {
+          const spans = nameContainer.querySelectorAll('span');
+          for (const span of spans) {
+            const text = span.innerText.trim();
+            if (text && !text.startsWith('@') && text.length > 0) {
+              cached.author_display_name = text;
+              break;
+            }
+          }
+        }
+      }
+      if (!cached.author_avatar_url) {
+        const avatarImg = tweetElement.querySelector('[data-testid="Tweet-User-Avatar"] img');
+        if (avatarImg?.src) {
+          cached.author_avatar_url = avatarImg.src.replace('_normal.', '_400x400.');
+        }
+      }
+      // Fix source_url if it's the fallback /i/web/ format
+      if (cached.author_handle && cached.source_url.includes('/i/web/status/')) {
+        cached.source_url = `https://x.com/${cached.author_handle}/status/${cached.external_id}`;
       }
     }
     // Return a clean copy without internal fields
@@ -696,7 +803,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ started: false, reason: 'Already running' });
       return;
     }
-    startBulkCapture();
+    startBulkCapture(message.useApi || false);
     sendResponse({ started: true });
   }
 
@@ -721,6 +828,7 @@ function createHUD() {
       <div>SCANNED <span id="feedsilo-stat-total">0</span></div>
       <div class="stat-captured">CAPTURED <span id="feedsilo-stat-captured">0</span></div>
       <div class="stat-skipped">SKIPPED <span id="feedsilo-stat-skipped">0</span></div>
+      <div class="stat-errors" style="display:none">ERRORS <span id="feedsilo-stat-errors">0</span></div>
     </div>
   `;
   document.body.appendChild(hud);
@@ -737,24 +845,38 @@ function updateHUD() {
   const totalEl = el('feedsilo-stat-total');
   const capturedEl = el('feedsilo-stat-captured');
   const skippedEl = el('feedsilo-stat-skipped');
+  const errorsEl = el('feedsilo-stat-errors');
+  const errorsRow = errorsEl?.parentElement;
   if (totalEl) totalEl.textContent = bulkStats.total;
   if (capturedEl) capturedEl.textContent = bulkStats.captured;
   if (skippedEl) skippedEl.textContent = bulkStats.skipped;
+  if (errorsEl) {
+    errorsEl.textContent = bulkStats.errors;
+    if (errorsRow) errorsRow.style.display = bulkStats.errors > 0 ? '' : 'none';
+  }
 }
 
-async function startBulkCapture() {
+async function startBulkCapture(useApi = false) {
   isBulkCapturing = true;
   bulkStats = { total: 0, captured: 0, skipped: 0, errors: 0 };
   processedIds.clear();
 
   const hud = createHUD();
+
+  // Show API mode indicator in HUD
+  if (useApi) {
+    const header = document.querySelector('.feedsilo-hud-header span');
+    if (header) header.textContent = 'BULK CAPTURE (API)';
+  }
+
   let unchangedScrollCount = 0;
   let lastScrollHeight = 0;
 
   while (isBulkCapturing) {
     // Collect all visible tweets
     const tweets = document.querySelectorAll('article[data-testid="tweet"]');
-    const batch = [];
+    const batch = [];        // DOM-extracted data (classic mode)
+    const idBatch = [];      // Tweet IDs only (API mode)
 
     for (const tweet of tweets) {
       const statusLink = tweet.querySelector('a[href*="/status/"]');
@@ -768,32 +890,82 @@ async function startBulkCapture() {
       // Skip already processed
       if (processedIds.has(tweetId)) continue;
       processedIds.add(tweetId);
+
+      // Skip thread replies (don't count in totals)
+      if (isThreadReply(tweet)) continue;
+
       bulkStats.total++;
 
-      // Skip thread replies
-      if (isThreadReply(tweet)) {
-        bulkStats.skipped++;
-        updateHUD();
-        continue;
+      if (useApi) {
+        // API mode: just collect the tweet ID
+        idBatch.push(tweetId);
+        tweet.style.borderLeft = '3px solid #22d3ee'; // Cyan for API mode
+      } else {
+        // Classic mode: extract full data from DOM
+        const showMore = tweet.querySelector('[data-testid="tweet-text-show-more-link"]');
+        if (showMore) {
+          showMore.click();
+          await new Promise(r => setTimeout(r, 500));
+        }
+
+        const data = await extractTweetFromDOM(tweet);
+        if (data) {
+          batch.push(data);
+          tweet.style.borderLeft = '3px solid #00ffc8';
+        }
       }
 
-      // Try expanding long tweets
-      const showMore = tweet.querySelector('[data-testid="tweet-text-show-more-link"]');
-      if (showMore) {
-        showMore.click();
-        await new Promise(r => setTimeout(r, 500));
-      }
-
-      const data = await extractTweetFromDOM(tweet);
-      if (data) {
-        batch.push(data);
-        // Visual feedback
-        tweet.style.borderLeft = '3px solid #00ffc8';
-      }
+      updateHUD();
     }
 
     // Send batch to server
-    if (batch.length > 0) {
+    if (useApi && idBatch.length > 0) {
+      // API mode: send tweet IDs for server-side X API fetch
+      const response = await new Promise(resolve => {
+        chrome.runtime.sendMessage({ type: 'CAPTURE_BULK_VIA_API', tweetIds: idBatch }, resolve);
+      });
+
+      if (response?.success) {
+        bulkStats.captured += response.synced || 0;
+        bulkStats.skipped += response.skipped || 0;
+        bulkStats.errors += response.errors || 0;
+
+        // DOM fallback for tweets the API couldn't fetch
+        const missing = response.missingIds || [];
+        if (missing.length > 0) {
+          log('API missed', missing.length, 'tweets, trying DOM fallback');
+          const fallbackBatch = [];
+          const visibleTweets = document.querySelectorAll('article[data-testid="tweet"]');
+          for (const tweet of visibleTweets) {
+            const link = tweet.querySelector('a[href*="/status/"]');
+            if (!link) continue;
+            const m = link.href.match(/\/status\/(\d+)/);
+            if (!m || !missing.includes(m[1])) continue;
+            const showMore = tweet.querySelector('[data-testid="tweet-text-show-more-link"]');
+            if (showMore) { showMore.click(); await new Promise(r => setTimeout(r, 500)); }
+            const data = await extractTweetFromDOM(tweet);
+            if (data) {
+              fallbackBatch.push(data);
+              tweet.style.borderLeft = '3px solid #ff6b35'; // Orange for DOM fallback
+            }
+          }
+          if (fallbackBatch.length > 0) {
+            const fbResponse = await new Promise(resolve => {
+              chrome.runtime.sendMessage({ type: 'CAPTURE_BULK', items: fallbackBatch }, resolve);
+            });
+            if (fbResponse?.success) {
+              bulkStats.captured += fbResponse.captured || 0;
+              bulkStats.skipped += fbResponse.skipped || 0;
+            }
+          }
+        }
+      } else if (response?.error) {
+        bulkStats.errors += idBatch.length;
+        log('API bulk error:', response.error);
+      }
+      updateHUD();
+    } else if (!useApi && batch.length > 0) {
+      // Classic mode: send DOM-extracted data
       const response = await new Promise(resolve => {
         chrome.runtime.sendMessage({ type: 'CAPTURE_BULK', items: batch }, resolve);
       });

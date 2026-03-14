@@ -12,6 +12,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === 'CAPTURE_BULK_VIA_API') {
+    handleBulkCaptureViaApi(message.tweetIds).then(sendResponse);
+    return true;
+  }
+
   if (message.type === 'CHECK_CONNECTION') {
     handleCheckConnection().then(sendResponse);
     return true;
@@ -20,7 +25,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function getSettings() {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(['serverUrl', 'captureSecret'], resolve);
+    chrome.storage.sync.get(['serverUrl', 'captureSecret', 'bearerToken'], resolve);
   });
 }
 
@@ -158,6 +163,34 @@ async function handleBulkCapture(items) {
     return await response.json();
   } catch (error) {
     console.error('FeedSilo bulk capture error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function handleBulkCaptureViaApi(tweetIds) {
+  const settings = await getSettings();
+  if (!settings.serverUrl || !settings.captureSecret) {
+    return { success: false, error: 'Extension not configured.' };
+  }
+
+  try {
+    const response = await fetch(`${settings.serverUrl}/api/xapi/fetch-tweets`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${settings.captureSecret}`,
+      },
+      body: JSON.stringify({ tweetIds }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`HTTP ${response.status}: ${text}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('FeedSilo API bulk capture error:', error);
     return { success: false, error: error.message };
   }
 }

@@ -1,34 +1,45 @@
 document.addEventListener('DOMContentLoaded', () => {
   const serverUrlInput = document.getElementById('serverUrl');
   const captureSecretInput = document.getElementById('captureSecret');
+  const bearerTokenInput = document.getElementById('bearerToken');
   const saveBtn = document.getElementById('saveBtn');
   const testBtn = document.getElementById('testBtn');
+  const saveXapiBtn = document.getElementById('saveXapiBtn');
   const bulkBtn = document.getElementById('bulkBtn');
   const statusMsg = document.getElementById('statusMsg');
+  const xapiStatusMsg = document.getElementById('xapiStatusMsg');
   const connectionDot = document.getElementById('connectionDot');
+  const xapiBadge = document.getElementById('xapiBadge');
+  const captureModeText = document.getElementById('captureModeText');
 
   // Load saved settings
-  chrome.storage.sync.get(['serverUrl', 'captureSecret'], (result) => {
+  chrome.storage.sync.get(['serverUrl', 'captureSecret', 'bearerToken'], (result) => {
     if (result.serverUrl) serverUrlInput.value = result.serverUrl;
     if (result.captureSecret) captureSecretInput.value = result.captureSecret;
+    if (result.bearerToken) {
+      bearerTokenInput.value = result.bearerToken;
+      xapiBadge.textContent = 'Active';
+      xapiBadge.className = 'badge badge-active';
+      updateCaptureMode(true);
+    }
 
     if (result.serverUrl && result.captureSecret) {
       testConnection();
     }
   });
 
-  // Save settings
+  // Save connection settings
   saveBtn.addEventListener('click', () => {
-    const url = serverUrlInput.value.trim().replace(/\/+$/, ''); // Strip trailing slash
+    const url = serverUrlInput.value.trim().replace(/\/+$/, '');
     const secret = captureSecretInput.value.trim();
 
     if (!url) {
-      showStatus('Enter a server URL', 'error');
+      showStatus(statusMsg, 'Enter a server URL', 'error');
       return;
     }
 
     chrome.storage.sync.set({ serverUrl: url, captureSecret: secret }, () => {
-      showStatus('Settings saved', 'success');
+      showStatus(statusMsg, 'Settings saved', 'success');
       if (url && secret) testConnection();
     });
   });
@@ -37,42 +48,88 @@ document.addEventListener('DOMContentLoaded', () => {
   testBtn.addEventListener('click', testConnection);
 
   function testConnection() {
-    showStatus('Connecting...', 'info');
+    showStatus(statusMsg, 'Connecting...', 'info');
     connectionDot.className = 'connection-dot offline';
+    connectionDot.title = 'Connecting...';
 
     chrome.runtime.sendMessage({ type: 'CHECK_CONNECTION' }, (response) => {
       if (response && response.success) {
         connectionDot.className = 'connection-dot online';
-        showStatus('Connected', 'success');
+        connectionDot.title = 'Connected';
+        showStatus(statusMsg, 'Connected', 'success');
       } else {
         connectionDot.className = 'connection-dot error';
-        showStatus(response?.error || 'Connection failed', 'error');
+        connectionDot.title = 'Connection failed';
+        showStatus(statusMsg, response?.error || 'Connection failed', 'error');
       }
     });
   }
 
-  // Bulk capture - send message to content script
+  // Save X API bearer token
+  saveXapiBtn.addEventListener('click', () => {
+    const token = bearerTokenInput.value.trim();
+    if (!token) {
+      showStatus(xapiStatusMsg, 'Enter a bearer token', 'error');
+      return;
+    }
+
+    chrome.storage.sync.set({ bearerToken: token }, () => {
+      showStatus(xapiStatusMsg, 'Token saved', 'success');
+      xapiBadge.textContent = 'Active';
+      xapiBadge.className = 'badge badge-active';
+      updateCaptureMode(true);
+
+      // Also save to FeedSilo server if connected
+      const serverUrl = serverUrlInput.value.trim().replace(/\/+$/, '');
+      const secret = captureSecretInput.value.trim();
+      if (serverUrl && secret) {
+        fetch(`${serverUrl}/api/settings`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${secret}`,
+          },
+          body: JSON.stringify({ xapi: { bearerToken: token } }),
+        }).catch(() => {
+          // Non-fatal — token is saved locally regardless
+        });
+      }
+    });
+  });
+
+  // Bulk capture
   bulkBtn.addEventListener('click', () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs[0];
       if (!tab?.url?.includes('x.com') && !tab?.url?.includes('twitter.com')) {
-        showStatus('Navigate to x.com first', 'error');
+        showStatus(statusMsg, 'Navigate to x.com first', 'error');
         return;
       }
 
-      chrome.tabs.sendMessage(tab.id, { type: 'START_BULK_CAPTURE' }, (response) => {
+      const useApi = !!bearerTokenInput.value.trim();
+      chrome.tabs.sendMessage(tab.id, { type: 'START_BULK_CAPTURE', useApi }, (response) => {
         if (chrome.runtime.lastError) {
-          showStatus('Reload the X page and try again', 'error');
+          showStatus(statusMsg, 'Reload the X page and try again', 'error');
           return;
         }
-        showStatus('Bulk capture started', 'success');
-        window.close(); // Close popup so user can see the page
+        showStatus(statusMsg, `Bulk capture started${useApi ? ' (API mode)' : ''}`, 'success');
+        window.close();
       });
     });
   });
 
-  function showStatus(text, type) {
-    statusMsg.textContent = text;
-    statusMsg.className = `status-msg ${type}`;
+  function updateCaptureMode(hasToken) {
+    if (hasToken) {
+      captureModeText.textContent = 'X API mode';
+      captureModeText.className = 'capture-mode-text api-mode';
+    } else {
+      captureModeText.textContent = 'Page scraping mode';
+      captureModeText.className = 'capture-mode-text';
+    }
+  }
+
+  function showStatus(el, text, type) {
+    el.textContent = text;
+    el.className = `status-msg ${type}`;
   }
 });

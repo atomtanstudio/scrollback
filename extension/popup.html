@@ -5,38 +5,80 @@
 </head>
 <body>
   <div class="popup-container">
+    <!-- Brand header -->
     <header class="popup-header">
       <div class="brand">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00ffc8" stroke-width="2">
-          <polyline points="4 17 10 11 4 5"></polyline>
-          <line x1="12" y1="19" x2="20" y2="19"></line>
-        </svg>
-        <span>Feed<em>Silo</em></span>
+        <div class="brand-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a0a0f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 17 10 11 4 5"></polyline>
+            <line x1="12" y1="19" x2="20" y2="19"></line>
+          </svg>
+        </div>
+        <span>feed<em>.</em>silo</span>
       </div>
-      <div id="connectionDot" class="connection-dot offline"></div>
+      <div id="connectionDot" class="connection-dot offline" title="Disconnected"></div>
     </header>
 
-    <div class="form-group">
-      <label>SERVER URL</label>
-      <input type="text" id="serverUrl" placeholder="http://localhost:3000" spellcheck="false">
+    <!-- Connection settings -->
+    <div class="section">
+      <div class="section-label">Connection</div>
+
+      <div class="form-group">
+        <label>SERVER URL</label>
+        <input type="text" id="serverUrl" placeholder="http://localhost:3000" spellcheck="false">
+      </div>
+
+      <div class="form-group">
+        <label>PAIRING TOKEN</label>
+        <input type="password" id="captureSecret" placeholder="Paste from Settings" spellcheck="false">
+      </div>
+
+      <div class="button-row">
+        <button id="saveBtn" class="btn btn-primary">Save</button>
+        <button id="testBtn" class="btn btn-ghost">Test</button>
+      </div>
+
+      <div id="statusMsg" class="status-msg"></div>
     </div>
 
-    <div class="form-group">
-      <label>CAPTURE SECRET</label>
-      <input type="password" id="captureSecret" placeholder="Enter your capture secret" spellcheck="false">
+    <div class="divider"></div>
+
+    <!-- X API section -->
+    <div class="section">
+      <div class="section-label">
+        <span>X API</span>
+        <span id="xapiBadge" class="badge badge-muted">Optional</span>
+      </div>
+      <p class="section-hint">Bearer token for safe bookmark & like syncing. Avoids ToS risk.</p>
+
+      <div class="form-group">
+        <label>BEARER TOKEN</label>
+        <input type="password" id="bearerToken" placeholder="From developer.x.com" spellcheck="false">
+      </div>
+
+      <div class="button-row">
+        <button id="saveXapiBtn" class="btn btn-ghost">Save Token</button>
+        <a href="https://developer.x.com/en/portal/products" target="_blank" class="link-btn">Get access &rarr;</a>
+      </div>
+
+      <div id="xapiStatusMsg" class="status-msg"></div>
     </div>
 
-    <div class="button-row">
-      <button id="saveBtn" class="btn btn-cyan">SAVE</button>
-      <button id="testBtn" class="btn btn-outline">TEST</button>
+    <div class="divider"></div>
+
+    <!-- Bulk capture -->
+    <div class="section">
+      <button id="bulkBtn" class="btn btn-primary btn-full">Start Bulk Capture</button>
+      <div id="captureMode" class="capture-mode">
+        <span id="captureModeText" class="capture-mode-text">Page scraping mode</span>
+      </div>
+      <p class="section-hint center">Navigate to your Likes or Bookmarks page on X first.</p>
     </div>
 
-    <div id="statusMsg" class="status-msg"></div>
-
-    <hr class="divider">
-
-    <button id="bulkBtn" class="btn btn-cyan btn-full">START BULK CAPTURE</button>
-    <p class="hint">Navigate to your Likes or Bookmarks page on X first.</p>
+    <!-- Footer -->
+    <div class="popup-footer">
+      <span>Your data stays on your machine</span>
+    </div>
   </div>
 
   <script src="popup.js"></script>
