@@ -1,34 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
 import { Settings, LogOut, Shield } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 interface HeaderProps {
   captureCount?: number;
+  isAuthed: boolean;
+  currentPath?: string;
 }
 
-export function Header({ captureCount }: HeaderProps) {
-  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    fetch("/api/auth/session", { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => setIsAuthed(!!d?.user))
-      .catch(() => setIsAuthed(false));
-  }, []);
+export function Header({ captureCount, isAuthed, currentPath = "/" }: HeaderProps) {
+  const loginHref =
+    currentPath === "/"
+      ? "/login"
+      : `/login?callbackUrl=${encodeURIComponent(currentPath)}`;
 
   const handleLogout = async () => {
-    // Get CSRF token and sign out
-    const csrfRes = await fetch("/api/auth/csrf");
-    const { csrfToken } = await csrfRes.json();
-    await fetch("/api/auth/signout", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ csrfToken }),
-      credentials: "include",
-    });
-    window.location.href = "/";
+    await signOut({ callbackUrl: "/" });
   };
 
   return (
@@ -66,9 +55,9 @@ export function Header({ captureCount }: HeaderProps) {
             </button>
           </>
         )}
-        {isAuthed === false && (
+        {!isAuthed && (
           <Link
-            href="/login"
+            href={loginHref}
             className="text-[13px] text-[#555566] hover:text-[#f0f0f5] transition-colors"
           >
             Login

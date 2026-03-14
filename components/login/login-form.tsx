@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 
 export function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const errorParam = searchParams.get("error");
@@ -12,53 +15,28 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(errorParam ? "Invalid email or password" : "");
   const [loading, setLoading] = useState(false);
-  const [csrfToken, setCsrfToken] = useState("");
-  const formRef = useRef<HTMLFormElement>(null);
-
-  // Fetch CSRF token on mount
-  useEffect(() => {
-    fetch("/api/auth/csrf")
-      .then((r) => r.json())
-      .then((d) => setCsrfToken(d.csrfToken))
-      .catch(() => {});
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    // Use fetch with redirect:follow — browser will follow the 302 and apply Set-Cookie
     try {
-      const res = await fetch("/api/auth/callback/credentials", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          csrfToken,
-          email,
-          password,
-        }),
-        credentials: "include",
+      const result = await signIn("credentials", {
+        email,
+        password,
+        callbackUrl,
+        redirect: false,
       });
 
-      // After following redirects, check the final URL for errors
-      const finalUrl = res.url;
-      if (finalUrl.includes("error=")) {
+      if (result?.error) {
         setError("Invalid email or password");
         setLoading(false);
         return;
       }
 
-      // Check if session was actually set
-      const sessionRes = await fetch("/api/auth/session", { credentials: "include" });
-      const session = await sessionRes.json();
-
-      if (session?.user) {
-        window.location.href = callbackUrl;
-      } else {
-        setError("Invalid email or password");
-        setLoading(false);
-      }
+      router.push(result?.url || callbackUrl);
+      router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
       setLoading(false);
@@ -81,7 +59,7 @@ export function LoginForm() {
         Login
       </h1>
 
-      <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
           <label className="text-[13px] font-medium text-[#f0f0f5] mb-2 block">
             Email
@@ -116,7 +94,7 @@ export function LoginForm() {
 
         <button
           type="submit"
-          disabled={loading || !email || !password || !csrfToken}
+          disabled={loading || !email || !password}
           className="h-12 px-8 rounded-[14px] bg-[var(--accent-thread)] text-[#0a0a0f] font-heading font-semibold text-[15px] hover:brightness-110 transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-default mt-2"
         >
           {loading ? "Signing in..." : "Sign In"}

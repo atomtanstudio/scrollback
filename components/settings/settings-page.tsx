@@ -21,6 +21,7 @@ interface SettingsData {
 
 interface SettingsPageProps {
   stats: { total: number; tweets: number; threads: number; articles: number; art: number };
+  isAuthed: boolean;
 }
 
 function SectionGroup({
@@ -45,7 +46,7 @@ function SectionGroup({
   );
 }
 
-export function SettingsPage({ stats }: SettingsPageProps) {
+export function SettingsPage({ stats, isAuthed }: SettingsPageProps) {
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -76,7 +77,7 @@ export function SettingsPage({ stats }: SettingsPageProps) {
 
   return (
     <div className="relative z-10 max-w-[960px] mx-auto px-6">
-      <Header captureCount={stats.total} />
+      <Header captureCount={stats.total} isAuthed={isAuthed} currentPath="/settings" />
 
       <div className="py-8">
         <h1 className="font-heading text-3xl font-extrabold tracking-tight text-[#f0f0f5] mb-2">

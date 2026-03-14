@@ -13,9 +13,10 @@ interface HomePageProps {
   initialItems: ContentItemWithMedia[];
   totalCount: number;
   stats: { total: number; tweets: number; threads: number; articles: number; art: number };
+  isAuthed: boolean;
 }
 
-export function HomePage({ initialItems, totalCount, stats }: HomePageProps) {
+export function HomePage({ initialItems, totalCount, stats, isAuthed }: HomePageProps) {
   const [activeType, setActiveType] = useState("");
   const [searchResults, setSearchResults] = useState<ContentItemWithMedia[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -43,7 +44,7 @@ export function HomePage({ initialItems, totalCount, stats }: HomePageProps) {
   return (
     <div className="relative z-10 max-w-[1200px] mx-auto px-6">
       {/* Header */}
-      <Header captureCount={stats.total} />
+      <Header captureCount={stats.total} isAuthed={isAuthed} currentPath="/" />
 
       {/* Hero */}
       <div className="flex flex-col items-center pt-20 pb-10 text-center">
