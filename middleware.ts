@@ -13,6 +13,7 @@ const EXTENSION_API_PATHS = [
 const PUBLIC_API_PATHS = [
   "/api/auth/",      // NextAuth routes
   "/api/setup/",     // Onboarding
+  "/api/admin/setup", // First-time admin account creation
   "/api/stats",      // Stats for home page
   "/api/items",      // Public feed API
   "/api/search",     // Public search
@@ -45,9 +46,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Public API routes — allow GET always
+  // Public API routes — allow all methods
   if (PUBLIC_API_PATHS.some((p) => pathname.startsWith(p))) {
-    if (method === "GET") return NextResponse.next();
+    return NextResponse.next();
   }
 
   // Check if this request needs auth
