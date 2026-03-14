@@ -26,7 +26,8 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
     ? { ...baseWhere, id: { notIn: excludeIds } }
     : baseWhere;
 
-  const [items, totalCount] = await Promise.all([
+  // Fetch more than needed so we have enough after thread deduplication
+  const [rawItems, totalCount] = await Promise.all([
     prisma.contentItem.findMany({
       where,
       include: {
@@ -35,10 +36,23 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
         tags: { include: { tag: true } },
       },
       orderBy: { created_at: "desc" },
-      take: limit,
+      take: limit * 3,
     }),
     prisma.contentItem.count({ where: baseWhere }),
   ]);
+
+  // Deduplicate threads: for items sharing a conversation_id, keep only the
+  // earliest one (the root tweet). Non-thread items pass through unchanged.
+  const seenConversations = new Set<string>();
+  const items = [];
+  for (const item of rawItems) {
+    if (item.conversation_id && item.source_type === "thread") {
+      if (seenConversations.has(item.conversation_id)) continue;
+      seenConversations.add(item.conversation_id);
+    }
+    items.push(item);
+    if (items.length >= limit) break;
+  }
 
   const loadedCount = excludeIds.length + items.length;
   const hasMore = loadedCount < totalCount;
