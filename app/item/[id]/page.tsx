@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { fetchItemById, fetchThreadChain } from "@/lib/db/queries";
+import { auth } from "@/lib/auth/auth";
 import type { Metadata } from "next";
 import type { DetailItem, ContentItemWithMedia } from "@/lib/db/types";
 import { ItemDetailPage } from "@/components/detail/item-detail-page";
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function ItemDetailPageRoute({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const item = await fetchItemById(id);
+  const [item, session] = await Promise.all([fetchItemById(id), auth()]);
   if (!item) notFound();
   const serializedItem = JSON.parse(JSON.stringify(item)) as DetailItem;
 
@@ -28,7 +29,7 @@ export default async function ItemDetailPageRoute({ params }: { params: Promise<
 
   return (
     <main className="min-h-screen">
-      <ItemDetailPage item={serializedItem} threadSiblings={threadSiblings} />
+      <ItemDetailPage item={serializedItem} threadSiblings={threadSiblings} isAuthed={!!session?.user} />
     </main>
   );
 }

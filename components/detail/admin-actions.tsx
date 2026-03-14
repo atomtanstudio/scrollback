@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Trash2, RefreshCw } from "lucide-react";
 import { ItemEditDialog } from "@/components/admin/item-edit-dialog";
@@ -25,20 +25,11 @@ const btnClass =
 
 export function AdminActions({ item }: AdminActionsProps) {
   const router = useRouter();
-  const [isAuthed, setIsAuthed] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
   const [reprocessStatus, setReprocessStatus] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/auth/session", { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => setIsAuthed(!!d?.user))
-      .catch(() => setIsAuthed(false));
-  }, []);
-
-  if (!isAuthed) return null;
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const adminItem: AdminItem = {
     id: item.id,
@@ -54,6 +45,14 @@ export function AdminActions({ item }: AdminActionsProps) {
     posted_at: item.posted_at instanceof Date ? item.posted_at.toISOString() : item.posted_at,
     created_at: "",
     thumbnail: null,
+  };
+
+  const clearStatusAfter = (ms: number) => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      setReprocessStatus(null);
+      timeoutRef.current = null;
+    }, ms);
   };
 
   const handleDelete = async () => {
@@ -75,15 +74,15 @@ export function AdminActions({ item }: AdminActionsProps) {
       });
       if (res.ok) {
         setReprocessStatus("Queued");
-        setTimeout(() => setReprocessStatus(null), 2000);
+        clearStatusAfter(2000);
       } else {
         setReprocessStatus("Failed");
-        setTimeout(() => setReprocessStatus(null), 3000);
+        clearStatusAfter(3000);
       }
     } catch (err) {
       console.error("Failed to reprocess:", err);
       setReprocessStatus("Failed");
-      setTimeout(() => setReprocessStatus(null), 3000);
+      clearStatusAfter(3000);
     } finally {
       setReprocessing(false);
     }

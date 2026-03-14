@@ -46,9 +46,10 @@ const itemVariants = {
 interface ItemDetailPageProps {
   item: DetailItem;
   threadSiblings?: ContentItemWithMedia[];
+  isAuthed?: boolean;
 }
 
-export function ItemDetailPage({ item, threadSiblings = [] }: ItemDetailPageProps) {
+export function ItemDetailPage({ item, threadSiblings = [], isAuthed = false }: ItemDetailPageProps) {
   const cardType = getCardType(item.source_type);
   const isArticle = cardType === "article";
   const isThread = cardType === "thread";
@@ -90,7 +91,7 @@ export function ItemDetailPage({ item, threadSiblings = [] }: ItemDetailPageProp
 
           {/* Right column: sidebar */}
           <motion.div variants={itemVariants}>
-            <DetailSidebar item={item} cardType={cardType} />
+            <DetailSidebar item={item} cardType={cardType} isAuthed={isAuthed} />
           </motion.div>
         </div>
 

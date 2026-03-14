@@ -11,6 +11,7 @@ type CardType = "tweet" | "thread" | "article" | "art";
 interface DetailSidebarProps {
   item: DetailItem;
   cardType: CardType;
+  isAuthed?: boolean;
 }
 
 const accentColors: Record<CardType, string> = {
@@ -192,7 +193,7 @@ function CategoriesCard({ categories, cardType }: { categories: DetailItem["cate
   );
 }
 
-export function DetailSidebar({ item, cardType }: DetailSidebarProps) {
+export function DetailSidebar({ item, cardType, isAuthed = false }: DetailSidebarProps) {
   const accent = accentColors[cardType];
   const sourceTypeLabel =
     item.source_type.charAt(0).toUpperCase() + item.source_type.slice(1);
@@ -219,7 +220,7 @@ export function DetailSidebar({ item, cardType }: DetailSidebarProps) {
         sourceType={item.source_type}
       />
 
-      <AdminActions item={item} />
+      {isAuthed && <AdminActions item={item} />}
 
       <TagsCard tags={item.tags} cardType={cardType} />
       <CategoriesCard categories={item.categories} cardType={cardType} />
