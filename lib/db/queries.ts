@@ -45,17 +45,22 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
           orderBy: { created_at: "desc" },
           take: limit,
         }),
-    // One root tweet per thread: pick the earliest item per conversation_id
-    // (the root tweet, not a reply). Uses posted_at so we get the original
-    // tweet date, falling back to created_at for items without posted_at.
+    // One thread per author: the same thread can be captured multiple times
+    // from different entry points, yielding different conversation_ids.
+    // Deduplicating by author_handle ensures only one thread card per author
+    // appears in the feed regardless of how many captures occurred.
+    // Within each author's threads, we pick the root tweet (earliest posted_at).
     isThreadFilter
       ? (prisma.$queryRawUnsafe(
-          `SELECT DISTINCT ON (conversation_id) id
-           FROM content_items
-           WHERE source_type = 'thread'
-             AND conversation_id IS NOT NULL
-             ${excludeIds.length > 0 ? `AND id NOT IN (${excludeIds.map((_, i) => `$${i + 1}`).join(",")})` : ""}
-           ORDER BY conversation_id, COALESCE(posted_at, created_at) ASC
+          `SELECT DISTINCT ON (author_handle) id FROM (
+             SELECT DISTINCT ON (conversation_id) id, author_handle, created_at
+             FROM content_items
+             WHERE source_type = 'thread'
+               AND conversation_id IS NOT NULL
+               ${excludeIds.length > 0 ? `AND id NOT IN (${excludeIds.map((_, i) => `$${i + 1}`).join(",")})` : ""}
+             ORDER BY conversation_id, COALESCE(posted_at, created_at) ASC
+           ) roots
+           ORDER BY author_handle, created_at DESC
            LIMIT $${excludeIds.length + 1}`,
           ...excludeIds,
           limit,
