@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { BrandWordmark } from "@/components/brand-wordmark";
 import {
   onboardingHeadingClass,
   onboardingNoteClass,
@@ -16,11 +17,7 @@ interface WelcomeStepProps {
 export function WelcomeStep({ onContinue }: WelcomeStepProps) {
   return (
     <div className="flex flex-col items-center text-center">
-      <div className="mb-4 flex items-center font-heading text-[32px] font-semibold tracking-tight text-[#f2ede5]">
-        feed
-        <span className="relative top-[1px] mx-[2px] inline-block h-[7px] w-[7px] rounded-full bg-[var(--accent-article)]" />
-        silo
-      </div>
+      <BrandWordmark className="mb-4 text-[32px] font-semibold tracking-tight text-[#f2ede5]" />
 
       <h1 className={cn(onboardingHeadingClass, "max-w-[12ch]")}>
         Your personal content

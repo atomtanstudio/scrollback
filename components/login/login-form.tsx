@@ -4,6 +4,7 @@ import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { loginAction } from "@/lib/auth/actions";
+import { BrandWordmark } from "@/components/brand-wordmark";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -32,9 +33,7 @@ export function LoginForm() {
           href="/"
           className="font-heading text-2xl font-semibold tracking-[-0.05em] text-[#f2ede5] transition-opacity hover:opacity-80"
         >
-          feed
-          <span className="text-[var(--accent-article)]">.</span>
-          silo
+          <BrandWordmark className="text-[1em]" />
         </Link>
       </div>
 

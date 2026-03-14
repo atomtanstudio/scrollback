@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Settings, LogOut, Shield } from "lucide-react";
 import { logoutAction } from "@/lib/auth/actions";
+import { BrandWordmark } from "@/components/brand-wordmark";
 
 interface HeaderProps {
   captureCount?: number;
@@ -22,9 +23,7 @@ export function Header({ captureCount, isAuthed, currentPath = "/" }: HeaderProp
         href="/"
         className="font-heading flex items-center text-[clamp(1.7rem,2vw,2.15rem)] font-semibold tracking-[-0.05em] text-[#f2ede5] transition-opacity hover:opacity-80"
       >
-        feed
-        <span className="relative top-[1px] mx-[1px] inline-block h-[5px] w-[5px] rounded-full bg-[var(--accent-article)]" />
-        silo
+        <BrandWordmark className="text-[1em]" />
       </Link>
 
       <div className="flex flex-wrap items-center justify-end gap-2 text-[13px] text-[#a49b8b]">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandWordmark } from "@/components/brand-wordmark";
 
 export default function ArchivePage() {
   return (
@@ -9,9 +10,7 @@ export default function ArchivePage() {
             href="/"
             className="font-heading text-[clamp(1.7rem,2vw,2.15rem)] font-semibold tracking-[-0.05em] text-[#f2ede5] transition-opacity hover:opacity-80"
           >
-            feed
-            <span className="relative top-[1px] mx-[1px] inline-block h-[5px] w-[5px] rounded-full bg-[var(--accent-article)]" />
-            silo
+            <BrandWordmark className="text-[1em]" />
           </Link>
           <div className="flex gap-2">
             <Link
