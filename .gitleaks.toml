@@ -1,0 +1,20 @@
+title = "FeedSilo gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Placeholder connection strings and example secrets in docs, examples, and tests"
+paths = [
+  '''^\.env\.example$''',
+  '''^docs/superpowers/''',
+  '''^lib/config/config\.test\.ts$''',
+  '''^components/onboarding/steps/configure-step\.tsx$'''
+]
+
+[[allowlists]]
+description = "Documented placeholder database URLs"
+regexes = [
+  '''postgres(?:ql)?:\/\/user:(?:password|pass)@''',
+  '''postgresql:\/\/postgres\.\[ref\]:\[pass\]@\[host\]:5432\/postgres'''
+]
