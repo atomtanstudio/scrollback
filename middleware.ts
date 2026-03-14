@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
 
   // Onboarding check (existing logic)
   if (!pathname.startsWith("/onboarding") && !pathname.startsWith("/api/")) {
-    const hasEnv = process.env.DATABASE_URL && process.env.DATABASE_TYPE;
+    const hasEnv = Boolean(process.env.DATABASE_URL && process.env.DATABASE_TYPE);
     const configured = request.cookies.get("feedsilo-configured");
     if (!hasEnv && configured?.value !== "true") {
       return NextResponse.redirect(new URL("/onboarding", request.url));

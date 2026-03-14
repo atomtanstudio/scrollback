@@ -3,9 +3,57 @@ import { z } from "zod";
 import { writeConfig, invalidateConfigCache, type FeedsiloConfig } from "@/lib/config";
 import { exec } from "child_process";
 import { promisify } from "util";
+import path from "path";
+import fs from "fs/promises";
 import { redactSensitiveText, sanitizeErrorMessage } from "@/lib/security/redact";
 
 const execAsync = promisify(exec);
+
+function resolveSqliteFilePath(databaseUrl: string): string | null {
+  if (!databaseUrl.startsWith("file:")) return null;
+  const filePath = databaseUrl.slice("file:".length);
+  if (!filePath) return null;
+  return path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
+}
+
+async function deleteSqliteDatabaseFiles(databaseUrl: string): Promise<void> {
+  const sqlitePath = resolveSqliteFilePath(databaseUrl);
+  if (!sqlitePath) return;
+
+  const candidatePaths = [
+    sqlitePath,
+    `${sqlitePath}-wal`,
+    `${sqlitePath}-shm`,
+    `${sqlitePath}-journal`,
+  ];
+
+  await Promise.all(
+    candidatePaths.map(async (candidatePath) => {
+      try {
+        await fs.unlink(candidatePath);
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code !== "ENOENT") throw error;
+      }
+    })
+  );
+}
+
+async function pushSchema(config: FeedsiloConfig, schemaFlag: string): Promise<void> {
+  await execAsync(`npx prisma db push ${schemaFlag} --accept-data-loss`, {
+    env: { ...process.env, DATABASE_URL: config.database.url },
+    timeout: 30000,
+  });
+}
+
+function getExecErrorText(error: unknown): string {
+  if (typeof error === "object" && error !== null) {
+    const maybeError = error as { stderr?: unknown; message?: unknown };
+    if (typeof maybeError.stderr === "string" && maybeError.stderr) return maybeError.stderr;
+    if (typeof maybeError.message === "string" && maybeError.message) return maybeError.message;
+  }
+  return "Unknown error";
+}
 
 const requestSchema = z.object({
   database: z.object({
@@ -51,16 +99,30 @@ export async function POST(request: NextRequest) {
         : "--schema=prisma/schema.prisma";
 
     try {
-      await execAsync(`npx prisma db push ${schemaFlag} --accept-data-loss`, {
-        env: { ...process.env, DATABASE_URL: config.database.url },
-        timeout: 30000,
-      });
+      await pushSchema(config, schemaFlag);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      return NextResponse.json({
-        success: false,
-        error: `Migration failed: ${redactSensitiveText(error.stderr || error.message || "Unknown error")}`,
-      });
+      const stderr = getExecErrorText(error);
+      const needsSqliteReset =
+        config.database.type === "sqlite" &&
+        stderr.includes("content_items_fts_config");
+
+      if (needsSqliteReset) {
+        try {
+          await deleteSqliteDatabaseFiles(config.database.url);
+          await pushSchema(config, schemaFlag);
+        } catch (retryError: unknown) {
+          return NextResponse.json({
+            success: false,
+            error: `Migration failed: ${redactSensitiveText(getExecErrorText(retryError))}`,
+          });
+        }
+      } else {
+        return NextResponse.json({
+          success: false,
+          error: `Migration failed: ${redactSensitiveText(stderr)}`,
+        });
+      }
     }
 
     // For PostgreSQL, try to create pgvector extension
