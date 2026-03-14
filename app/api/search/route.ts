@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSearchProvider } from "@/lib/db/search-provider";
 import { mergeAndRankResults } from "@/lib/search/hybrid";
 import { generateEmbedding } from "@/lib/embeddings/gemini";
+import { getClient } from "@/lib/db/client";
 import type { SearchFilters, SearchOptions } from "@/lib/db/types";
 
 export async function GET(request: NextRequest) {
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
     | "keyword"
     | "semantic"
     | "hybrid";
+  const format = searchParams.get("format") || "default";
   const type = searchParams.get("type") || undefined;
   const author = searchParams.get("author") || undefined;
   const dateFrom = searchParams.get("date_from") || undefined;
@@ -26,7 +28,7 @@ export async function GET(request: NextRequest) {
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
   const perPage = Math.min(
     100,
-    Math.max(1, parseInt(searchParams.get("per_page") || "20", 10))
+    Math.max(1, parseInt(searchParams.get("per_page") || "50", 10))
   );
 
   const filters: SearchFilters = { type, author, dateFrom, dateTo };
@@ -82,6 +84,28 @@ export async function GET(request: NextRequest) {
       semanticWeight
     );
     const trimmed = results.slice(0, perPage);
+
+    // Full format: fetch complete ContentItemWithMedia for card rendering
+    if (format === "full" && trimmed.length > 0) {
+      const prisma = await getClient();
+      const ids = trimmed.map((r) => r.id);
+      const fullItems = await prisma.contentItem.findMany({
+        where: { id: { in: ids } },
+        include: { media_items: true },
+      });
+
+      // Preserve search ranking order
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const itemMap = new Map(fullItems.map((item: any) => [item.id, item]));
+      const ordered = ids.map((id) => itemMap.get(id)).filter(Boolean);
+
+      return NextResponse.json({
+        items: JSON.parse(JSON.stringify(ordered)),
+        total,
+        page,
+        per_page: perPage,
+      });
+    }
 
     return NextResponse.json({
       results: trimmed,
