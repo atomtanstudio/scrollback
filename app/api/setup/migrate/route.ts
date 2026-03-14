@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
       database: parsed.data.database,
       embeddings: parsed.data.embeddings || { provider: "gemini" },
       extension: parsed.data.extension || {},
+      xapi: {},
       search: { keywordWeight: 0.4, semanticWeight: 0.6 },
     };
 

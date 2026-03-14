@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const PUBLIC_PATHS = [
   "/onboarding",
-  "/api/setup",
+  "/api/",
   "/_next",
   "/favicon.ico",
 ];

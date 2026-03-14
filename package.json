@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1008.0",
+    "@aws-sdk/lib-storage": "^3.1008.0",
     "@google/genai": "^1.44.0",
     "@prisma/adapter-better-sqlite3": "^7.5.0",
     "@prisma/adapter-pg": "^7.5.0",
@@ -26,6 +27,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.36.0",
     "lucide-react": "^0.577.0",
+    "marked": "^17.0.4",
     "next": "14.2.35",
     "pg": "^8.20.0",
     "prisma": "^7.5.0",
