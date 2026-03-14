@@ -17,7 +17,7 @@ interface AdminActionsProps {
     author_handle: string | null;
     author_display_name: string | null;
     original_url: string | null;
-    posted_at: string | null;
+    posted_at: Date | string | null;
   };
 }
 
@@ -45,7 +45,7 @@ export function AdminActions({ item }: AdminActionsProps) {
     author_display_name: item.author_display_name,
     author_avatar_url: null,
     original_url: item.original_url,
-    posted_at: item.posted_at,
+    posted_at: item.posted_at instanceof Date ? item.posted_at.toISOString() : item.posted_at,
     created_at: "",
     thumbnail: null,
   };

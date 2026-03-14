@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") || "";
   const skip = (page - 1) * limit;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {};
   if (type) where.source_type = type;
   if (search) {
@@ -49,6 +50,7 @@ export async function GET(request: NextRequest) {
   ]);
 
   return NextResponse.json({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     items: items.map((item: any) => ({
       ...item,
       body_preview: item.body_text?.substring(0, 150) || "",

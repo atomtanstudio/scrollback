@@ -14,7 +14,11 @@ export async function POST(
 
   const item = await db.contentItem.findUnique({
     where: { id },
-    select: { id: true, body_text: true, title: true, author_handle: true },
+    select: {
+      id: true, body_text: true, title: true, author_handle: true,
+      source_type: true,
+      categories: { select: { category: { select: { slug: true } } } },
+    },
   });
 
   if (!item) {
@@ -25,14 +29,22 @@ export async function POST(
   (async () => {
     try {
       const text = `${item.title || ""} ${item.body_text || ""}`.trim();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const categorySlugs = item.categories?.map((c: any) => c.category.slug) || [];
 
-      // 1. Re-classify source_type
+      // 1. Re-classify via Gemini (summary, tags, categories)
       const { classifyContent } = await import("@/lib/embeddings/gemini");
-      const newType = await classifyContent(text);
-      if (newType) {
+      const result = await classifyContent(
+        item.title || "",
+        item.body_text || "",
+        item.source_type,
+        categorySlugs,
+        item.author_handle
+      );
+      if (result) {
         await db.contentItem.update({
           where: { id },
-          data: { source_type: newType as any },
+          data: { ai_summary: result.ai_summary },
         });
       }
 

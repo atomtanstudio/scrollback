@@ -18,6 +18,7 @@ export async function PUT(
     "source_type", "author_handle", "author_display_name",
     "title", "body_text", "original_url", "posted_at",
   ];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data: any = {};
   for (const key of allowed) {
     if (key in updates) {
