@@ -56,6 +56,9 @@ export async function GET() {
     extension: {
       pairingToken: config.extension?.pairingToken || null,
     },
+    xapi: {
+      hasBearerToken: !!config.xapi?.bearerToken,
+    },
     search: {
       keywordWeight: config.search.keywordWeight,
       semanticWeight: config.search.semanticWeight,
@@ -82,6 +85,9 @@ export async function POST(request: Request) {
     }
     if (body.extension) {
       updated.extension = { ...current.extension, ...body.extension };
+    }
+    if (body.xapi) {
+      updated.xapi = { ...(current.xapi || {}), ...body.xapi };
     }
     if (body.search) {
       updated.search = { ...current.search, ...body.search };

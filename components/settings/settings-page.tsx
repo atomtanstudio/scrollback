@@ -14,12 +14,35 @@ interface SettingsData {
   database?: { type: string; url: string };
   embeddings?: { provider: string; apiKey: string | null; hasKey: boolean };
   extension?: { pairingToken: string | null };
+  xapi?: { hasBearerToken: boolean };
   search?: { keywordWeight: number; semanticWeight: number };
   r2?: { configured: boolean; mediaWithStored: number; mediaWithoutStored: number };
 }
 
 interface SettingsPageProps {
   stats: { total: number; tweets: number; threads: number; articles: number; art: number };
+}
+
+function SectionGroup({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="mb-4">
+        <h2 className="font-heading text-lg font-bold tracking-tight text-[#f0f0f5]">
+          {title}
+        </h2>
+        <p className="text-xs text-[#8888aa] mt-0.5">{description}</p>
+      </div>
+      <div className="flex flex-col gap-4">{children}</div>
+    </div>
+  );
 }
 
 export function SettingsPage({ stats }: SettingsPageProps) {
@@ -29,10 +52,19 @@ export function SettingsPage({ stats }: SettingsPageProps) {
   const fetchSettings = async () => {
     try {
       const res = await fetch("/api/settings");
+      if (!res.ok) {
+        console.error("Settings fetch failed:", res.status, res.statusText);
+        return;
+      }
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        console.error("Settings returned non-JSON:", contentType);
+        return;
+      }
       const data = await res.json();
       setSettings(data);
-    } catch {
-      // Silently fail
+    } catch (err) {
+      console.error("Settings fetch error:", err);
     } finally {
       setLoading(false);
     }
@@ -50,7 +82,7 @@ export function SettingsPage({ stats }: SettingsPageProps) {
         <h1 className="font-heading text-3xl font-extrabold tracking-tight text-[#f0f0f5] mb-2">
           Settings
         </h1>
-        <p className="text-[hsl(var(--muted-foreground))] text-sm mb-8">
+        <p className="text-[hsl(var(--muted-foreground))] text-sm mb-10">
           Configure your FeedSilo instance
         </p>
 
@@ -61,13 +93,36 @@ export function SettingsPage({ stats }: SettingsPageProps) {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
-            <DatabaseSection settings={settings} onRefresh={fetchSettings} />
-            <ExtensionSection settings={settings} onRefresh={fetchSettings} />
-            <XApiSection />
-            <SearchSection settings={settings} onRefresh={fetchSettings} />
-            <EmbeddingsSection settings={settings} onRefresh={fetchSettings} />
-            <DataSection stats={stats} settings={settings} />
+          <div className="flex flex-col gap-10">
+            <SectionGroup
+              title="Capture"
+              description="Browser extension and content ingestion"
+            >
+              <ExtensionSection settings={settings} onRefresh={fetchSettings} />
+            </SectionGroup>
+
+            <SectionGroup
+              title="Integrations"
+              description="External API connections"
+            >
+              <XApiSection settings={settings} onRefresh={fetchSettings} />
+              <EmbeddingsSection settings={settings} onRefresh={fetchSettings} />
+            </SectionGroup>
+
+            <SectionGroup
+              title="Infrastructure"
+              description="Database, search, and storage"
+            >
+              <DatabaseSection settings={settings} onRefresh={fetchSettings} />
+              <SearchSection settings={settings} onRefresh={fetchSettings} />
+            </SectionGroup>
+
+            <SectionGroup
+              title="Data"
+              description="Stats, export, and management"
+            >
+              <DataSection stats={stats} settings={settings} />
+            </SectionGroup>
           </div>
         )}
       </div>

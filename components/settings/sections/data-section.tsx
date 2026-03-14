@@ -35,7 +35,24 @@ export function DataSection({ stats, settings }: DataSectionProps) {
 
   return (
     <div className="rounded-[14px] border border-[#ffffff0a] bg-[#111118] p-6">
-      <h3 className="font-heading font-semibold text-[15px] text-[#f0f0f5] mb-4">Data</h3>
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-[10px] bg-[#1a1a24] border border-[#ffffff0a] flex items-center justify-center shrink-0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+        </div>
+        <div>
+          <h3 className="font-heading font-semibold text-[15px] text-[#f0f0f5]">
+            Data
+          </h3>
+          <p className="text-xs text-[#8888aa]">
+            {stats.total.toLocaleString()} items captured
+          </p>
+        </div>
+      </div>
 
       <div className="flex flex-col gap-5">
         {/* Stats */}

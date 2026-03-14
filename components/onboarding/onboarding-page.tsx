@@ -6,6 +6,8 @@ import { OnboardingLayout } from "./onboarding-layout";
 import { WelcomeStep } from "./steps/welcome-step";
 import { DatabaseStep, type DatabaseChoice } from "./steps/database-step";
 import { ConfigureStep } from "./steps/configure-step";
+import { GeminiStep } from "./steps/gemini-step";
+import { XApiStep } from "./steps/xapi-step";
 import { ExtensionStep } from "./steps/extension-step";
 
 const STORAGE_KEY = "feedsilo-onboarding-step";
@@ -56,7 +58,7 @@ export function OnboardingPage() {
 
   const goNext = useCallback(() => {
     setDirection(1);
-    setStep((s) => Math.min(s + 1, 4));
+    setStep((s) => Math.min(s + 1, 6));
   }, []);
 
   const goBack = useCallback(() => {
@@ -76,7 +78,7 @@ export function OnboardingPage() {
   return (
     <OnboardingLayout
       currentStep={step}
-      totalSteps={4}
+      totalSteps={6}
       onBack={step > 1 ? goBack : undefined}
     >
       <AnimatePresence mode="wait" custom={direction}>
@@ -100,7 +102,9 @@ export function OnboardingPage() {
           {step === 3 && dbChoice && (
             <ConfigureStep dbType={dbChoice} onContinue={goNext} />
           )}
-          {step === 4 && <ExtensionStep />}
+          {step === 4 && <GeminiStep onContinue={goNext} />}
+          {step === 5 && <XApiStep onContinue={goNext} />}
+          {step === 6 && <ExtensionStep />}
         </motion.div>
       </AnimatePresence>
     </OnboardingLayout>
