@@ -16,6 +16,11 @@ function resolveSqliteFilePath(databaseUrl: string): string | null {
   return path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
 }
 
+function normalizeSqliteDatabaseUrl(databaseUrl: string): string {
+  const sqlitePath = resolveSqliteFilePath(databaseUrl);
+  return sqlitePath ? `file:${sqlitePath}` : databaseUrl;
+}
+
 async function deleteSqliteDatabaseFiles(databaseUrl: string): Promise<void> {
   const sqlitePath = resolveSqliteFilePath(databaseUrl);
   if (!sqlitePath) return;
@@ -44,6 +49,34 @@ async function pushSchema(config: FeedsiloConfig, schemaFlag: string): Promise<v
     env: { ...process.env, DATABASE_URL: config.database.url },
     timeout: 30000,
   });
+}
+
+async function ensureSqliteParentDirectory(databaseUrl: string): Promise<void> {
+  const sqlitePath = resolveSqliteFilePath(databaseUrl);
+  if (!sqlitePath) return;
+  await fs.mkdir(path.dirname(sqlitePath), { recursive: true });
+}
+
+async function verifySqliteSchema(databaseUrl: string): Promise<void> {
+  const sqlitePath = resolveSqliteFilePath(databaseUrl);
+  if (!sqlitePath) {
+    throw new Error("Invalid SQLite database path");
+  }
+
+  const { default: Database } = await import("better-sqlite3");
+  const db = new Database(sqlitePath, { readonly: true });
+
+  try {
+    const contentItemsTable = db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+      .get("content_items");
+
+    if (!contentItemsTable) {
+      throw new Error("SQLite setup completed without creating the content_items table");
+    }
+  } finally {
+    db.close();
+  }
 }
 
 function getExecErrorText(error: unknown): string {
@@ -80,8 +113,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const database =
+      parsed.data.database.type === "sqlite"
+        ? {
+            ...parsed.data.database,
+            url: normalizeSqliteDatabaseUrl(parsed.data.database.url),
+          }
+        : parsed.data.database;
+
     const config: FeedsiloConfig = {
-      database: parsed.data.database,
+      database,
       embeddings: parsed.data.embeddings || { provider: "gemini" },
       extension: parsed.data.extension || {},
       xapi: {},
@@ -99,6 +140,9 @@ export async function POST(request: NextRequest) {
         : "--schema=prisma/schema.prisma";
 
     try {
+      if (config.database.type === "sqlite") {
+        await ensureSqliteParentDirectory(config.database.url);
+      }
       await pushSchema(config, schemaFlag);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
@@ -121,6 +165,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: false,
           error: `Migration failed: ${redactSensitiveText(stderr)}`,
+        });
+      }
+    }
+
+    if (config.database.type === "sqlite") {
+      try {
+        await verifySqliteSchema(config.database.url);
+      } catch (error: unknown) {
+        return NextResponse.json({
+          success: false,
+          error: `Migration failed: ${redactSensitiveText(getExecErrorText(error))}`,
         });
       }
     }
