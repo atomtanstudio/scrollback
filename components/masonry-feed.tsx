@@ -18,6 +18,8 @@ const GAP = 20;
 function filterByType(items: ContentItemWithMedia[], type?: string): ContentItemWithMedia[] {
   if (!type) return items;
   if (type === "art") return items.filter(i => i.source_type === "image_prompt" || i.source_type === "video_prompt");
+  if (type === "rss") return items.filter(i => i.source_platform === "rss");
+  if (type === "article") return items.filter(i => i.source_type === "article" && i.source_platform !== "rss");
   return items.filter(i => i.source_type === type);
 }
 

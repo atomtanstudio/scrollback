@@ -64,11 +64,18 @@ export function ArticleCard({ item, href }: ArticleCardProps) {
         )}
       </div>
       <div className="p-4 pt-4">
-        {sourceDomain && (
-          <div className="mb-2 inline-flex rounded-full border border-[rgba(184,148,98,0.24)] bg-[rgba(184,148,98,0.12)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#e0c29c]">
-            {sourceDomain}
-          </div>
-        )}
+        <div className="mb-2 flex flex-wrap gap-2">
+          {item.source_platform === "rss" && (
+            <div className="inline-flex rounded-full border border-[rgba(184,148,98,0.24)] bg-[rgba(184,148,98,0.16)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#f0cf9f]">
+              RSS
+            </div>
+          )}
+          {sourceDomain && (
+            <div className="inline-flex rounded-full border border-[rgba(184,148,98,0.24)] bg-[rgba(184,148,98,0.12)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#e0c29c]">
+              {sourceDomain}
+            </div>
+          )}
+        </div>
         <h3 className="mb-2 font-heading text-[1.05rem] font-semibold leading-tight tracking-[-0.03em] text-[#f2ede5] line-clamp-2">
           {displayTitle}
         </h3>

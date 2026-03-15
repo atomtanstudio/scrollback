@@ -1,5 +1,5 @@
 interface StatPillsProps {
-  stats: { total: number; tweets: number; threads: number; articles: number; art: number };
+  stats: { total: number; tweets: number; threads: number; articles: number; rss: number; art: number };
 }
 
 export function StatPills({ stats }: StatPillsProps) {
@@ -7,6 +7,7 @@ export function StatPills({ stats }: StatPillsProps) {
     { label: "Tweets", count: stats.tweets, color: "bg-[var(--accent-tweet)]" },
     { label: "Threads", count: stats.threads, color: "bg-[var(--accent-thread)]" },
     { label: "Articles", count: stats.articles, color: "bg-[var(--accent-article)]" },
+    { label: "RSS", count: stats.rss, color: "bg-[var(--accent-article)]" },
     { label: "Art", count: stats.art, color: "bg-[var(--accent-art)]" },
   ];
 

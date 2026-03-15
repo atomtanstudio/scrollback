@@ -21,7 +21,7 @@ interface SettingsData {
 }
 
 interface SettingsPageProps {
-  stats: { total: number; tweets: number; threads: number; articles: number; art: number };
+  stats: { total: number; tweets: number; threads: number; articles: number; rss: number; art: number };
   isAuthed: boolean;
 }
 
@@ -101,7 +101,7 @@ export function SettingsPage({ stats, isAuthed }: SettingsPageProps) {
                 {stats.total.toLocaleString()}
               </div>
               <p className="mt-4 text-[15px] leading-7 text-[#b4ab9d]">
-                {stats.tweets.toLocaleString()} tweets, {stats.threads.toLocaleString()} threads, {stats.articles.toLocaleString()} articles, and {stats.art.toLocaleString()} art items.
+                {stats.tweets.toLocaleString()} tweets, {stats.threads.toLocaleString()} threads, {stats.articles.toLocaleString()} articles, {stats.rss.toLocaleString()} RSS items, and {stats.art.toLocaleString()} art items.
               </p>
             </div>
 

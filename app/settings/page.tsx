@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  let stats = { total: 0, tweets: 0, threads: 0, articles: 0, art: 0 };
+  let stats = { total: 0, tweets: 0, threads: 0, articles: 0, rss: 0, art: 0 };
   const session = await auth();
 
   try {

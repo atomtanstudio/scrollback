@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createRssFeed, listRssFeeds, syncAllRssFeeds } from "@/lib/rss/service";
+import { createRssFeed, listRssFeeds, previewRssFeed, syncAllRssFeeds } from "@/lib/rss/service";
 import { sanitizeErrorMessage } from "@/lib/security/redact";
 
 export async function GET() {
@@ -22,6 +22,12 @@ export async function POST(request: NextRequest) {
     if (action === "sync-all") {
       const result = await syncAllRssFeeds();
       return NextResponse.json({ success: true, ...result });
+    }
+
+    if (action === "preview") {
+      const feedUrl = typeof body?.feedUrl === "string" ? body.feedUrl : "";
+      const preview = await previewRssFeed(feedUrl);
+      return NextResponse.json({ success: true, preview });
     }
 
     const feedUrl = typeof body?.feedUrl === "string" ? body.feedUrl : "";

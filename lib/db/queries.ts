@@ -19,6 +19,11 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
   if (type) {
     if (type === "art") {
       baseWhere.source_type = { in: ["image_prompt", "video_prompt"] };
+    } else if (type === "rss") {
+      baseWhere.source_platform = "rss";
+    } else if (type === "article") {
+      baseWhere.source_type = "article";
+      baseWhere.source_platform = { not: "rss" };
     } else {
       baseWhere.source_type = type;
     }
@@ -139,17 +144,18 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
 
 export async function fetchStats() {
   const prisma = await getClient();
-  const [total, tweets, threads, articles, art] = await Promise.all([
+  const [total, tweets, threads, articles, rss, art] = await Promise.all([
     prisma.contentItem.count(),
     prisma.contentItem.count({ where: { source_type: "tweet" } }),
     prisma.contentItem.count({ where: { source_type: "thread" } }),
-    prisma.contentItem.count({ where: { source_type: "article" } }),
+    prisma.contentItem.count({ where: { source_type: "article", source_platform: { not: "rss" } } }),
+    prisma.contentItem.count({ where: { source_platform: "rss" } }),
     prisma.contentItem.count({
       where: { source_type: { in: ["image_prompt", "video_prompt"] } },
     }),
   ]);
 
-  return { total, tweets, threads, articles, art };
+  return { total, tweets, threads, articles, rss, art };
 }
 
 export async function fetchItemById(id: string) {

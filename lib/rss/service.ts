@@ -251,6 +251,46 @@ export async function createRssFeed(feedUrl: string) {
   });
 }
 
+export async function previewRssFeed(feedUrl: string) {
+  const normalizedUrl = normalizeFeedUrl(feedUrl);
+  const fetched = await fetchParsedFeed(normalizedUrl);
+  const parsed = fetched.parsed;
+
+  if (!parsed?.title) {
+    throw new Error("Could not parse a valid RSS or Atom feed");
+  }
+
+  const previewFeed = {
+    id: "preview",
+    title: parsed.title,
+    site_url: parsed.link || null,
+    feed_url: normalizedUrl,
+  };
+
+  const previewItems = [];
+  for (const entry of (parsed.items || []).slice(0, 5)) {
+    const payload = await mapFeedItemToPayload(previewFeed, entry);
+    if (!payload) continue;
+    previewItems.push({
+      title: payload.title || "Untitled",
+      source_url: payload.source_url,
+      body_preview: payload.body_text.slice(0, 320),
+      body_length: payload.body_text.length,
+      media_count: payload.media_urls?.length || 0,
+      posted_at: payload.posted_at,
+    });
+  }
+
+  return {
+    title: parsed.title,
+    description: parsed.description || null,
+    language: parsed.language || null,
+    site_url: parsed.link || null,
+    item_count: parsed.items?.length || 0,
+    items: previewItems,
+  };
+}
+
 export async function updateRssFeed(feedId: string, data: { active?: boolean }) {
   const prisma = await getClient();
   return prisma.rssFeed.update({

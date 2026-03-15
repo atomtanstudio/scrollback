@@ -18,7 +18,7 @@ interface HomePageProps {
   initialItems: ContentItemWithMedia[];
   totalCount: number;
   initialHasMore: boolean;
-  stats: { total: number; tweets: number; threads: number; articles: number; art: number };
+  stats: { total: number; tweets: number; threads: number; articles: number; rss: number; art: number };
   isAuthed: boolean;
 }
 
@@ -27,6 +27,7 @@ function isArtItem(item: ContentItemWithMedia) {
 }
 
 function getItemLabel(item: ContentItemWithMedia) {
+  if (item.source_platform === "rss") return "RSS";
   if (item.source_type === "thread") return "Thread";
   if (item.source_type === "article") return "Article";
   if (isArtItem(item)) return item.source_type === "video_prompt" ? "Video Prompt" : "Image Prompt";
@@ -150,6 +151,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
     { label: "Tweets", count: stats.tweets, dot: "bg-[var(--accent-tweet)]" },
     { label: "Threads", count: stats.threads, dot: "bg-[var(--accent-thread)]" },
     { label: "Articles", count: stats.articles, dot: "bg-[var(--accent-article)]" },
+    { label: "RSS", count: stats.rss, dot: "bg-[var(--accent-article)]" },
     { label: "Art", count: stats.art, dot: "bg-[var(--accent-art)]" },
   ];
 
@@ -158,6 +160,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
     { label: "Tweets", value: "tweet" },
     { label: "Threads", value: "thread" },
     { label: "Articles", value: "article" },
+    { label: "RSS", value: "rss" },
     { label: "Art", value: "art" },
   ];
 
@@ -296,9 +299,11 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
         ? "Threads"
         : activeType === "article"
           ? "Articles"
-          : activeType === "art"
-            ? "Art & Prompts"
-            : "Recent Captures";
+          : activeType === "rss"
+            ? "RSS"
+            : activeType === "art"
+              ? "Art & Prompts"
+              : "Recent Captures";
   const filteredTotalCount = searchResults
     ? searchResults.length
     : activeType === "tweet"
@@ -307,6 +312,8 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
         ? stats.threads
         : activeType === "article"
           ? stats.articles
+          : activeType === "rss"
+            ? stats.rss
           : activeType === "art"
             ? stats.art
             : totalCount;
@@ -380,8 +387,8 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                 </h1>
                 <p className="mt-5 max-w-[58ch] text-[16px] leading-8 text-[#b4ab9d]">
                   {stats.total.toLocaleString()} captures across {stats.tweets.toLocaleString()} tweets,{" "}
-                  {stats.threads.toLocaleString()} threads, {stats.articles.toLocaleString()} articles, and{" "}
-                  {stats.art.toLocaleString()} art items. Search, filters, and review cues stay close without hiding the content.
+                  {stats.threads.toLocaleString()} threads, {stats.articles.toLocaleString()} articles,{" "}
+                  {stats.rss.toLocaleString()} RSS items, and {stats.art.toLocaleString()} art items. Search, filters, and review cues stay close without hiding the content.
                 </p>
                 <div className="mt-8">
                   <SearchBar onSearch={handleSearch} onClear={handleClearSearch} />
@@ -405,7 +412,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                     {stats.total.toLocaleString()}
                   </div>
                   <p className="mt-4 text-[15px] leading-7 text-[#b4ab9d]">
-                    Largest category right now: {strongestLane.label.toLowerCase()} with {strongestLane.count.toLocaleString()} captures.
+                    Largest collection slice right now: {strongestLane.label.toLowerCase()} with {strongestLane.count.toLocaleString()} captures.
                   </p>
                 </div>
 

@@ -26,6 +26,11 @@ export async function GET(request: NextRequest) {
   };
   if (type === "art") {
     where.source_type = { in: ["image_prompt", "video_prompt"] };
+  } else if (type === "rss") {
+    where.source_platform = "rss";
+  } else if (type === "article") {
+    where.source_type = "article";
+    where.source_platform = { not: "rss" };
   } else if (type) {
     where.source_type = type;
   }

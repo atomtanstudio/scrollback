@@ -17,6 +17,24 @@ interface RssFeedRecord {
   };
 }
 
+interface RssPreviewItem {
+  title: string;
+  source_url: string;
+  body_preview: string;
+  body_length: number;
+  media_count: number;
+  posted_at: string | null;
+}
+
+interface RssPreview {
+  title: string;
+  description: string | null;
+  language: string | null;
+  site_url: string | null;
+  item_count: number;
+  items: RssPreviewItem[];
+}
+
 function formatSyncTime(value: string | null): string {
   if (!value) return "Never synced";
   return new Date(value).toLocaleString(undefined, {
@@ -46,6 +64,8 @@ export function RssSection({ onRefresh }: RssSectionProps) {
   const [saving, setSaving] = useState(false);
   const [syncingFeedId, setSyncingFeedId] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [preview, setPreview] = useState<RssPreview | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const loadFeeds = async () => {
@@ -79,6 +99,7 @@ export function RssSection({ onRefresh }: RssSectionProps) {
         throw new Error(data.error || "Failed to add feed");
       }
       setFeedUrl("");
+      setPreview(null);
       setMessage(`Added ${data.feed.title}`);
       await loadFeeds();
       onRefresh();
@@ -86,6 +107,29 @@ export function RssSection({ onRefresh }: RssSectionProps) {
       setMessage(error instanceof Error ? error.message : "Failed to add feed");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePreviewFeed = async () => {
+    if (!feedUrl.trim()) return;
+    setPreviewing(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/rss/feeds", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "preview", feedUrl }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to preview feed");
+      }
+      setPreview(data.preview);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to preview feed");
+      setPreview(null);
+    } finally {
+      setPreviewing(false);
     }
   };
 
@@ -209,6 +253,13 @@ export function RssSection({ onRefresh }: RssSectionProps) {
             className="h-11 flex-1 rounded-[12px] border border-[#d6c9b214] bg-[#111821] px-4 text-sm text-[#f2ede5] placeholder:text-[#6f695f] focus:border-[#d6c9b24d] focus:outline-none"
           />
           <button
+            onClick={handlePreviewFeed}
+            disabled={previewing || !feedUrl.trim()}
+            className="h-11 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-5 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233] disabled:opacity-50 disabled:cursor-default"
+          >
+            {previewing ? "Previewing..." : "Preview"}
+          </button>
+          <button
             onClick={handleAddFeed}
             disabled={saving || !feedUrl.trim()}
             className="h-11 rounded-[12px] bg-[var(--accent-article)] px-5 text-sm font-medium text-[#090c11] transition-all duration-200 cursor-pointer hover:brightness-110 disabled:opacity-50 disabled:cursor-default"
@@ -220,6 +271,44 @@ export function RssSection({ onRefresh }: RssSectionProps) {
           Start with manual sync. The first sync imports the latest 24 entries so a new feed does not overwhelm your library.
         </p>
       </div>
+
+      {preview && (
+        <div className="mb-5 rounded-[16px] border border-[#d6c9b214] bg-[#ffffff04] p-4">
+          <div className="mb-4">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">Preview</p>
+            <h4 className="mt-2 font-heading text-[1.05rem] font-semibold text-[#f2ede5]">
+              {preview.title}
+            </h4>
+            <p className="mt-2 text-xs text-[#8a8174]">
+              {(getHostname(preview.site_url) || preview.site_url || "Unknown source")} · {preview.item_count} visible feed entries
+              {preview.language ? ` · ${preview.language.toUpperCase()}` : ""}
+            </p>
+            {preview.description && (
+              <p className="mt-3 max-w-[74ch] text-sm leading-6 text-[#b4ab9d]">
+                {preview.description}
+              </p>
+            )}
+          </div>
+
+          <div className="grid gap-3">
+            {preview.items.map((item) => (
+              <div key={item.source_url} className="rounded-[14px] border border-[#d6c9b214] bg-[#0f141b] p-4">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] uppercase tracking-[0.12em] text-[#8a8174]">
+                  <span>{item.media_count > 0 ? `${item.media_count} media` : "No media"}</span>
+                  <span>{item.body_length.toLocaleString()} chars</span>
+                  {item.posted_at && <span>{formatSyncTime(item.posted_at)}</span>}
+                </div>
+                <p className="mt-2 font-heading text-[1rem] font-semibold leading-tight text-[#f2ede5]">
+                  {item.title}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-[#b4ab9d]">
+                  {item.body_preview || "No article body preview extracted."}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {message && (
         <p className={`mb-4 text-xs ${message.toLowerCase().includes("failed") || message.toLowerCase().includes("error") ? "text-[#ff8b7b]" : "text-emerald-300"}`}>

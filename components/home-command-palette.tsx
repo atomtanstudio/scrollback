@@ -42,11 +42,12 @@ interface PaletteAction {
   detail?: string;
   meta?: string;
   icon: "filter" | "search" | "jump" | "recent";
-  tone?: "all" | "tweet" | "thread" | "article" | "art";
+  tone?: "all" | "tweet" | "thread" | "article" | "rss" | "art";
   run: () => void;
 }
 
 function itemLabel(item: ContentItemWithMedia) {
+  if (item.source_platform === "rss") return "RSS";
   if (item.source_type === "thread") return "Thread";
   if (item.source_type === "article") return "Article";
   if (
@@ -200,6 +201,19 @@ export function HomeCommandPalette({
         tone: "article",
         run: () => {
           onApplyFilter("article");
+          onOpenChange(false);
+        },
+      },
+      {
+        id: "filter-rss",
+        section: "Quick actions",
+        label: "Filter to RSS",
+        detail: "Imported feed items only",
+        meta: currentFilter === "rss" ? "Current" : undefined,
+        icon: "filter",
+        tone: "rss",
+        run: () => {
+          onApplyFilter("rss");
           onOpenChange(false);
         },
       },
@@ -419,6 +433,8 @@ export function HomeCommandPalette({
                       : action.tone === "thread"
                         ? "bg-[var(--accent-thread)]"
                         : action.tone === "article"
+                          ? "bg-[var(--accent-article)]"
+                          : action.tone === "rss"
                           ? "bg-[var(--accent-article)]"
                           : action.tone === "art"
                             ? "bg-[var(--accent-art)]"

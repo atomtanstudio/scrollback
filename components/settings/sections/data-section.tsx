@@ -5,7 +5,7 @@ import { DangerZone } from "@/components/shared/danger-zone";
 import { ProgressBar } from "@/components/shared/progress-bar";
 
 interface DataSectionProps {
-  stats: { total: number; tweets: number; threads: number; articles: number; art: number };
+  stats: { total: number; tweets: number; threads: number; articles: number; rss: number; art: number };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   settings?: any;
 }
@@ -56,11 +56,12 @@ export function DataSection({ stats, settings }: DataSectionProps) {
 
       <div className="flex flex-col gap-5">
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <StatCard label="Total" value={stats.total} color="var(--accent-thread)" />
           <StatCard label="Tweets" value={stats.tweets} color="var(--accent-tweet)" />
           <StatCard label="Threads" value={stats.threads} color="var(--accent-thread)" />
           <StatCard label="Articles" value={stats.articles} color="var(--accent-article)" />
+          <StatCard label="RSS" value={stats.rss} color="var(--accent-article)" />
         </div>
 
         {/* Media Storage (R2) */}
