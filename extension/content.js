@@ -323,6 +323,24 @@ const NON_ART_CUES = [
   /\bstartup ideas\b/i,
 ];
 
+const THREAD_CONTINUATION_PATTERNS = [
+  /\bthread\b/i,
+  /\b(?:continued?|continuing)\b/i,
+  /\bmore below\b/i,
+  /\bsee (?:below|thread|replies)\b/i,
+  /\b(?:prompt|details?|breakdown|examples?|steps?|tutorial|context|part)\s+(?:below|in replies|in the replies)\b/i,
+  /\bin (?:the )?replies\b/i,
+  /\bscroll down\b/i,
+  /\b(?:1|one)\/\d+\b/i,
+  /\(\s*(?:1|one)\s*\/\s*\d+\s*\)/i,
+  /👇|⬇️|↓/,
+];
+
+const THREAD_REPLY_CONTINUATION_PATTERNS = [
+  /^\s*(?:\d+\/\d+|\(\d+\/\d+\)|part\s+\d+|step\s+\d+)\b/i,
+  /\b(?:next|continued?|continuing|more|part\s+\d+|step\s+\d+)\b/i,
+];
+
 function hasExplicitPromptSnippet(text) {
   const normalized = (text || '').replace(/\s+/g, ' ').trim();
   const directPatterns = [
@@ -354,6 +372,78 @@ function hasArtGenerationContext(text, hasVideo) {
   if (hasVideo && hasVideoTool) return true;
 
   return false;
+}
+
+function normalizeThreadText(text) {
+  return (text || '')
+    .replace(/https?:\/\/\S+/gi, ' ')
+    .replace(/@\w+/g, ' ')
+    .replace(/[#*_`>~]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function hasThreadLeadCue(text) {
+  const normalized = normalizeThreadText(text);
+  if (!normalized) return false;
+  return THREAD_CONTINUATION_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+function isSubstantiveThreadReply(item) {
+  const normalized = normalizeThreadText(item?.body_text || '');
+  if (!normalized) return false;
+  if (THREAD_REPLY_CONTINUATION_PATTERNS.some((pattern) => pattern.test(normalized))) return true;
+
+  const words = normalized.split(/\s+/).filter(Boolean);
+  if (words.length >= 18) return true;
+  if (normalized.length >= 110) return true;
+  if (words.length >= 10 && /[.!?。！？]/.test(normalized)) return true;
+
+  return false;
+}
+
+function getRootTweetForConversation(items, conversationId) {
+  const rootId = conversationId || items[0]?.external_id || null;
+  return items.find((item) => item.external_id === rootId) || items[0] || null;
+}
+
+function getCandidateSelfThreadItems(items, authorHandle, conversationId) {
+  const author = normalizeHandle(authorHandle);
+  if (!author) return [];
+
+  const rootConversationId = conversationId || items[0]?.conversation_id || items[0]?.external_id || null;
+  const sameAuthorItems = items.filter((item) => {
+    if (normalizeHandle(item.author_handle) !== author) return false;
+    const itemConversationId = item.conversation_id || item.external_id || null;
+    if (rootConversationId && itemConversationId && itemConversationId !== rootConversationId) return false;
+    return true;
+  });
+
+  const authorTweetIds = new Set(sameAuthorItems.map((item) => item.external_id));
+
+  return sameAuthorItems.filter((item) => {
+    if (!isLikelySelfThreadEntry(item, author, rootConversationId)) return false;
+    const replyToTweetId = item._replyToTweetId || null;
+    if (!replyToTweetId) return true;
+    return authorTweetIds.has(replyToTweetId);
+  });
+}
+
+function shouldTreatItemsAsThread(items, authorHandle, conversationId) {
+  const candidates = getCandidateSelfThreadItems(items, authorHandle, conversationId);
+  if (candidates.length < 2) return false;
+
+  const root = getRootTweetForConversation(candidates, conversationId);
+  if (!root || root.source_type === 'article') return false;
+
+  const continuations = candidates.filter((item) =>
+    item.external_id !== root.external_id && isSubstantiveThreadReply(item)
+  );
+
+  if (continuations.length === 0) return false;
+  if (hasThreadLeadCue(root.body_text || '')) return true;
+
+  return continuations.length >= 2;
 }
 
 function looksLikeNonArtVisualContent(text) {
@@ -463,6 +553,7 @@ function cacheTweetData(tweet) {
   const replyToHandle = normalizeHandle(
     legacy.in_reply_to_screen_name || existingEntry?._replyToHandle || null
   ) || null;
+  const replyToTweetId = legacy.in_reply_to_status_id_str || legacy.in_reply_to_status_id || existingEntry?._replyToTweetId || null;
 
   // Detect X Articles (long-form content linked from tweets)
   let isArticle = false;
@@ -571,6 +662,7 @@ function cacheTweetData(tweet) {
     media_urls: mediaUrls,
     _hasUnresolvedVideo: hasUnresolvedVideo,
     _replyToHandle: replyToHandle,
+    _replyToTweetId: replyToTweetId,
     _cachedAt: Date.now(),
     likes: legacy.favorite_count || null,
     retweets: legacy.retweet_count || null,
@@ -594,24 +686,18 @@ function detectSelfThreadInCache(conversationId) {
   if (siblings.length < 2) return;
 
   // Count tweets per author in this conversation
-  const authorCounts = {};
+  const authors = new Set();
   for (const s of siblings) {
     const author = (s.author_handle || '').toLowerCase();
-    if (author && isLikelySelfThreadEntry(s, author, conversationId)) {
-      authorCounts[author] = (authorCounts[author] || 0) + 1;
-    }
+    if (author) authors.add(author);
   }
 
-  // If any author has 2+ tweets in the same conversation, it's a self-thread
-  for (const [author, count] of Object.entries(authorCounts)) {
-    if (count >= 2) {
-      for (const s of siblings) {
-        if (isLikelySelfThreadEntry(s, author, conversationId)
-            && (s.source_type === 'tweet' || s.source_type === 'image_prompt' || s.source_type === 'video_prompt')) {
-          // Only upgrade to thread if it's not an article
-          // Keep prompt classification if it was detected — just change the base type
-          s.source_type = 'thread';
-        }
+  for (const author of authors) {
+    if (!shouldTreatItemsAsThread(siblings, author, conversationId)) continue;
+    for (const s of siblings) {
+      if (isLikelySelfThreadEntry(s, author, conversationId)
+          && (s.source_type === 'tweet' || s.source_type === 'image_prompt' || s.source_type === 'video_prompt')) {
+        s.source_type = 'thread';
       }
     }
   }
@@ -643,6 +729,7 @@ function stripInternalCaptureFields(item) {
   delete clean._hasUnresolvedVideo;
   delete clean._cachedAt;
   delete clean._replyToHandle;
+  delete clean._replyToTweetId;
   return clean;
 }
 
@@ -706,10 +793,6 @@ function extractTweetFromDOM(tweetElement, options = {}) {
     if (cached.source_type === 'tweet' || cached.source_type === 'image_prompt' || cached.source_type === 'video_prompt') {
       // Re-run cache-based detection (replies may have loaded since initial cache)
       detectSelfThreadInCache(cached.conversation_id);
-      // If cache detection didn't upgrade, try DOM-based detection
-      if (cached.source_type !== 'thread' && isSelfThreadOnPage(tweetElement)) {
-        cached.source_type = 'thread';
-      }
     }
 
     // Return a clean copy without internal fields
@@ -754,9 +837,7 @@ function extractTweetFromDOM(tweetElement, options = {}) {
     if (vid.poster) mediaUrls.push(vid.poster);
   });
 
-  // Check if this tweet is part of a self-thread via DOM signals
-  const isThread = isSelfThreadOnPage(tweetElement);
-  const sourceType = isThread ? 'thread' : detectSourceType(bodyText, mediaUrls, false, false);
+  const sourceType = detectSourceType(bodyText, mediaUrls, false, false);
   const replyToHandle = getReplyingToHandleFromTweetElement(tweetElement);
 
   return {
@@ -772,6 +853,7 @@ function extractTweetFromDOM(tweetElement, options = {}) {
     media_urls: mediaUrls,
     _hasUnresolvedVideo: hasVideo,
     _replyToHandle: replyToHandle,
+    _replyToTweetId: null,
     likes: null,
     retweets: null,
     replies: null,
@@ -973,6 +1055,7 @@ function injectSaveButtons() {
 // Collect all thread siblings from cache for a given conversation + author
 function getThreadSiblingsFromCache(conversationId, authorHandle) {
   const author = normalizeHandle(authorHandle);
+  const conversationItems = [];
   const siblings = [];
   // First pass: find a sibling with full author info to use for backfill
   let refDisplayName = null;
@@ -980,10 +1063,12 @@ function getThreadSiblingsFromCache(conversationId, authorHandle) {
   let refSourceUrl = null;
   for (const [, data] of tweetCache) {
     if (data.conversation_id !== conversationId) continue;
+    conversationItems.push(data);
     if (data.author_display_name && !refDisplayName) refDisplayName = data.author_display_name;
     if (data.author_avatar_url && !refAvatarUrl) refAvatarUrl = data.author_avatar_url;
     if (data.source_url && !data.source_url.includes('/i/web/') && !refSourceUrl) refSourceUrl = data.source_url;
   }
+  if (!shouldTreatItemsAsThread(conversationItems, author, conversationId)) return [];
   for (const [, data] of tweetCache) {
     if (data.conversation_id !== conversationId) continue;
     if (isLikelySelfThreadEntry(data, author, conversationId)) {
@@ -1050,7 +1135,7 @@ async function getThreadSiblingsFromDOM(tweetElement, seedData = null) {
       return new Date(a.posted_at).getTime() - new Date(b.posted_at).getTime();
     });
 
-  if (threadItems.length < 2) return [];
+  if (threadItems.length < 2 || !shouldTreatItemsAsThread(threadItems, authorHandle, conversationId)) return [];
 
   return threadItems.map((item) => stripInternalCaptureFields({
     ...item,
