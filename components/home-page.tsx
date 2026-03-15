@@ -221,12 +221,14 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
     [paletteOpen, scheduleScrollToFeed]
   );
 
-  const handleSearch = useCallback(async (query: string) => {
+  const handleSearch = useCallback(async (query: string, options?: { scroll?: boolean }) => {
     setIsSearching(true);
     setActiveType("");
     setSearchQuery(query);
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&format=full&per_page=50`);
+      const res = await fetch(
+        `/api/search?q=${encodeURIComponent(query)}&format=full&per_page=50&mode=keyword`
+      );
       const data = await res.json();
       setSearchResults(data.items || []);
     } catch {
@@ -235,7 +237,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
       setIsSearching(false);
       if (paletteOpen) {
         pendingPaletteScrollRef.current = true;
-      } else {
+      } else if (options?.scroll) {
         scheduleScrollToFeed();
       }
     }

@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 
 interface SearchBarProps {
-  onSearch: (query: string) => void;
+  onSearch: (query: string, options?: { scroll?: boolean }) => void;
   onClear: () => void;
 }
 
@@ -29,7 +29,7 @@ export function SearchBar({ onSearch, onClear }: SearchBarProps) {
 
     if (query.trim().length >= 2) {
       debounceRef.current = setTimeout(() => {
-        onSearch(query.trim());
+        onSearch(query.trim(), { scroll: false });
       }, 300);
     } else if (query.trim().length === 0) {
       onClear();
@@ -45,7 +45,7 @@ export function SearchBar({ onSearch, onClear }: SearchBarProps) {
       e.preventDefault();
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (query.trim()) {
-        onSearch(query.trim());
+        onSearch(query.trim(), { scroll: true });
       } else {
         onClear();
       }

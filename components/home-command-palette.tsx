@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -84,6 +84,7 @@ export function HomeCommandPalette({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isMacLike, setIsMacLike] = useState(true);
   const selectedActionRef = useRef<HTMLButtonElement | null>(null);
+  const listContainerRef = useRef<HTMLDivElement | null>(null);
 
   const hotkeyLabel = isMacLike ? "⌘K" : "Ctrl K";
 
@@ -122,7 +123,7 @@ export function HomeCommandPalette({
       setSearching(true);
       try {
         const res = await fetch(
-          `/api/search?q=${encodeURIComponent(trimmed)}&format=full&per_page=8`,
+          `/api/search?q=${encodeURIComponent(trimmed)}&format=full&per_page=8&mode=keyword`,
           { signal: controller.signal }
         );
         const data = await res.json();
@@ -329,12 +330,25 @@ export function HomeCommandPalette({
     }
   }, [selectedIndex, actions.length]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
-    selectedActionRef.current?.scrollIntoView({
-      block: "nearest",
-      inline: "nearest",
-    });
+    const container = listContainerRef.current;
+    const selectedNode = selectedActionRef.current;
+    if (!container || !selectedNode) return;
+
+    const containerTop = container.scrollTop;
+    const containerBottom = containerTop + container.clientHeight;
+    const nodeTop = selectedNode.offsetTop - 12;
+    const nodeBottom = selectedNode.offsetTop + selectedNode.offsetHeight + 12;
+
+    if (nodeTop < containerTop) {
+      container.scrollTo({ top: Math.max(0, nodeTop), behavior: "auto" });
+    } else if (nodeBottom > containerBottom) {
+      container.scrollTo({
+        top: Math.max(0, nodeBottom - container.clientHeight),
+        behavior: "auto",
+      });
+    }
   }, [open, selectedIndex]);
 
   const groupedActions = useMemo(() => {
@@ -366,7 +380,7 @@ export function HomeCommandPalette({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[88vh] overflow-hidden rounded-[30px] border border-[#d6c9b214] bg-[linear-gradient(180deg,rgba(22,28,36,0.98),rgba(14,18,24,0.99))] p-0 shadow-[0_34px_90px_rgba(2,6,12,0.55)] sm:max-w-[760px]">
+      <DialogContent className="max-h-[88vh] overflow-hidden rounded-[30px] border border-[#d6c9b214] bg-[linear-gradient(180deg,rgba(22,28,36,0.98),rgba(14,18,24,0.99))] p-0 shadow-[0_34px_90px_rgba(2,6,12,0.55)] sm:max-w-[880px]">
         <DialogTitle className="sr-only">Command palette</DialogTitle>
         <DialogDescription className="sr-only">
           Search, switch filters, and jump through your library without leaving the page.
@@ -417,7 +431,10 @@ export function HomeCommandPalette({
           </div>
         </div>
 
-        <div className="max-h-[58vh] overflow-y-auto px-3 py-3 sm:px-4">
+        <div
+          ref={listContainerRef}
+          className="max-h-[58vh] overflow-y-auto overflow-x-hidden px-3 py-3 sm:px-4"
+        >
           {groupedActions.map((group) => (
             <div key={group.section} className="mb-4 last:mb-0">
               <div className="px-2 pb-2 pt-1 text-[11px] uppercase tracking-[0.16em] text-[#8a8174]">
@@ -445,7 +462,7 @@ export function HomeCommandPalette({
                       type="button"
                       onMouseEnter={() => setSelectedIndex(action.index)}
                       onClick={() => void action.run()}
-                      className={`flex w-full items-center justify-between gap-4 rounded-[20px] border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462] ${
+                    className={`flex w-full min-w-0 items-center justify-between gap-4 overflow-hidden rounded-[20px] border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462] ${
                         selected
                           ? "border-[#d6c9b242] bg-[#f2ede50a] shadow-[inset_0_0_0_1px_rgba(214,201,178,0.08)]"
                           : "border-transparent bg-transparent hover:border-[#d6c9b214] hover:bg-[#ffffff05]"
@@ -479,18 +496,18 @@ export function HomeCommandPalette({
                           )}
                         </span>
                         <div className="min-w-0">
-                          <div className="truncate text-[15px] font-medium text-[#f2ede5]">
+                          <div className="text-[15px] font-medium text-[#f2ede5] [overflow-wrap:anywhere]">
                             {action.label}
                           </div>
                           {action.detail && (
-                            <div className="mt-1 truncate text-sm text-[#9c9387]">
+                            <div className="mt-1 text-sm text-[#9c9387] [overflow-wrap:anywhere]">
                               {action.detail}
                             </div>
                           )}
                         </div>
                       </div>
                       {action.meta && (
-                        <span className="shrink-0 rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-[#8a8174]">
+                        <span className="max-w-[128px] shrink-0 truncate rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-[#8a8174]">
                           {action.meta}
                         </span>
                       )}
