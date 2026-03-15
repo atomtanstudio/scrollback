@@ -186,6 +186,9 @@ export function DetailSidebar({ item, cardType, isAuthed = false }: DetailSideba
         authorAvatarUrl={item.author_avatar_url}
         originalUrl={item.original_url}
         sourceType={item.source_type}
+        sourcePlatform={item.source_platform}
+        sourceLabel={item.source_label}
+        sourceDomain={item.source_domain}
       />
 
       {isAuthed && <AdminActions item={item} />}

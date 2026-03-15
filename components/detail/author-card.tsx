@@ -1,11 +1,16 @@
 "use client";
 
+import { getAttributionName } from "@/lib/content-display";
+
 interface AuthorCardProps {
   authorHandle: string | null;
   authorDisplayName: string | null;
   authorAvatarUrl: string | null;
   originalUrl: string | null;
   sourceType: string;
+  sourcePlatform?: string | null;
+  sourceLabel?: string | null;
+  sourceDomain?: string | null;
 }
 
 export function AuthorCard({
@@ -14,8 +19,19 @@ export function AuthorCard({
   authorAvatarUrl,
   originalUrl,
   sourceType,
+  sourcePlatform,
+  sourceLabel,
+  sourceDomain,
 }: AuthorCardProps) {
-  const displayName = authorDisplayName || authorHandle || "Unknown";
+  const displayName =
+    getAttributionName({
+      author_display_name: authorDisplayName,
+      author_handle: authorHandle,
+      source_platform: sourcePlatform,
+      source_label: sourceLabel,
+      source_domain: sourceDomain,
+      original_url: originalUrl,
+    }) || "Unknown";
   const initials = displayName.slice(0, 2).toUpperCase();
 
   const isXSource = sourceType === "tweet" || sourceType === "thread";
