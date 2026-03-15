@@ -32,13 +32,26 @@ function getItemLabel(item: ContentItemWithMedia) {
   return "Tweet";
 }
 
-function getItemTitle(item: ContentItemWithMedia, max = 92) {
-  const raw = (item.title || item.prompt_text || item.body_text || "Untitled capture").replace(/\s+/g, " ").trim();
-  return raw.length > max ? `${raw.slice(0, max - 1).trimEnd()}…` : raw;
+function normalizeCardText(value: string | null | undefined) {
+  if (!value) return "";
+  return value
+    .replace(/https?:\/\/t\.co\/\S+/gi, "")
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function getItemExcerpt(item: ContentItemWithMedia, max = 150) {
-  const source = (item.body_text || item.prompt_text || item.title || "").replace(/\s+/g, " ").trim();
+function getItemTitle(item: ContentItemWithMedia) {
+  const raw = normalizeCardText(
+    item.title || item.prompt_text || item.body_text || "Untitled capture"
+  );
+  return raw || "Untitled capture";
+}
+
+function getItemExcerpt(item: ContentItemWithMedia, max = 180) {
+  const source = normalizeCardText(
+    item.body_text || item.prompt_text || item.title || ""
+  );
   if (!source) return "Captured without body text.";
   return source.length > max ? `${source.slice(0, max - 1).trimEnd()}…` : source;
 }
@@ -73,8 +86,12 @@ function HomeFeatureCard({ item, eyebrow, className = "", tall = false }: HomeFe
       className={`group rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 transition-colors hover:border-[#d6c9b233] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462] ${className}`}
     >
       <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">{eyebrow}</p>
-      <h2 className="mt-3 max-w-[14ch] font-heading text-[2rem] leading-[0.98] tracking-[-0.05em] text-[#f2ede5] group-hover:text-white">
-        {getItemTitle(item, tall ? 84 : 76)}
+      <h2
+        className={`mt-3 max-w-[14ch] overflow-hidden font-heading text-[2rem] leading-[0.98] tracking-[-0.05em] text-[#f2ede5] [overflow-wrap:anywhere] group-hover:text-white ${
+          tall ? "line-clamp-6" : "line-clamp-5"
+        }`}
+      >
+        {getItemTitle(item)}
       </h2>
 
       {mediaUrl ? (
@@ -98,7 +115,9 @@ function HomeFeatureCard({ item, eyebrow, className = "", tall = false }: HomeFe
         </div>
       ) : null}
 
-      <p className="mt-4 text-[15px] leading-7 text-[#b4ab9d]">{getItemExcerpt(item, tall ? 150 : 132)}</p>
+      <p className={`mt-4 text-[15px] leading-7 text-[#b4ab9d] [overflow-wrap:anywhere] ${tall ? "line-clamp-5" : "line-clamp-4"}`}>
+        {getItemExcerpt(item, tall ? 180 : 144)}
+      </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2 text-[12px] text-[#cdc4b7]">
           {getItemLabel(item)}
