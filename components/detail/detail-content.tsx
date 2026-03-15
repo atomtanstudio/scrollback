@@ -539,12 +539,12 @@ function ArticleContent({
       )}
       {renderedBodyHtml && !translationAvailable ? (
         <div
-          className="prose prose-invert max-w-none
+          className="prose prose-invert max-w-none whitespace-pre-wrap
             prose-headings:font-heading prose-headings:text-[#f2ede5]
             prose-headings:max-w-[18ch]
             prose-h2:mb-4 prose-h2:mt-12 prose-h2:text-[1.7rem] prose-h2:tracking-[-0.04em]
             prose-h3:mb-3 prose-h3:mt-9 prose-h3:text-[1.32rem]
-            prose-p:my-6 prose-p:max-w-[72ch] prose-p:text-[#cdc4b7] prose-p:leading-[1.95] prose-p:text-[17px]
+            prose-p:my-6 prose-p:max-w-[72ch] prose-p:whitespace-pre-wrap prose-p:text-[#cdc4b7] prose-p:leading-[1.95] prose-p:text-[17px]
             prose-a:text-[var(--accent-article)] prose-a:no-underline hover:prose-a:underline
             prose-strong:text-[#f2ede5]
             prose-code:text-[var(--accent-thread)] prose-code:bg-[#0f141b] prose-code:rounded prose-code:px-1.5 prose-code:py-0.5
