@@ -402,6 +402,14 @@ function isSubstantiveThreadReply(item) {
   return false;
 }
 
+function isHighValueSingleContinuation(item) {
+  if (!item) return false;
+  if (item.source_type === 'article') return false;
+  if (item.source_type === 'image_prompt' || item.source_type === 'video_prompt') return true;
+  if ((item.media_urls || []).length > 0 && isSubstantiveThreadReply(item)) return true;
+  return false;
+}
+
 function getRootTweetForConversation(items, conversationId) {
   const rootId = conversationId || items[0]?.external_id || null;
   return items.find((item) => item.external_id === rootId) || items[0] || null;
@@ -442,6 +450,7 @@ function shouldTreatItemsAsThread(items, authorHandle, conversationId) {
 
   if (continuations.length === 0) return false;
   if (hasThreadLeadCue(root.body_text || '')) return true;
+  if (continuations.length === 1 && isHighValueSingleContinuation(continuations[0])) return true;
 
   return continuations.length >= 2;
 }
