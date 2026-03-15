@@ -197,7 +197,17 @@ function decodeBasicHtmlEntities(value: string): string {
 }
 
 function htmlHasStructuredParagraphs(html: string): boolean {
-  return /<(p|ul|ol|blockquote|figure|pre|table)\b/i.test(html);
+  if (/(<figure\b|<blockquote\b|<pre\b|<table\b)/i.test(html)) return true;
+  if (/<ul\b|<ol\b/i.test(html)) {
+    const listItems = html.match(/<li\b/gi) || [];
+    if (listItems.length >= 2) return true;
+  }
+
+  const paragraphLikeBlocks = html.match(/<(p|h[1-6]|li)\b/gi) || [];
+  if (paragraphLikeBlocks.length >= 2) return true;
+
+  const explicitBreaks = html.match(/<br\s*\/?>\s*<br\s*\/?>/gi) || [];
+  return explicitBreaks.length > 0;
 }
 
 function htmlToReadableText(html: string): string {
