@@ -298,6 +298,17 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
           : activeType === "art"
             ? "Art & Prompts"
             : "Recent Captures";
+  const filteredTotalCount = searchResults
+    ? searchResults.length
+    : activeType === "tweet"
+      ? stats.tweets
+      : activeType === "thread"
+        ? stats.threads
+        : activeType === "article"
+          ? stats.articles
+          : activeType === "art"
+            ? stats.art
+            : totalCount;
 
   return (
     <div className="relative z-10 mx-auto max-w-[1440px] px-4 pb-16 sm:px-6 lg:px-8">
@@ -333,24 +344,6 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                       </button>
                     );
                   })}
-                </div>
-              </div>
-
-              <div className="rounded-[24px] border border-[#d6c9b214] bg-[#ffffff08] p-4">
-                <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">Library</p>
-                <div className="grid gap-2">
-                  {statEntries.map((entry) => (
-                    <div
-                      key={entry.label}
-                      className="flex items-center justify-between rounded-[18px] border border-[#d6c9b214] bg-[#ffffff05] px-4 py-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className={`h-2.5 w-2.5 rounded-full ${entry.dot}`} />
-                        <span className="text-[14px] text-[#cdc4b7]">{entry.label}</span>
-                      </div>
-                      <span className="text-[14px] font-semibold text-[#f2ede5]">{entry.count.toLocaleString()}</span>
-                    </div>
-                  ))}
                 </div>
               </div>
 
@@ -468,7 +461,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                   {searchQuery && searchResults && (
                     <span>for &ldquo;{searchQuery}&rdquo;</span>
                   )}
-                  <span>{(searchResults ? searchResults.length : totalCount).toLocaleString()} items</span>
+                  <span>{filteredTotalCount.toLocaleString()} items</span>
                 </div>
               </div>
 
