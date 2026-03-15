@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { getDisplayBodyText } from "@/lib/content-display";
+import {
+  getDisplayBodyText,
+  getLanguageLabel,
+  hasEnglishTranslation,
+} from "@/lib/content-display";
 import { formatTimeAgo } from "@/lib/format";
 import { MediaRenderer } from "./media-renderer";
 import { MediaLightbox } from "./media-lightbox";
@@ -33,6 +37,11 @@ function buildInitials(displayName: string | null, handle: string | null): strin
 
 export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [showOriginalCurrent, setShowOriginalCurrent] = useState(false);
+  const currentHasTranslation = hasEnglishTranslation(currentItem);
+  const currentBodyText = showOriginalCurrent
+    ? currentItem.body_text || getDisplayBodyText(currentItem)
+    : getDisplayBodyText(currentItem);
 
   const allEntries: ChainEntry[] = [
     {
@@ -41,7 +50,7 @@ export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
       author_display_name: currentItem.author_display_name,
       author_handle: currentItem.author_handle,
       author_avatar_url: currentItem.author_avatar_url,
-      body_text: getDisplayBodyText(currentItem),
+      body_text: currentBodyText,
       posted_at: currentItem.posted_at,
       media_items: currentItem.media_items,
     },
@@ -171,9 +180,25 @@ export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
                       </div>
 
                       {entry.body_text && (
-                        <p className="whitespace-pre-wrap text-sm leading-[1.8] text-[#ddd4c7]">
-                          {entry.body_text}
-                        </p>
+                        <>
+                          {currentHasTranslation && (
+                            <div className="mb-3 flex flex-wrap items-center gap-3 rounded-[16px] border border-[#d6c9b214] bg-[#ffffff05] px-3.5 py-2.5">
+                              <p className="text-[12px] text-[#b4ab9d]">
+                                Translated from {getLanguageLabel(currentItem.language)}.
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => setShowOriginalCurrent((value) => !value)}
+                                className="rounded-full border border-[#d6c9b214] bg-[#0f141b] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#f2ede5] transition-colors hover:border-[#d6c9b233] hover:text-white"
+                              >
+                                {showOriginalCurrent ? "Show English" : "Show original"}
+                              </button>
+                            </div>
+                          )}
+                          <p className="whitespace-pre-wrap text-sm leading-[1.8] text-[#ddd4c7]">
+                            {entry.body_text}
+                          </p>
+                        </>
                       )}
 
                       {entry.media_items && entry.media_items.length > 0 && (
