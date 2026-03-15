@@ -374,7 +374,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_340px]">
               <div className="rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 sm:p-8">
                 <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">FeedSilo</p>
-                <h1 className="mt-3 max-w-[10ch] font-heading text-[clamp(2.7rem,6vw,5rem)] font-semibold leading-[0.94] tracking-[-0.045em] text-[#f2ede5]">
+                <h1 className="mt-3 max-w-[10.5ch] font-heading text-[clamp(2.7rem,6vw,5rem)] font-semibold leading-[0.94] tracking-[-0.03em] text-[#f2ede5]">
                   Your feed, without the noise.
                 </h1>
                 <p className="mt-5 max-w-[58ch] text-[16px] leading-8 text-[#b4ab9d]">
@@ -392,7 +392,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                     className="inline-flex items-center gap-2 rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-4 py-2 text-[12px] uppercase tracking-[0.16em] text-[#8a8174] transition-colors hover:border-[#d6c9b233] hover:text-[#f2ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
                   >
                     <Command size={14} />
-                    Command palette
+                    Open palette
                   </button>
                 </div>
               </div>
@@ -404,7 +404,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                     {stats.total.toLocaleString()}
                   </div>
                   <p className="mt-4 text-[15px] leading-7 text-[#b4ab9d]">
-                    Biggest lane right now: {strongestLane.label.toLowerCase()} at {strongestLane.count.toLocaleString()} items.
+                    Largest category right now: {strongestLane.label.toLowerCase()} with {strongestLane.count.toLocaleString()} captures.
                   </p>
                 </div>
 

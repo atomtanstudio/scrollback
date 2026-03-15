@@ -9,7 +9,19 @@ interface SearchBarProps {
 
 export function SearchBar({ onSearch, onClear }: SearchBarProps) {
   const [query, setQuery] = useState("");
+  const [isMacLike, setIsMacLike] = useState(true);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const hotkeyLabel = isMacLike ? "⌘K" : "Ctrl K";
+
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    const nav = navigator as Navigator & {
+      userAgentData?: { platform?: string };
+    };
+    const platform =
+      nav.userAgentData?.platform || navigator.platform || navigator.userAgent;
+    setIsMacLike(/mac|iphone|ipad|ipod/i.test(platform));
+  }, []);
 
   // Debounced live search as user types
   useEffect(() => {
@@ -75,7 +87,7 @@ export function SearchBar({ onSearch, onClear }: SearchBarProps) {
             </button>
           )}
           <span className="hidden rounded-full border border-[#d6c9b21f] bg-[#0f1319] px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-[#8a8174] md:inline-flex">
-            &#8984;K
+            {hotkeyLabel}
           </span>
         </div>
       </div>

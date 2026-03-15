@@ -11,7 +11,6 @@ import {
 import {
   Search,
   ArrowRight,
-  Command,
   Sparkles,
   PanelTop,
   CircleDot,
@@ -81,6 +80,10 @@ export function HomeCommandPalette({
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isMacLike, setIsMacLike] = useState(true);
+  const selectedActionRef = useRef<HTMLButtonElement | null>(null);
+
+  const hotkeyLabel = isMacLike ? "⌘K" : "Ctrl K";
 
   useEffect(() => {
     if (!open) return;
@@ -92,6 +95,16 @@ export function HomeCommandPalette({
     }, 30);
     return () => window.clearTimeout(timeout);
   }, [open, currentSearch]);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    const nav = navigator as Navigator & {
+      userAgentData?: { platform?: string };
+    };
+    const platform =
+      nav.userAgentData?.platform || navigator.platform || navigator.userAgent;
+    setIsMacLike(/mac|iphone|ipad|ipod/i.test(platform));
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -302,6 +315,14 @@ export function HomeCommandPalette({
     }
   }, [selectedIndex, actions.length]);
 
+  useEffect(() => {
+    if (!open) return;
+    selectedActionRef.current?.scrollIntoView({
+      block: "nearest",
+      inline: "nearest",
+    });
+  }, [open, selectedIndex]);
+
   const groupedActions = useMemo(() => {
     const groups: Array<{ section: string; items: Array<PaletteAction & { index: number }> }> = [];
     actions.forEach((action, index) => {
@@ -344,12 +365,8 @@ export function HomeCommandPalette({
                 Command palette
               </p>
               <p className="mt-1 text-sm text-[#b4ab9d]">
-                Search, switch lanes, and jump without touching the feed chrome.
+                Search, switch categories, and jump without losing your place.
               </p>
-            </div>
-            <div className="hidden items-center gap-2 rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#8a8174] sm:inline-flex">
-              <Command size={12} />
-              K
             </div>
           </div>
 
@@ -363,7 +380,7 @@ export function HomeCommandPalette({
                 setSelectedIndex(0);
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Search your captures, jump to admin, or switch lanes..."
+              placeholder="Search captures, jump to admin, or switch categories..."
               className="h-8 flex-1 border-none bg-transparent text-[15px] text-[#f2ede5] outline-none placeholder:text-[#7d7569]"
             />
             <span className="hidden text-[11px] uppercase tracking-[0.16em] text-[#8a8174] md:inline">
@@ -374,7 +391,9 @@ export function HomeCommandPalette({
                 type="button"
                 onClick={() => {
                   setQuery("");
+                  setResults([]);
                   setSelectedIndex(0);
+                  onClearSearch();
                 }}
                 className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-[#8a8174] transition-colors hover:text-[#f2ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
               >
@@ -406,6 +425,7 @@ export function HomeCommandPalette({
                   return (
                     <button
                       key={action.id}
+                      ref={selected ? selectedActionRef : null}
                       type="button"
                       onMouseEnter={() => setSelectedIndex(action.index)}
                       onClick={() => void action.run()}
@@ -468,13 +488,23 @@ export function HomeCommandPalette({
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#d6c9b214] px-5 py-3 text-[11px] uppercase tracking-[0.16em] text-[#8a8174]">
           <div className="flex items-center gap-3">
-            <span>Use ↑↓ to move</span>
-            <span>Enter to select</span>
-            <span>Esc to close</span>
+            <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2">
+              Use ↑↓ to move
+            </span>
+            <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2">
+              Enter to select
+            </span>
+            <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2">
+              Esc to close
+            </span>
           </div>
           <div className="flex items-center gap-3">
-            <span>/ to open</span>
-            <span>⌘K to open</span>
+            <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2">
+              / to open
+            </span>
+            <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2">
+              {hotkeyLabel} to open
+            </span>
           </div>
         </div>
       </DialogContent>
