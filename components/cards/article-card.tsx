@@ -2,7 +2,7 @@
 
 import { CardWrapper } from "./card-wrapper";
 import { VideoPoster } from "./video-poster";
-import { getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
+import { getAttributionName, getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
 import { formatTimeAgo } from "@/lib/format";
 import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { ContentItemWithMedia } from "@/lib/db/types";
@@ -16,6 +16,7 @@ export function ArticleCard({ item, href }: ArticleCardProps) {
   const thumbnail = item.media_items?.[0] || null;
   const displayTitle = getDisplayTitle(item);
   const displayBodyText = getDisplayBodyText(item);
+  const attribution = getAttributionName(item);
   let sourceDomain: string | null = null;
   try {
     sourceDomain = item.original_url
@@ -83,9 +84,7 @@ export function ArticleCard({ item, href }: ArticleCardProps) {
           {displayBodyText}
         </p>
         <div className="flex items-center justify-between gap-3 text-xs text-[#7d7569]">
-          <span className="truncate">
-            {item.author_display_name || item.author_handle}
-          </span>
+          <span className="truncate">{attribution || "Archived item"}</span>
           <span className="shrink-0">Captured {formatTimeAgo(item.created_at)}</span>
         </div>
       </div>

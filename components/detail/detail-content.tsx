@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getDisplayBodyText, getDisplayTitle, getLanguageLabel, hasEnglishTranslation } from "@/lib/content-display";
+import { getAttributionName, getDisplayBodyText, getDisplayTitle, getLanguageLabel, hasEnglishTranslation } from "@/lib/content-display";
 import { parseBodyContent } from "@/lib/content-parser";
 import { formatFullDate } from "@/lib/format";
 import type { DetailItem } from "@/lib/db/types";
@@ -251,8 +251,8 @@ function ArticleContent({
   onMediaClick: (index: number) => void;
 }) {
   const [showOriginal, setShowOriginal] = useState(false);
-  const displayName = item.author_display_name || item.author_handle || null;
-  const initials = displayName ? displayName.slice(0, 2).toUpperCase() : "??";
+  const attribution = getAttributionName(item);
+  const initials = attribution ? attribution.slice(0, 2).toUpperCase() : "??";
   const displayTitle = getDisplayTitle(item);
   const displayBodyText = getDisplayBodyText(item);
   const translationAvailable = hasEnglishTranslation(item);
@@ -290,12 +290,12 @@ function ArticleContent({
         {item.author_avatar_url ? (
           <img
             src={item.author_avatar_url}
-            alt={displayName || "Author"}
+            alt={attribution || "Author"}
             width={28}
             height={28}
             className="w-7 h-7 rounded-full object-cover flex-shrink-0"
           />
-        ) : displayName ? (
+        ) : attribution ? (
           <div
             className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-[#f2ede5]"
             style={{
@@ -305,10 +305,10 @@ function ArticleContent({
             {initials}
           </div>
         ) : null}
-        {displayName && (
-          <span className="text-[13px] text-[#a49b8b]">{displayName}</span>
+        {attribution && (
+          <span className="text-[13px] text-[#a49b8b]">{attribution}</span>
         )}
-        {(displayName || item.posted_at) && (
+        {(attribution || item.posted_at) && (
           <span className="text-[13px] text-[#8a8174]">&middot;</span>
         )}
         {item.posted_at && (

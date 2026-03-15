@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
+import { getAttributionName, getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
 
 interface RelatedItemsProps {
   itemId: string;
@@ -81,7 +81,7 @@ function buildExcerpt(item: RelatedApiItem) {
 }
 
 function RelatedItemCard({ item }: { item: RelatedApiItem }) {
-  const displayName = item.author_display_name || item.author_handle || "Unknown";
+  const displayName = getAttributionName(item) || "Archived item";
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
@@ -112,7 +112,7 @@ function RelatedItemCard({ item }: { item: RelatedApiItem }) {
         </div>
         <div className="min-w-0">
           <p className="truncate text-[13px] font-medium text-[#cdc4b7]">{displayName}</p>
-          {item.author_handle && (
+          {item.author_handle && item.author_display_name && (
             <p className="truncate text-[12px] text-[#8a8174]">@{item.author_handle}</p>
           )}
         </div>

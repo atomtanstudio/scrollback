@@ -4,6 +4,12 @@ type TranslatableContent = {
   translated_title?: string | null;
   translated_body_text?: string | null;
   language?: string | null;
+  author_display_name?: string | null;
+  author_handle?: string | null;
+  source_platform?: string | null;
+  source_label?: string | null;
+  source_domain?: string | null;
+  original_url?: string | null;
 };
 
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -49,4 +55,27 @@ export function getLanguageLabel(language: string | null | undefined): string {
   const code = clean(language).toLowerCase();
   if (!code) return "another language";
   return LANGUAGE_LABELS[code] || code.toUpperCase();
+}
+
+export function getAttributionName(item: TranslatableContent): string | null {
+  const authorDisplayName = clean(item.author_display_name);
+  const authorHandle = clean(item.author_handle);
+  if (authorDisplayName) return authorDisplayName;
+  if (authorHandle) return authorHandle;
+
+  if (clean(item.source_platform).toLowerCase() === "rss") {
+    const sourceLabel = clean(item.source_label);
+    if (sourceLabel) return sourceLabel;
+
+    const sourceDomain = clean(item.source_domain);
+    if (sourceDomain) return sourceDomain;
+
+    try {
+      return item.original_url ? new URL(item.original_url).hostname.replace(/^www\./, "") : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
 }
