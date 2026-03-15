@@ -428,12 +428,21 @@ function getCandidateSelfThreadItems(items, authorHandle, conversationId) {
   });
 
   const authorTweetIds = new Set(sameAuthorItems.map((item) => item.external_id));
+  const root = getRootTweetForConversation(sameAuthorItems, rootConversationId);
+  const rootHasLeadCue = hasThreadLeadCue(root?.body_text || '');
 
   return sameAuthorItems.filter((item) => {
-    if (!isLikelySelfThreadEntry(item, author, rootConversationId)) return false;
+    if (isLikelySelfThreadEntry(item, author, rootConversationId)) return true;
+
     const replyToTweetId = item._replyToTweetId || null;
-    if (!replyToTweetId) return true;
-    return authorTweetIds.has(replyToTweetId);
+    if (replyToTweetId) return authorTweetIds.has(replyToTweetId);
+
+    const itemConversationId = item.conversation_id || item.external_id || null;
+    if (rootConversationId && itemConversationId && itemConversationId !== rootConversationId) return false;
+    if (item.external_id === root?.external_id) return true;
+    if (item._replyToHandle) return false;
+
+    return isSubstantiveThreadReply(item) && (rootHasLeadCue || isHighValueSingleContinuation(item));
   });
 }
 
@@ -1078,9 +1087,12 @@ function getThreadSiblingsFromCache(conversationId, authorHandle) {
     if (data.source_url && !data.source_url.includes('/i/web/') && !refSourceUrl) refSourceUrl = data.source_url;
   }
   if (!shouldTreatItemsAsThread(conversationItems, author, conversationId)) return [];
+  const candidateIds = new Set(
+    getCandidateSelfThreadItems(conversationItems, author, conversationId).map((item) => item.external_id)
+  );
   for (const [, data] of tweetCache) {
     if (data.conversation_id !== conversationId) continue;
-    if (isLikelySelfThreadEntry(data, author, conversationId)) {
+    if (candidateIds.has(data.external_id)) {
       // Backfill missing author info from reference sibling
       const clean = { ...data };
       if (!clean.author_handle && author) clean.author_handle = author;
@@ -1137,8 +1149,7 @@ async function getThreadSiblingsFromDOM(tweetElement, seedData = null) {
     || extracted[0]?.external_id
     || null;
 
-  const threadItems = extracted
-    .filter((item) => isLikelySelfThreadEntry(item, authorHandle, conversationId))
+  const threadItems = getCandidateSelfThreadItems(extracted, authorHandle, conversationId)
     .sort((a, b) => {
       if (!a.posted_at || !b.posted_at) return 0;
       return new Date(a.posted_at).getTime() - new Date(b.posted_at).getTime();
