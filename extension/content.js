@@ -783,6 +783,13 @@ function extractTweetFromDOM(tweetElement, options = {}) {
   // Check API cache first — video resolution happens in background.js
   if (tweetCache.has(tweetId)) {
     const cached = tweetCache.get(tweetId);
+    const domBodyText = getTweetTextFromDOM(tweetElement);
+    if (domBodyText && domBodyText.length > (cached.body_text?.length || 0)) {
+      cached.body_text = domBodyText;
+      if (cached.source_type !== 'article') {
+        cached.source_type = detectSourceType(cached.body_text, cached.media_urls || [], false, false);
+      }
+    }
     // For articles with truncated body, try to get full content
     if (cached.source_type === 'article' && (!cached.body_text || cached.body_text.length < 500)) {
       const fullBody = extractArticleBodyFromDOM();
@@ -835,8 +842,7 @@ function extractTweetFromDOM(tweetElement, options = {}) {
   }
 
   // Fall back to DOM extraction
-  const tweetTextEl = tweetElement.querySelector('[data-testid="tweetText"]');
-  const bodyText = tweetTextEl ? tweetTextEl.innerText : '';
+  const bodyText = getTweetTextFromDOM(tweetElement);
 
   // Extract display name
   const nameContainer = tweetElement.querySelector('[data-testid="User-Name"]');
@@ -985,6 +991,19 @@ function extractTextFromContainer(container) {
   return blocks.filter(b => b.length > 5).join('\n\n');
 }
 
+async function expandTweetText(tweetElement, delay = 500) {
+  const showMore = tweetElement?.querySelector?.('[data-testid="tweet-text-show-more-link"]');
+  if (!showMore) return false;
+  showMore.click();
+  await new Promise((resolve) => setTimeout(resolve, delay));
+  return true;
+}
+
+function getTweetTextFromDOM(tweetElement) {
+  const tweetTextEl = tweetElement?.querySelector?.('[data-testid="tweetText"]');
+  return tweetTextEl ? tweetTextEl.innerText : '';
+}
+
 
 // --- Per-Tweet Save Buttons ---
 const BUTTON_ATTR = 'data-feedsilo-btn';
@@ -1009,11 +1028,7 @@ function injectSaveButtons() {
       btn.classList.add('saving');
 
       // Try to expand long tweets first
-      const showMore = tweet.querySelector('[data-testid="tweet-text-show-more-link"]');
-      if (showMore) {
-        showMore.click();
-        await new Promise(r => setTimeout(r, 800));
-      }
+      await expandTweetText(tweet, 800);
 
       const data = await extractTweetFromDOM(tweet);
       if (!data) {
@@ -1149,6 +1164,9 @@ async function getThreadSiblingsFromDOM(tweetElement, seedData = null) {
 
   const seedConversationId = seedData?.conversation_id || seedData?.external_id || null;
   const visibleTweets = Array.from(document.querySelectorAll('article[data-testid="tweet"]'));
+  for (const visibleTweet of visibleTweets) {
+    await expandTweetText(visibleTweet);
+  }
   const extracted = [];
   const seenIds = new Set();
 
