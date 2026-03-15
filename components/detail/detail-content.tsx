@@ -57,6 +57,108 @@ function BodySegments({ bodyText }: { bodyText: string }) {
   );
 }
 
+function splitReadableParagraphs(text: string): string[] {
+  const normalized = text
+    .replace(/\r\n/g, "\n")
+    .replace(/\u00a0/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  if (!normalized) return [];
+
+  const explicitParagraphs = normalized
+    .split(/\n\s*\n/g)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (explicitParagraphs.length > 1) {
+    return explicitParagraphs;
+  }
+
+  const lines = normalized
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length > 2 && lines.every((line) => line.length < 180)) {
+    return lines;
+  }
+
+  const sentenceMatches = normalized.match(/[^.!?。！？]+[.!?。！？]+|[^.!?。！？]+$/g);
+  if (!sentenceMatches || sentenceMatches.length < 3) {
+    return [normalized];
+  }
+
+  const paragraphs: string[] = [];
+  let buffer = "";
+
+  for (const sentence of sentenceMatches.map((part) => part.trim()).filter(Boolean)) {
+    const next = buffer ? `${buffer} ${sentence}` : sentence;
+    const reachedTargetLength = next.length >= 320;
+    const reachedHardLimit = next.length >= 520;
+
+    if (reachedHardLimit || (reachedTargetLength && buffer)) {
+      paragraphs.push(buffer || sentence);
+      buffer = reachedHardLimit ? sentence : "";
+      if (reachedHardLimit) continue;
+    }
+
+    if (!buffer) {
+      buffer = sentence;
+    } else if (buffer !== sentence) {
+      buffer = next;
+    }
+  }
+
+  if (buffer) paragraphs.push(buffer);
+
+  return paragraphs.length > 1 ? paragraphs : [normalized];
+}
+
+function ArticleTextSegments({ bodyText }: { bodyText: string }) {
+  const { segments } = parseBodyContent(bodyText);
+
+  return (
+    <div className="space-y-5">
+      {segments.map((segment, i) => {
+        if (segment.type === "text") {
+          const paragraphs = splitReadableParagraphs(segment.content);
+
+          return (
+            <div key={i} className="space-y-5">
+              {paragraphs.map((paragraph, paragraphIndex) => (
+                <p
+                  key={`${i}-${paragraphIndex}`}
+                  className="max-w-[72ch] text-[17px] leading-[1.95] text-[#cdc4b7] [text-wrap:pretty]"
+                >
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          );
+        }
+
+        if (segment.type === "json") {
+          return <JsonCodeBlock key={i} code={segment.content} />;
+        }
+
+        if (segment.type === "code") {
+          return (
+            <div
+              key={i}
+              className="overflow-x-auto rounded-[18px] border border-[#d6c9b214] bg-[#0f141b] p-5 font-mono text-sm text-[#b4ab9d]"
+            >
+              <pre className="m-0 whitespace-pre-wrap">{segment.content}</pre>
+            </div>
+          );
+        }
+
+        return null;
+      })}
+    </div>
+  );
+}
+
 function normalizePromptComparisonText(value: string | null | undefined) {
   if (!value) return "";
   return value
@@ -395,23 +497,25 @@ function ArticleContent({
         <div
           className="prose prose-invert max-w-none
             prose-headings:font-heading prose-headings:text-[#f2ede5]
-            prose-h2:mt-10 prose-h2:text-[1.7rem] prose-h2:tracking-[-0.04em]
-            prose-h3:mt-8 prose-h3:text-[1.32rem]
-            prose-p:text-[#cdc4b7] prose-p:leading-[1.85] prose-p:text-[16px]
+            prose-headings:max-w-[18ch]
+            prose-h2:mb-4 prose-h2:mt-12 prose-h2:text-[1.7rem] prose-h2:tracking-[-0.04em]
+            prose-h3:mb-3 prose-h3:mt-9 prose-h3:text-[1.32rem]
+            prose-p:my-6 prose-p:max-w-[72ch] prose-p:text-[#cdc4b7] prose-p:leading-[1.95] prose-p:text-[17px]
             prose-a:text-[var(--accent-article)] prose-a:no-underline hover:prose-a:underline
             prose-strong:text-[#f2ede5]
             prose-code:text-[var(--accent-thread)] prose-code:bg-[#0f141b] prose-code:rounded prose-code:px-1.5 prose-code:py-0.5
-            prose-blockquote:rounded-r-[20px] prose-blockquote:border-[var(--accent-article)] prose-blockquote:bg-[#ffffff05] prose-blockquote:px-5 prose-blockquote:py-4 prose-blockquote:text-[#c5baab]
-            prose-ul:text-[#cdc4b7] prose-ol:text-[#cdc4b7]
-            prose-li:marker:text-[#b89462]
+            prose-blockquote:my-8 prose-blockquote:rounded-r-[20px] prose-blockquote:border-[var(--accent-article)] prose-blockquote:bg-[#ffffff05] prose-blockquote:px-5 prose-blockquote:py-4 prose-blockquote:text-[#c5baab]
+            prose-ul:my-6 prose-ul:max-w-[72ch] prose-ul:text-[#cdc4b7] prose-ol:my-6 prose-ol:max-w-[72ch] prose-ol:text-[#cdc4b7]
+            prose-li:my-1.5 prose-li:marker:text-[#b89462]
             prose-hr:my-10 prose-hr:border-[#d6c9b214]
             prose-img:rounded-[20px] prose-img:border prose-img:border-[#d6c9b214]
-            prose-figure:my-8 prose-figcaption:text-center prose-figcaption:text-xs prose-figcaption:text-[#8a8174]"
+            prose-figure:my-10 prose-figure:overflow-hidden prose-figure:rounded-[22px] prose-figure:border prose-figure:border-[#d6c9b214] prose-figure:bg-[#ffffff03]
+            prose-figcaption:mt-3 prose-figcaption:px-4 prose-figcaption:pb-4 prose-figcaption:text-center prose-figcaption:text-xs prose-figcaption:leading-6 prose-figcaption:text-[#8a8174]"
           dangerouslySetInnerHTML={{ __html: item.body_html }}
         />
       ) : bodyText ? (
-        <div className="space-y-4">
-          <BodySegments bodyText={bodyText} />
+        <div className="space-y-5">
+          <ArticleTextSegments bodyText={bodyText} />
         </div>
       ) : null}
     </div>
