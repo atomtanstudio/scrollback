@@ -42,6 +42,7 @@
     "https://x.com/*",
     "https://twitter.com/*",
     "https://cdn.syndication.twimg.com/*",
+    "https://*/*",
     "http://localhost/*",
     "http://127.0.0.1/*"
   ],
