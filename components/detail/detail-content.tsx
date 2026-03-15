@@ -226,6 +226,38 @@ function htmlToReadableText(html: string): string {
   );
 }
 
+function addInlineStyle(existing: string | undefined, addition: string): string {
+  const trimmed = existing?.trim();
+  if (!trimmed) return addition;
+  const suffix = trimmed.endsWith(";") ? "" : ";";
+  return `${trimmed}${suffix} ${addition}`;
+}
+
+function decorateArticleHtml(html: string): string {
+  return html
+    .replace(/<div([^>]*data-gt-id=["']rich_text["'][^>]*)>/gi, (_match, attrs) => {
+      const styleMatch = attrs.match(/\sstyle=(["'])(.*?)\1/i);
+      const mergedStyle = addInlineStyle(styleMatch?.[2], "margin: 2rem 0;");
+      let nextAttrs = attrs.replace(/\sstyle=(["'])(.*?)\1/i, "");
+      nextAttrs = nextAttrs.replace(/\s+$/, "");
+      return `<div${nextAttrs} style="${mergedStyle}">`;
+    })
+    .replace(/<p([^>]*)>/gi, (_match, attrs) => {
+      const styleMatch = attrs.match(/\sstyle=(["'])(.*?)\1/i);
+      const mergedStyle = addInlineStyle(styleMatch?.[2], "margin: 1.35rem 0; line-height: 1.95;");
+      let nextAttrs = attrs.replace(/\sstyle=(["'])(.*?)\1/i, "");
+      nextAttrs = nextAttrs.replace(/\s+$/, "");
+      return `<p${nextAttrs} style="${mergedStyle}">`;
+    })
+    .replace(/<h2([^>]*)>/gi, (_match, attrs) => {
+      const styleMatch = attrs.match(/\sstyle=(["'])(.*?)\1/i);
+      const mergedStyle = addInlineStyle(styleMatch?.[2], "margin: 3rem 0 1rem; line-height: 1.2;");
+      let nextAttrs = attrs.replace(/\sstyle=(["'])(.*?)\1/i, "");
+      nextAttrs = nextAttrs.replace(/\s+$/, "");
+      return `<h2${nextAttrs} style="${mergedStyle}">`;
+    });
+}
+
 function normalizePromptComparisonText(value: string | null | undefined) {
   if (!value) return "";
   return value
@@ -437,6 +469,7 @@ function ArticleContent({
     item.body_html && preferredLeadImageUrl
       ? stripLeadingFigureImage(item.body_html, preferredLeadImageUrl)
       : item.body_html;
+  const decoratedBodyHtml = renderedBodyHtml ? decorateArticleHtml(renderedBodyHtml) : null;
   const shouldRenderHtml = !!renderedBodyHtml && htmlHasStructuredParagraphs(renderedBodyHtml);
   const fallbackHtmlText =
     renderedBodyHtml && !shouldRenderHtml ? htmlToReadableText(renderedBodyHtml) : null;
@@ -580,7 +613,7 @@ function ArticleContent({
           />
         </div>
       )}
-      {shouldRenderHtml && renderedBodyHtml && !translationAvailable ? (
+      {shouldRenderHtml && decoratedBodyHtml && !translationAvailable ? (
         <div
           className="prose prose-invert max-w-none
             prose-headings:font-heading prose-headings:text-[#f2ede5]
@@ -598,7 +631,7 @@ function ArticleContent({
             prose-img:rounded-[20px] prose-img:border prose-img:border-[#d6c9b214]
             prose-figure:my-10 prose-figure:overflow-hidden prose-figure:rounded-[22px] prose-figure:border prose-figure:border-[#d6c9b214] prose-figure:bg-[#ffffff03]
             prose-figcaption:mt-3 prose-figcaption:px-4 prose-figcaption:pb-4 prose-figcaption:text-center prose-figcaption:text-xs prose-figcaption:leading-6 prose-figcaption:text-[#8a8174]"
-          dangerouslySetInnerHTML={{ __html: renderedBodyHtml }}
+          dangerouslySetInnerHTML={{ __html: decoratedBodyHtml }}
         />
       ) : fallbackHtmlText && !translationAvailable ? (
         <div className="space-y-5">
