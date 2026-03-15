@@ -143,6 +143,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
   const [paletteOpen, setPaletteOpen] = useState(false);
   const feedSectionRef = useRef<HTMLElement | null>(null);
   const scrollTimeoutRef = useRef<number | null>(null);
+  const pendingPaletteScrollRef = useRef(false);
 
   const statEntries = [
     { label: "Tweets", count: stats.tweets, dot: "bg-[var(--accent-tweet)]" },
@@ -191,7 +192,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
     });
   }, []);
 
-  const scheduleScrollToFeed = useCallback(() => {
+  const scheduleScrollToFeed = useCallback((delay = 140) => {
     if (scrollTimeoutRef.current) {
       window.clearTimeout(scrollTimeoutRef.current);
     }
@@ -199,7 +200,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
       requestAnimationFrame(() => {
         requestAnimationFrame(scrollToFeed);
       });
-    }, 140);
+    }, delay);
   }, [scrollToFeed]);
 
   const applyFilter = useCallback(
@@ -207,9 +208,13 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
       setActiveType(type);
       setSearchResults(null);
       setSearchQuery("");
-      scheduleScrollToFeed();
+      if (paletteOpen) {
+        pendingPaletteScrollRef.current = true;
+      } else {
+        scheduleScrollToFeed();
+      }
     },
-    [scheduleScrollToFeed]
+    [paletteOpen, scheduleScrollToFeed]
   );
 
   const handleSearch = useCallback(async (query: string) => {
@@ -224,9 +229,13 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
       setSearchResults([]);
     } finally {
       setIsSearching(false);
-      scheduleScrollToFeed();
+      if (paletteOpen) {
+        pendingPaletteScrollRef.current = true;
+      } else {
+        scheduleScrollToFeed();
+      }
     }
-  }, [scheduleScrollToFeed]);
+  }, [paletteOpen, scheduleScrollToFeed]);
 
   const handleClearSearch = useCallback(() => {
     setSearchResults(null);
@@ -269,6 +278,12 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (paletteOpen || !pendingPaletteScrollRef.current) return;
+    pendingPaletteScrollRef.current = false;
+    scheduleScrollToFeed(240);
+  }, [paletteOpen, scheduleScrollToFeed]);
 
   const feedTitle = searchResults
     ? isSearching
