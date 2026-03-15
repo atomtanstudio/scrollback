@@ -124,19 +124,21 @@ export function MediaRenderer({ mediaItems, onMediaClick }: MediaRendererProps) 
             preload="metadata"
             muted
             playsInline
-            className="w-full max-h-[480px] cursor-pointer rounded-xl bg-[#10151c]"
+            className="block w-full max-h-[480px] cursor-pointer rounded-xl bg-[#10151c]"
           >
             <source src={getMediaUrl(item)} />
           </video>
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(7,7,12,0.8)] via-transparent to-transparent opacity-90" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between px-4 py-3 text-white">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/78">
-              Video
-            </span>
-            <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-[rgba(20,20,28,0.72)] transition-transform duration-200 group-hover:scale-105">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-[rgba(20,20,28,0.78)] text-white shadow-[0_14px_34px_rgba(0,0,0,0.35)] transition-transform duration-200 group-hover:scale-105">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18a1 1 0 0 0 0-1.68L9.54 5.98A1 1 0 0 0 8 6.82Z" />
               </svg>
+            </span>
+          </div>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 py-3 text-white">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/78">
+              Video
             </span>
           </div>
         </button>
