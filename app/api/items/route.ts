@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     prisma.contentItem.findMany({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       where: where as any,
-      orderBy: { posted_at: "desc" },
+      orderBy: [{ posted_at: "desc" }, { created_at: "desc" }],
       skip: (page - 1) * perPage,
       take: perPage,
       include: {

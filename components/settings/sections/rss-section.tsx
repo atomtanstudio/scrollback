@@ -217,7 +217,7 @@ export function RssSection({ onRefresh }: RssSectionProps) {
           </button>
         </div>
         <p className="mt-2 text-[11px] leading-5 text-[#8a8174]">
-          Start with manual sync. New entries are ingested as articles, classified, translated, and included in search.
+          Start with manual sync. The first sync imports the latest 24 entries so a new feed does not overwhelm your library.
         </p>
       </div>
 

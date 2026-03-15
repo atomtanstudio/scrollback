@@ -35,6 +35,8 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
     categories: { include: { category: true } },
     tags: { include: { tag: true } },
   };
+  const itemTimestamp = (item: { posted_at?: Date | null; created_at: Date }) =>
+    new Date(item.posted_at ?? item.created_at).getTime();
 
   // Fetch non-thread items and deduplicated thread items separately, then merge.
   // This avoids the problem where a single thread with 100 replies drowns out
@@ -49,7 +51,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
       : prisma.contentItem.findMany({
           where: nonThreadWhere,
           include,
-          orderBy: { created_at: "desc" },
+          orderBy: [{ posted_at: "desc" }, { created_at: "desc" }],
           take: batchSize,
         }),
     // One thread per author: the same thread can be captured multiple times
@@ -97,7 +99,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
             }
 
             return Array.from(latestByAuthor.values())
-              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              .sort((a, b) => itemTimestamp(b) - itemTimestamp(a))
               .slice(0, batchSize);
           })
         : (prisma.$queryRawUnsafe(
@@ -118,7 +120,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
             return prisma.contentItem.findMany({
               where: { id: { in: rows.map((r) => r.id) } },
               include,
-              orderBy: { created_at: "desc" },
+              orderBy: [{ posted_at: "desc" }, { created_at: "desc" }],
             });
           })
       : Promise.resolve([]),
@@ -128,7 +130,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
   // Merge and sort by created_at descending, then trim to the requested batch size.
   // `hasMore` must be based on the deduplicated feed result, not raw content row counts.
   const mergedCandidates = [...nonThreadItems, ...threadItems]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    .sort((a, b) => itemTimestamp(b) - itemTimestamp(a));
   const hasMore = mergedCandidates.length > limit;
   const merged = mergedCandidates.slice(0, limit);
 

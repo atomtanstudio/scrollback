@@ -1,5 +1,7 @@
 import { createHash } from "crypto";
 import Parser from "rss-parser";
+import { Readability } from "@mozilla/readability";
+import { JSDOM } from "jsdom";
 import { getClient } from "@/lib/db/client";
 import { ingestItem } from "@/lib/ingest";
 import type { CapturePayload } from "@/lib/db/types";
@@ -37,6 +39,9 @@ const parser = new Parser<Record<string, never>, ParsedFeedItem>({
     item: ["creator", "content:encoded"],
   },
 });
+
+const INITIAL_SYNC_ITEM_LIMIT = 24;
+const MIN_FEED_BODY_LENGTH = 140;
 
 function normalizeFeedUrl(feedUrl: string): string {
   const trimmed = feedUrl.trim();
@@ -90,6 +95,15 @@ function getItemText(item: ParsedFeedItem): string {
   return item.title?.trim() || "";
 }
 
+function isThinFeedBody(text: string, title: string | undefined): boolean {
+  const cleanText = text.trim();
+  const cleanTitle = (title || "").trim();
+  if (!cleanText) return true;
+  if (cleanText.length < MIN_FEED_BODY_LENGTH) return true;
+  if (cleanTitle && cleanText === cleanTitle) return true;
+  return false;
+}
+
 function extractMediaUrls(item: ParsedFeedItem): string[] {
   const urls = new Set<string>();
   const enclosureUrl = item.enclosure?.url?.trim();
@@ -116,6 +130,37 @@ function buildExternalId(feedId: string, item: ParsedFeedItem): string {
 
   const hash = createHash("sha256").update(stableKey).digest("hex").slice(0, 24);
   return `rss:${feedId}:${hash}`;
+}
+
+async function fetchReadableArticle(url: string): Promise<{
+  title: string | null;
+  textContent: string | null;
+  htmlContent: string | null;
+  imageUrl: string | null;
+}> {
+  const response = await fetch(url, {
+    headers: { "User-Agent": "FeedSilo RSS Fetcher/1.0" },
+    redirect: "follow",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Article request failed with ${response.status}`);
+  }
+
+  const html = await response.text();
+  const dom = new JSDOM(html, { url });
+  const article = new Readability(dom.window.document).parse();
+  const imageUrl =
+    dom.window.document.querySelector('meta[property="og:image"]')?.getAttribute("content") ||
+    dom.window.document.querySelector('meta[name="twitter:image"]')?.getAttribute("content") ||
+    null;
+
+  return {
+    title: article?.title || dom.window.document.title || null,
+    textContent: article?.textContent?.trim() || null,
+    htmlContent: article?.content || null,
+    imageUrl,
+  };
 }
 
 async function fetchParsedFeed(
@@ -219,7 +264,7 @@ export async function deleteRssFeed(feedId: string) {
   await prisma.rssFeed.delete({ where: { id: feedId } });
 }
 
-function mapFeedItemToPayload(
+async function mapFeedItemToPayload(
   feed: {
     id: string;
     title: string;
@@ -227,13 +272,38 @@ function mapFeedItemToPayload(
     feed_url: string;
   },
   item: ParsedFeedItem
-): CapturePayload | null {
+): Promise<CapturePayload | null> {
   const originalUrl = item.link?.trim();
-  const bodyText = getItemText(item);
-  const title = item.title?.trim() || bodyText.slice(0, 140);
+  const initialBodyText = getItemText(item);
+  const initialTitle = item.title?.trim() || initialBodyText.slice(0, 140);
 
-  if (!originalUrl || !title) {
+  if (!originalUrl || !initialTitle) {
     return null;
+  }
+
+  let title = initialTitle;
+  let bodyText = initialBodyText;
+  let bodyHtml = getItemHtml(item);
+  let mediaUrls = extractMediaUrls(item);
+
+  if (isThinFeedBody(initialBodyText, initialTitle)) {
+    try {
+      const article = await fetchReadableArticle(originalUrl);
+      if (article.title) {
+        title = article.title.trim();
+      }
+      if (article.textContent && article.textContent.trim().length > bodyText.length) {
+        bodyText = article.textContent.trim();
+      }
+      if (article.htmlContent && article.htmlContent.trim().length > (bodyHtml || "").length) {
+        bodyHtml = article.htmlContent.trim();
+      }
+      if (article.imageUrl && mediaUrls.length === 0) {
+        mediaUrls = [article.imageUrl];
+      }
+    } catch (error) {
+      console.warn("RSS article fetch fallback failed:", error instanceof Error ? error.message : error);
+    }
   }
 
   return {
@@ -248,9 +318,9 @@ function mapFeedItemToPayload(
     author_display_name: item.creator?.trim() || item.author?.trim() || null,
     title,
     body_text: bodyText,
-    body_html: getItemHtml(item),
+    body_html: bodyHtml,
     posted_at: item.isoDate || item.pubDate || null,
-    media_urls: extractMediaUrls(item),
+    media_urls: mediaUrls,
   };
 }
 
@@ -286,12 +356,13 @@ export async function syncRssFeed(feedId: string) {
   }
 
   const entries = parsed.items || [];
+  const entriesToProcess = !feed.last_synced_at ? entries.slice(0, INITIAL_SYNC_ITEM_LIMIT) : entries;
   let synced = 0;
   let skipped = 0;
   let errors = 0;
 
-  for (const entry of entries) {
-    const payload = mapFeedItemToPayload(feed, entry);
+  for (const entry of entriesToProcess) {
+    const payload = await mapFeedItemToPayload(feed, entry);
     if (!payload) {
       skipped++;
       continue;
