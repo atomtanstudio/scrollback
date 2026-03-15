@@ -56,6 +56,17 @@ function BodySegments({ bodyText }: { bodyText: string }) {
   );
 }
 
+function normalizePromptComparisonText(value: string | null | undefined) {
+  if (!value) return "";
+  return value
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^["']+|["']+$/g, "")
+    .toLowerCase();
+}
+
 function TagsSection({
   tags,
   cardType,
@@ -294,6 +305,14 @@ function ArtContent({
   const hasJsonInText =
     (item.prompt_text && (item.prompt_text.includes("{") || item.prompt_text.includes("["))) ||
     (item.body_text && (item.body_text.includes("{") || item.body_text.includes("[")));
+  const normalizedBody = normalizePromptComparisonText(item.body_text);
+  const normalizedPrompt = normalizePromptComparisonText(item.prompt_text);
+  const promptIsDuplicatedInBody =
+    !!normalizedBody &&
+    !!normalizedPrompt &&
+    (normalizedBody === normalizedPrompt ||
+      normalizedBody.includes(normalizedPrompt) ||
+      normalizedPrompt.includes(normalizedBody));
 
   return (
     <div>
@@ -314,7 +333,7 @@ function ArtContent({
           <BodySegments bodyText={item.body_text} />
         </div>
       )}
-      {item.has_prompt && item.prompt_text && (
+      {item.has_prompt && item.prompt_text && !promptIsDuplicatedInBody && (
         <div className="mb-6">
           <p
             className="mb-2 text-[11px] font-semibold text-[#a49b8b]"
