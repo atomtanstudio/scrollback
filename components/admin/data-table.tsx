@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { getMediaDisplayUrl } from "@/lib/media-url";
 import {
   Table,
@@ -72,6 +72,17 @@ export function DataTable({
 }: DataTableProps) {
   const lastClickedIndex = useRef<number | null>(null);
 
+  useEffect(() => {
+    if (items.length === 0) {
+      lastClickedIndex.current = null;
+      return;
+    }
+
+    if (lastClickedIndex.current !== null && lastClickedIndex.current >= items.length) {
+      lastClickedIndex.current = items.length - 1;
+    }
+  }, [items]);
+
   const allSelected = items.length > 0 && items.every((i) => selectedIds.has(i.id));
   const someSelected = items.some((i) => selectedIds.has(i.id)) && !allSelected;
 
@@ -91,8 +102,13 @@ export function DataTable({
       if (event.shiftKey && lastClickedIndex.current !== null) {
         const start = Math.min(lastClickedIndex.current, index);
         const end = Math.max(lastClickedIndex.current, index);
+        const shouldSelectRange = !selectedIds.has(item.id);
         for (let i = start; i <= end; i++) {
-          next.add(items[i].id);
+          if (shouldSelectRange) {
+            next.add(items[i].id);
+          } else {
+            next.delete(items[i].id);
+          }
         }
       } else {
         if (next.has(item.id)) {
@@ -152,9 +168,6 @@ export function DataTable({
               <TableCell>
                 <Checkbox
                   checked={selectedIds.has(item.id)}
-                  onCheckedChange={() =>
-                    handleRowSelect(index, { shiftKey: false } as React.MouseEvent)
-                  }
                   onClick={(e) => {
                     e.stopPropagation();
                     handleRowSelect(index, e);
