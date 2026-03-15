@@ -352,7 +352,9 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                         <span>{getItemLabel(item)}</span>
                         <span>{formatTimeAgo(item.created_at)}</span>
                       </div>
-                      <p className="mt-2 line-clamp-2 text-[14px] leading-6 text-[#cdc4b7]">{getItemTitle(item, 76)}</p>
+                      <p className="mt-2 line-clamp-2 text-[14px] leading-6 text-[#cdc4b7] [overflow-wrap:anywhere]">
+                        {getItemTitle(item)}
+                      </p>
                     </Link>
                   ))}
                 </div>
@@ -404,8 +406,8 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                     className="rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 transition-colors hover:border-[#d6c9b233] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
                   >
                     <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">Latest article</p>
-                    <h2 className="mt-3 font-heading text-[1.7rem] leading-[1] tracking-[-0.05em] text-[#f2ede5]">
-                      {getItemTitle(featuredArticle, 66)}
+                    <h2 className="mt-3 line-clamp-3 font-heading text-[1.7rem] leading-[1] tracking-[-0.05em] text-[#f2ede5] [overflow-wrap:anywhere]">
+                      {getItemTitle(featuredArticle)}
                     </h2>
                     <p className="mt-4 text-[15px] leading-7 text-[#b4ab9d]">{getItemExcerpt(featuredArticle, 118)}</p>
                     <div className="mt-4 flex flex-wrap gap-2">
