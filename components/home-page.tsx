@@ -375,7 +375,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
               <div className="rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 sm:p-8">
                 <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">FeedSilo</p>
                 <h1 className="mt-3 max-w-[9ch] font-heading text-[clamp(2.7rem,6vw,5rem)] font-semibold leading-[0.94] tracking-[-0.07em] text-[#f2ede5]">
-                  A premium archive for the captures you actually keep.
+                  Your feed, without the noise.
                 </h1>
                 <p className="mt-5 max-w-[58ch] text-[16px] leading-8 text-[#b4ab9d]">
                   {stats.total.toLocaleString()} captures across {stats.tweets.toLocaleString()} tweets,{" "}
