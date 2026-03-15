@@ -186,6 +186,36 @@ function stripLeadingFigureImage(html: string, imageUrl: string | null): string 
     .trim();
 }
 
+function decodeBasicHtmlEntities(value: string): string {
+  return value
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#39;/gi, "'")
+    .replace(/&quot;/gi, '"');
+}
+
+function htmlHasStructuredParagraphs(html: string): boolean {
+  return /<(p|ul|ol|blockquote|figure|pre|table)\b/i.test(html);
+}
+
+function htmlToReadableText(html: string): string {
+  return decodeBasicHtmlEntities(
+    html
+      .replace(/\r\n/g, "\n")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(p|div|section|article|blockquote|figure|figcaption|ul|ol|li|h[1-6]|pre)>/gi, "\n\n")
+      .replace(/<li\b[^>]*>/gi, "• ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n[ \t]+/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/[ \t]{2,}/g, " ")
+      .trim()
+  );
+}
+
 function normalizePromptComparisonText(value: string | null | undefined) {
   if (!value) return "";
   return value
@@ -397,6 +427,9 @@ function ArticleContent({
     item.body_html && preferredLeadImageUrl
       ? stripLeadingFigureImage(item.body_html, preferredLeadImageUrl)
       : item.body_html;
+  const shouldRenderHtml = !!renderedBodyHtml && htmlHasStructuredParagraphs(renderedBodyHtml);
+  const fallbackHtmlText =
+    renderedBodyHtml && !shouldRenderHtml ? htmlToReadableText(renderedBodyHtml) : null;
 
   let domain = "";
   if (item.original_url) {
@@ -537,14 +570,14 @@ function ArticleContent({
           />
         </div>
       )}
-      {renderedBodyHtml && !translationAvailable ? (
+      {shouldRenderHtml && renderedBodyHtml && !translationAvailable ? (
         <div
-          className="prose prose-invert max-w-none whitespace-pre-wrap
+          className="prose prose-invert max-w-none
             prose-headings:font-heading prose-headings:text-[#f2ede5]
             prose-headings:max-w-[18ch]
             prose-h2:mb-4 prose-h2:mt-12 prose-h2:text-[1.7rem] prose-h2:tracking-[-0.04em]
             prose-h3:mb-3 prose-h3:mt-9 prose-h3:text-[1.32rem]
-            prose-p:my-6 prose-p:max-w-[72ch] prose-p:whitespace-pre-wrap prose-p:text-[#cdc4b7] prose-p:leading-[1.95] prose-p:text-[17px]
+            prose-p:my-6 prose-p:max-w-[72ch] prose-p:text-[#cdc4b7] prose-p:leading-[1.95] prose-p:text-[17px]
             prose-a:text-[var(--accent-article)] prose-a:no-underline hover:prose-a:underline
             prose-strong:text-[#f2ede5]
             prose-code:text-[var(--accent-thread)] prose-code:bg-[#0f141b] prose-code:rounded prose-code:px-1.5 prose-code:py-0.5
@@ -557,6 +590,10 @@ function ArticleContent({
             prose-figcaption:mt-3 prose-figcaption:px-4 prose-figcaption:pb-4 prose-figcaption:text-center prose-figcaption:text-xs prose-figcaption:leading-6 prose-figcaption:text-[#8a8174]"
           dangerouslySetInnerHTML={{ __html: renderedBodyHtml }}
         />
+      ) : fallbackHtmlText && !translationAvailable ? (
+        <div className="space-y-5">
+          <ArticleTextSegments bodyText={fallbackHtmlText} />
+        </div>
       ) : bodyText ? (
         <div className="space-y-5">
           <ArticleTextSegments bodyText={bodyText} />
