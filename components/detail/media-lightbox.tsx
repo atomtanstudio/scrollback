@@ -213,9 +213,9 @@ export function MediaLightbox({
         <motion.div
           key={currentIndex}
           className="relative z-10 flex items-center justify-center"
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
+          initial={isVideo || isGif ? { opacity: 0, y: 12 } : { scale: 0.9, opacity: 0 }}
+          animate={isVideo || isGif ? { opacity: 1, y: 0 } : { scale: 1, opacity: 1 }}
+          exit={isVideo || isGif ? { opacity: 0, y: 12 } : { scale: 0.9, opacity: 0 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
           onClick={(e) => e.stopPropagation()}
           onPointerDown={handlePointerDown}
