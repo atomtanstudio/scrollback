@@ -402,10 +402,27 @@ function isSubstantiveThreadReply(item) {
   return false;
 }
 
+function hasPromptLikeContinuation(item) {
+  const text = item?.body_text || '';
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  if (!normalized) return false;
+
+  if (hasExplicitPromptSnippet(normalized)) return true;
+  if (STRONG_PROMPT_PATTERNS.some((pattern) => pattern.test(normalized))) return true;
+  if (PROMPT_LANG.some((pattern) => pattern.test(normalized))) return true;
+
+  const hasVideoTool = new RegExp(`\\b(?:${VIDEO_TOOLS.join('|')})\\b`, 'i').test(normalized);
+  const hasImageTool = new RegExp(`\\b(?:${IMAGE_TOOLS.join('|')})\\b`, 'i').test(normalized);
+  if ((hasVideoTool || hasImageTool) && hasArtGenerationContext(normalized, hasVideoTool)) return true;
+
+  return false;
+}
+
 function isHighValueSingleContinuation(item) {
   if (!item) return false;
   if (item.source_type === 'article') return false;
   if (item.source_type === 'image_prompt' || item.source_type === 'video_prompt') return true;
+  if (hasPromptLikeContinuation(item)) return true;
   if ((item.media_urls || []).length > 0 && isSubstantiveThreadReply(item)) return true;
   return false;
 }
