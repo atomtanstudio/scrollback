@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getAttributionName, getDisplayBodyText, getDisplayTitle, getLanguageLabel, hasEnglishTranslation } from "@/lib/content-display";
+import { getArticleDek, getAttributionName, getDisplayBodyText, getDisplayTitle, getLanguageLabel, getSourceDisplayName, getSourceDomain, getSourceFaviconUrl, hasEnglishTranslation } from "@/lib/content-display";
 import { parseBodyContent } from "@/lib/content-parser";
 import { formatFullDate } from "@/lib/format";
 import type { DetailItem } from "@/lib/db/types";
@@ -251,6 +251,7 @@ function ArticleContent({
   onMediaClick: (index: number) => void;
 }) {
   const [showOriginal, setShowOriginal] = useState(false);
+  const isRssArticle = item.source_platform === "rss";
   const attribution = getAttributionName(item);
   const initials = attribution ? attribution.slice(0, 2).toUpperCase() : "??";
   const displayTitle = getDisplayTitle(item);
@@ -258,6 +259,10 @@ function ArticleContent({
   const translationAvailable = hasEnglishTranslation(item);
   const title = showOriginal ? (item.title || displayTitle) : displayTitle;
   const bodyText = showOriginal ? (item.body_text || displayBodyText) : displayBodyText;
+  const sourceName = getSourceDisplayName(item);
+  const sourceDomain = getSourceDomain(item);
+  const sourceFavicon = getSourceFaviconUrl(item);
+  const articleDek = getArticleDek(item, 320);
 
   let domain = "";
   if (item.original_url) {
@@ -273,7 +278,51 @@ function ArticleContent({
 
   return (
     <div>
-      {domain && (
+      {isRssArticle ? (
+        <div className="mb-6 rounded-[26px] border border-[rgba(184,148,98,0.18)] bg-[linear-gradient(180deg,rgba(184,148,98,0.08),rgba(255,255,255,0.03))] p-5 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              {sourceFavicon ? (
+                <img
+                  src={sourceFavicon}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-10 w-10 flex-shrink-0 rounded-xl bg-[#171d26] p-1"
+                />
+              ) : null}
+              <div className="min-w-0">
+                <p className="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-[#f0cf9f]">
+                  {sourceName || domain || "RSS"}
+                </p>
+                {sourceDomain && sourceName && sourceName.toLowerCase() !== sourceDomain.toLowerCase() && (
+                  <p className="truncate text-[13px] text-[#988e81]">{sourceDomain}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-[rgba(184,148,98,0.22)] bg-[rgba(184,148,98,0.14)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f0cf9f]">
+                RSS Archive
+              </span>
+              {item.original_url && (
+                <a
+                  href={item.original_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full border border-[#d6c9b214] bg-[#0f141b] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#f2ede5] transition-colors hover:border-[#d6c9b233] hover:text-white"
+                >
+                  Read original
+                </a>
+              )}
+            </div>
+          </div>
+          {articleDek && (
+            <p className="mt-4 max-w-[62ch] text-[15px] leading-7 text-[#c8bba7]">
+              {articleDek}
+            </p>
+          )}
+        </div>
+      ) : domain && (
         <p
           className="text-[12px] text-[--accent-article] font-semibold mb-3"
           style={{ textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--accent-article)" }}
@@ -286,7 +335,7 @@ function ArticleContent({
           {title}
         </h1>
       )}
-      <div className="flex items-center gap-2 mb-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         {item.author_avatar_url ? (
           <img
             src={item.author_avatar_url}
@@ -335,7 +384,7 @@ function ArticleContent({
         </div>
       )}
       {item.media_items && item.media_items.length > 0 && (
-        <div className="mb-6">
+        <div className={`mb-6 ${isRssArticle ? "overflow-hidden rounded-[26px] border border-[#d6c9b214] bg-[#10151c] p-2" : ""}`}>
           <MediaRenderer
             mediaItems={item.media_items}
             onMediaClick={onMediaClick}
@@ -344,16 +393,20 @@ function ArticleContent({
       )}
       {item.body_html && !translationAvailable ? (
         <div
-          className="prose prose-invert prose-sm max-w-none
+          className="prose prose-invert max-w-none
             prose-headings:font-heading prose-headings:text-[#f2ede5]
-            prose-p:text-[#cdc4b7] prose-p:leading-[1.75]
+            prose-h2:mt-10 prose-h2:text-[1.7rem] prose-h2:tracking-[-0.04em]
+            prose-h3:mt-8 prose-h3:text-[1.32rem]
+            prose-p:text-[#cdc4b7] prose-p:leading-[1.85] prose-p:text-[16px]
             prose-a:text-[var(--accent-article)] prose-a:no-underline hover:prose-a:underline
             prose-strong:text-[#f2ede5]
-            prose-code:text-[var(--accent-thread)] prose-code:bg-[#0f141b] prose-code:rounded prose-code:px-1
-            prose-blockquote:border-[var(--accent-article)] prose-blockquote:text-[#b4ab9d]
+            prose-code:text-[var(--accent-thread)] prose-code:bg-[#0f141b] prose-code:rounded prose-code:px-1.5 prose-code:py-0.5
+            prose-blockquote:rounded-r-[20px] prose-blockquote:border-[var(--accent-article)] prose-blockquote:bg-[#ffffff05] prose-blockquote:px-5 prose-blockquote:py-4 prose-blockquote:text-[#c5baab]
             prose-ul:text-[#cdc4b7] prose-ol:text-[#cdc4b7]
-            prose-hr:border-[#d6c9b214]
-            prose-img:rounded-xl"
+            prose-li:marker:text-[#b89462]
+            prose-hr:my-10 prose-hr:border-[#d6c9b214]
+            prose-img:rounded-[20px] prose-img:border prose-img:border-[#d6c9b214]
+            prose-figure:my-8 prose-figcaption:text-center prose-figcaption:text-xs prose-figcaption:text-[#8a8174]"
           dangerouslySetInnerHTML={{ __html: item.body_html }}
         />
       ) : bodyText ? (

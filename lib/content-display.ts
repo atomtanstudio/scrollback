@@ -4,6 +4,7 @@ type TranslatableContent = {
   translated_title?: string | null;
   translated_body_text?: string | null;
   language?: string | null;
+  ai_summary?: string | null;
   author_display_name?: string | null;
   author_handle?: string | null;
   source_platform?: string | null;
@@ -31,6 +32,10 @@ function clean(value: string | null | undefined): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function stripUrls(value: string): string {
+  return value.replace(/https?:\/\/\S+/gi, "").replace(/\s+/g, " ").trim();
+}
+
 export function getDisplayTitle(item: TranslatableContent): string {
   return clean(item.translated_title) || clean(item.title);
 }
@@ -55,6 +60,38 @@ export function getLanguageLabel(language: string | null | undefined): string {
   const code = clean(language).toLowerCase();
   if (!code) return "another language";
   return LANGUAGE_LABELS[code] || code.toUpperCase();
+}
+
+export function getSourceDomain(item: TranslatableContent): string | null {
+  const sourceDomain = clean(item.source_domain);
+  if (sourceDomain) return sourceDomain;
+
+  try {
+    return item.original_url ? new URL(item.original_url).hostname.replace(/^www\./, "") : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getSourceDisplayName(item: TranslatableContent): string | null {
+  const sourceLabel = clean(item.source_label);
+  if (sourceLabel) return sourceLabel;
+  return getSourceDomain(item);
+}
+
+export function getSourceFaviconUrl(item: TranslatableContent): string | null {
+  const domain = getSourceDomain(item);
+  if (!domain) return null;
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
+}
+
+export function getArticleDek(item: TranslatableContent, max = 220): string {
+  const summary = stripUrls(clean(item.ai_summary));
+  if (summary) return summary.length > max ? `${summary.slice(0, max - 1).trimEnd()}…` : summary;
+
+  const body = stripUrls(getDisplayBodyText(item));
+  if (!body) return "";
+  return body.length > max ? `${body.slice(0, max - 1).trimEnd()}…` : body;
 }
 
 export function getAttributionName(item: TranslatableContent): string | null {
