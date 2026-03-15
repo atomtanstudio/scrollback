@@ -47,14 +47,14 @@ export function MediaRenderer({ mediaItems, onMediaClick }: MediaRendererProps) 
   const gifs = mediaItems.filter((item) => item.media_type === "gif");
 
   return (
-    <div className="space-y-2">
+    <div className="isolate space-y-3">
       {/* Images */}
       {images.length === 1 && (
-        <div>
+        <div className="overflow-hidden rounded-xl bg-[#10151c] p-1">
           <img
             src={getOptimizedImageUrl(images[0], "medium")}
             alt={images[0].alt_text || ""}
-            className="w-full max-h-[480px] cursor-pointer rounded-xl bg-[#10151c] object-contain"
+            className="mx-auto block max-h-[70vh] w-auto max-w-full cursor-pointer rounded-[calc(theme(borderRadius.xl)-4px)] bg-[#10151c] object-contain"
             onClick={() => onMediaClick?.(mediaItems.indexOf(images[0]))}
           />
           <MediaCaption item={images[0]} />
@@ -64,34 +64,49 @@ export function MediaRenderer({ mediaItems, onMediaClick }: MediaRendererProps) 
       {images.length === 2 && (
         <div className="grid grid-cols-2 gap-2">
           {images.map((item) => (
-            <img
+            <button
               key={item.id}
-              src={getOptimizedImageUrl(item, "medium")}
-              alt={item.alt_text || ""}
-              className="w-full max-h-[320px] object-cover rounded-lg cursor-pointer"
+              type="button"
               onClick={() => onMediaClick?.(mediaItems.indexOf(item))}
-            />
+              className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-lg bg-[#10151c] p-1"
+            >
+              <img
+                src={getOptimizedImageUrl(item, "medium")}
+                alt={item.alt_text || ""}
+                className="block max-h-[320px] w-full rounded-[calc(theme(borderRadius.lg)-4px)] object-contain"
+              />
+            </button>
           ))}
         </div>
       )}
 
       {images.length === 3 && (
         <div className="space-y-2">
-          <img
-            src={getOptimizedImageUrl(images[0], "medium")}
-            alt={images[0].alt_text || ""}
-            className="w-full max-h-[320px] object-cover rounded-lg cursor-pointer"
+          <button
+            type="button"
             onClick={() => onMediaClick?.(mediaItems.indexOf(images[0]))}
-          />
+            className="flex min-h-[220px] w-full items-center justify-center overflow-hidden rounded-lg bg-[#10151c] p-1"
+          >
+            <img
+              src={getOptimizedImageUrl(images[0], "medium")}
+              alt={images[0].alt_text || ""}
+              className="block max-h-[320px] w-full rounded-[calc(theme(borderRadius.lg)-4px)] object-contain"
+            />
+          </button>
           <div className="grid grid-cols-2 gap-2">
             {images.slice(1).map((item) => (
-              <img
+              <button
                 key={item.id}
-                src={getOptimizedImageUrl(item, "medium")}
-                alt={item.alt_text || ""}
-                className="w-full max-h-[320px] object-cover rounded-lg cursor-pointer"
+                type="button"
                 onClick={() => onMediaClick?.(mediaItems.indexOf(item))}
-              />
+                className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-lg bg-[#10151c] p-1"
+              >
+                <img
+                  src={getOptimizedImageUrl(item, "medium")}
+                  alt={item.alt_text || ""}
+                  className="block max-h-[320px] w-full rounded-[calc(theme(borderRadius.lg)-4px)] object-contain"
+                />
+              </button>
             ))}
           </div>
         </div>
@@ -100,13 +115,18 @@ export function MediaRenderer({ mediaItems, onMediaClick }: MediaRendererProps) 
       {images.length >= 4 && (
         <div className="grid grid-cols-2 gap-2">
           {images.slice(0, 4).map((item) => (
-            <img
+            <button
               key={item.id}
-              src={getOptimizedImageUrl(item, "medium")}
-              alt={item.alt_text || ""}
-              className="w-full max-h-[320px] object-cover rounded-lg cursor-pointer"
+              type="button"
               onClick={() => onMediaClick?.(mediaItems.indexOf(item))}
-            />
+              className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-lg bg-[#10151c] p-1"
+            >
+              <img
+                src={getOptimizedImageUrl(item, "medium")}
+                alt={item.alt_text || ""}
+                className="block max-h-[320px] w-full rounded-[calc(theme(borderRadius.lg)-4px)] object-contain"
+              />
+            </button>
           ))}
         </div>
       )}
