@@ -418,6 +418,14 @@ function ArtContent({
           </button>
         </div>
       )}
+      {item.media_items && item.media_items.length > 0 && (
+        <div className="mb-6">
+          <MediaRenderer
+            mediaItems={item.media_items}
+            onMediaClick={onMediaClick}
+          />
+        </div>
+      )}
       {bodyText && (
         <div className="mb-6 space-y-4 text-base leading-[1.75] text-[#cdc4b7]">
           <BodySegments bodyText={bodyText} />
@@ -444,14 +452,6 @@ function ArtContent({
               item.prompt_text
             )}
           </blockquote>
-        </div>
-      )}
-      {item.media_items && item.media_items.length > 0 && (
-        <div className="mb-6">
-          <MediaRenderer
-            mediaItems={item.media_items}
-            onMediaClick={onMediaClick}
-          />
         </div>
       )}
       <TagsSection tags={item.tags} cardType="art" />
