@@ -236,15 +236,7 @@ export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
                       </div>
 
                       {entry.body_text && (
-                        <p
-                          className="text-sm leading-[1.75] text-[#9c9387]"
-                          style={{
-                            display: "-webkit-box",
-                            WebkitLineClamp: 3,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
-                          }}
-                        >
+                        <p className="whitespace-pre-wrap text-sm leading-[1.75] text-[#9c9387]">
                           {entry.body_text}
                         </p>
                       )}
