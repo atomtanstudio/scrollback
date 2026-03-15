@@ -150,7 +150,16 @@ async function fetchReadableArticle(url: string): Promise<{
   const html = await response.text();
   const dom = new JSDOM(html, { url });
   const article = new Readability(dom.window.document).parse();
+  const articleImage =
+    article?.content
+      ? new JSDOM(article.content, { url }).window.document.querySelector("img")?.getAttribute("src")
+      : null;
+  const firstDocumentImage =
+    dom.window.document.querySelector("main img, article img, [data-testid='article-body'] img, img")?.getAttribute("src") ||
+    null;
   const imageUrl =
+    articleImage ||
+    firstDocumentImage ||
     dom.window.document.querySelector('meta[property="og:image"]')?.getAttribute("content") ||
     dom.window.document.querySelector('meta[name="twitter:image"]')?.getAttribute("content") ||
     null;

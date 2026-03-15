@@ -2,7 +2,7 @@
 
 import { CardWrapper } from "./card-wrapper";
 import { VideoPoster } from "./video-poster";
-import { getArticleDek, getAttributionName, getDisplayBodyText, getDisplayTitle, getSourceDisplayName, getSourceFaviconUrl } from "@/lib/content-display";
+import { getArticleDek, getAttributionName, getDisplayBodyText, getDisplayTitle, getPreferredArticleImageUrl, getSourceDisplayName, getSourceFaviconUrl } from "@/lib/content-display";
 import { formatTimeAgo } from "@/lib/format";
 import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { ContentItemWithMedia } from "@/lib/db/types";
@@ -14,6 +14,12 @@ interface ArticleCardProps {
 
 export function ArticleCard({ item, href }: ArticleCardProps) {
   const thumbnail = item.media_items?.[0] || null;
+  const preferredImageUrl = getPreferredArticleImageUrl(item);
+  const resolvedThumbnailUrl =
+    preferredImageUrl ||
+    (thumbnail?.stored_path || thumbnail?.original_url
+      ? getMediaDisplayUrl(thumbnail.stored_path, thumbnail.original_url)
+      : null);
   const displayTitle = getDisplayTitle(item);
   const displayBodyText = getDisplayBodyText(item);
   const attribution = getAttributionName(item);
@@ -33,28 +39,25 @@ export function ArticleCard({ item, href }: ArticleCardProps) {
   return (
     <CardWrapper type="article" noPadding href={href}>
       <div className="relative flex h-[140px] w-full items-center justify-center overflow-hidden rounded-t-[23px] bg-[#171d26]">
-        {thumbnail?.stored_path || thumbnail?.original_url ? (
+        {resolvedThumbnailUrl ? (
           <>
-            {thumbnail.media_type === "video" ? (
+            {thumbnail?.media_type === "video" && !preferredImageUrl ? (
               <VideoPoster
-                src={getMediaDisplayUrl(thumbnail.stored_path, thumbnail.original_url)}
-                alt={thumbnail.alt_text || displayTitle}
+                src={resolvedThumbnailUrl}
+                alt={thumbnail?.alt_text || displayTitle}
                 className="h-full w-full object-cover object-top"
                 fallbackClassName="h-full w-full bg-[#171d26]"
               />
             ) : (
               <img
-                src={getMediaDisplayUrl(
-                  thumbnail.stored_path,
-                  thumbnail.original_url
-                )}
-                alt={thumbnail.alt_text || displayTitle}
+                src={resolvedThumbnailUrl}
+                alt={thumbnail?.alt_text || displayTitle}
                 loading="lazy"
                 decoding="async"
                 className="h-full w-full object-cover object-top"
               />
             )}
-            {thumbnail.media_type === "video" && (
+            {thumbnail?.media_type === "video" && !preferredImageUrl && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/45">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="white">

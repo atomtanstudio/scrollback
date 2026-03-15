@@ -1,6 +1,7 @@
 type TranslatableContent = {
   title?: string | null;
   body_text?: string | null;
+  body_html?: string | null;
   translated_title?: string | null;
   translated_body_text?: string | null;
   language?: string | null;
@@ -34,6 +35,11 @@ function clean(value: string | null | undefined): string {
 
 function stripUrls(value: string): string {
   return value.replace(/https?:\/\/\S+/gi, "").replace(/\s+/g, " ").trim();
+}
+
+function getFirstImageSrcFromHtml(html: string): string | null {
+  const match = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
+  return match?.[1]?.trim() || null;
 }
 
 export function getDisplayTitle(item: TranslatableContent): string {
@@ -83,6 +89,15 @@ export function getSourceFaviconUrl(item: TranslatableContent): string | null {
   const domain = getSourceDomain(item);
   if (!domain) return null;
   return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
+}
+
+export function getPreferredArticleImageUrl(item: TranslatableContent): string | null {
+  const bodyHtml = clean(item.body_html);
+  if (clean(item.source_platform).toLowerCase() === "rss" && bodyHtml) {
+    const inlineImage = getFirstImageSrcFromHtml(bodyHtml);
+    if (inlineImage) return inlineImage;
+  }
+  return null;
 }
 
 export function getArticleDek(item: TranslatableContent, max = 220): string {

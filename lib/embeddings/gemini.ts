@@ -159,7 +159,8 @@ ${truncatedBody || "(none)"}
 Rules:
 - Return the primary language as a lowercase ISO 639-1 code when possible (examples: en, ja, zh, ko).
 - If the content is already English or mostly English, do not translate it.
-- Preserve URLs, @handles, hashtags, line breaks, emoji, and any structured prompt syntax.
+- Preserve URLs, @handles, hashtags, emoji, and any structured prompt syntax.
+- Preserve paragraph structure and line breaks. If the source text is article-like and lacks clear breaks, infer readable paragraph breaks and separate paragraphs with blank lines.
 - Keep the translation faithful and readable, not overly literal.
 
 Return ONLY JSON in this exact shape:

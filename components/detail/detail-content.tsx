@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getArticleDek, getAttributionName, getDisplayBodyText, getDisplayTitle, getLanguageLabel, getSourceDisplayName, getSourceDomain, getSourceFaviconUrl, hasEnglishTranslation } from "@/lib/content-display";
+import { getArticleDek, getAttributionName, getDisplayBodyText, getDisplayTitle, getLanguageLabel, getPreferredArticleImageUrl, getSourceDisplayName, getSourceDomain, getSourceFaviconUrl, hasEnglishTranslation } from "@/lib/content-display";
 import { parseBodyContent } from "@/lib/content-parser";
 import { formatFullDate } from "@/lib/format";
 import type { DetailItem } from "@/lib/db/types";
@@ -157,6 +157,33 @@ function ArticleTextSegments({ bodyText }: { bodyText: string }) {
       })}
     </div>
   );
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function stripLeadingFigureImage(html: string, imageUrl: string | null): string {
+  if (!html || !imageUrl) return html;
+  const escapedUrl = escapeRegExp(imageUrl);
+  const figurePattern = new RegExp(
+    `^\\s*<figure[^>]*>[\\s\\S]*?<img[^>]+src=["']${escapedUrl}["'][^>]*>[\\s\\S]*?<\\/figure>\\s*`,
+    "i"
+  );
+  const paragraphPattern = new RegExp(
+    `^\\s*<(p|div)[^>]*>\\s*<img[^>]+src=["']${escapedUrl}["'][^>]*>\\s*<\\/(p|div)>\\s*`,
+    "i"
+  );
+  const imagePattern = new RegExp(
+    `^\\s*<img[^>]+src=["']${escapedUrl}["'][^>]*>\\s*`,
+    "i"
+  );
+
+  return html
+    .replace(figurePattern, "")
+    .replace(paragraphPattern, "")
+    .replace(imagePattern, "")
+    .trim();
 }
 
 function normalizePromptComparisonText(value: string | null | undefined) {
@@ -364,7 +391,12 @@ function ArticleContent({
   const sourceName = getSourceDisplayName(item);
   const sourceDomain = getSourceDomain(item);
   const sourceFavicon = getSourceFaviconUrl(item);
+  const preferredLeadImageUrl = getPreferredArticleImageUrl(item);
   const articleDek = getArticleDek(item, 320);
+  const renderedBodyHtml =
+    item.body_html && preferredLeadImageUrl
+      ? stripLeadingFigureImage(item.body_html, preferredLeadImageUrl)
+      : item.body_html;
 
   let domain = "";
   if (item.original_url) {
@@ -485,7 +517,19 @@ function ArticleContent({
           </button>
         </div>
       )}
-      {item.media_items && item.media_items.length > 0 && (
+      {preferredLeadImageUrl ? (
+        <div className={`mb-6 ${isRssArticle ? "overflow-hidden rounded-[26px] border border-[#d6c9b214] bg-[#10151c] p-2" : ""}`}>
+          <div className="overflow-hidden rounded-[22px] bg-[#10151c]">
+            <img
+              src={preferredLeadImageUrl}
+              alt={title || "Article image"}
+              loading="lazy"
+              decoding="async"
+              className="block max-h-[70vh] w-full object-cover"
+            />
+          </div>
+        </div>
+      ) : item.media_items && item.media_items.length > 0 && (
         <div className={`mb-6 ${isRssArticle ? "overflow-hidden rounded-[26px] border border-[#d6c9b214] bg-[#10151c] p-2" : ""}`}>
           <MediaRenderer
             mediaItems={item.media_items}
@@ -493,7 +537,7 @@ function ArticleContent({
           />
         </div>
       )}
-      {item.body_html && !translationAvailable ? (
+      {renderedBodyHtml && !translationAvailable ? (
         <div
           className="prose prose-invert max-w-none
             prose-headings:font-heading prose-headings:text-[#f2ede5]
@@ -511,7 +555,7 @@ function ArticleContent({
             prose-img:rounded-[20px] prose-img:border prose-img:border-[#d6c9b214]
             prose-figure:my-10 prose-figure:overflow-hidden prose-figure:rounded-[22px] prose-figure:border prose-figure:border-[#d6c9b214] prose-figure:bg-[#ffffff03]
             prose-figcaption:mt-3 prose-figcaption:px-4 prose-figcaption:pb-4 prose-figcaption:text-center prose-figcaption:text-xs prose-figcaption:leading-6 prose-figcaption:text-[#8a8174]"
-          dangerouslySetInnerHTML={{ __html: item.body_html }}
+          dangerouslySetInnerHTML={{ __html: renderedBodyHtml }}
         />
       ) : bodyText ? (
         <div className="space-y-5">
