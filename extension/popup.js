@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusMsg = document.getElementById('statusMsg');
   const xapiStatusMsg = document.getElementById('xapiStatusMsg');
   const connectionDot = document.getElementById('connectionDot');
+  const connectionStatus = document.getElementById('connectionStatus');
+  const connectionLabel = document.getElementById('connectionLabel');
   const xapiBadge = document.getElementById('xapiBadge');
   const captureModeText = document.getElementById('captureModeText');
 
@@ -50,17 +52,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function testConnection() {
     showStatus(statusMsg, 'Connecting...', 'info');
-    connectionDot.className = 'connection-dot offline';
-    connectionDot.title = 'Connecting...';
+    updateConnectionState('offline', 'Checking');
+    connectionStatus.title = 'Connecting...';
 
     chrome.runtime.sendMessage({ type: 'CHECK_CONNECTION' }, (response) => {
       if (response && response.success) {
-        connectionDot.className = 'connection-dot online';
-        connectionDot.title = 'Connected';
+        updateConnectionState('online', 'Connected');
+        connectionStatus.title = 'Connected';
         showStatus(statusMsg, 'Connected', 'success');
       } else {
-        connectionDot.className = 'connection-dot error';
-        connectionDot.title = 'Connection failed';
+        updateConnectionState('error', 'Failed');
+        connectionStatus.title = 'Connection failed';
         showStatus(statusMsg, response?.error || 'Connection failed', 'error');
       }
     });
@@ -127,6 +129,12 @@ document.addEventListener('DOMContentLoaded', () => {
       captureModeText.textContent = 'Page scraping mode';
       captureModeText.className = 'capture-mode-text';
     }
+  }
+
+  function updateConnectionState(state, label) {
+    connectionDot.className = `connection-dot ${state}`;
+    connectionStatus.className = `connection-status ${state}`;
+    connectionLabel.textContent = label;
   }
 
   function showStatus(el, text, type) {

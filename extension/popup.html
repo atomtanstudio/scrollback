@@ -1,83 +1,103 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="popup-container">
-    <!-- Brand header -->
     <header class="popup-header">
-      <div class="brand">
-        <div class="brand-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a0a0f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="4 17 10 11 4 5"></polyline>
-            <line x1="12" y1="19" x2="20" y2="19"></line>
-          </svg>
+      <div class="brand-lockup">
+        <div class="brand-icon" aria-hidden="true">
+          <div class="brand-mark brand-mark-left"></div>
+          <div class="brand-mark-dot"></div>
+          <div class="brand-mark brand-mark-right"></div>
         </div>
-        <span>feed<em>.</em>silo</span>
+        <div class="brand-copy">
+          <div class="brand-eyebrow">FeedSilo Capture</div>
+          <div class="brand-wordmark">feed<span class="brand-separator"></span>silo</div>
+        </div>
       </div>
-      <div id="connectionDot" class="connection-dot offline" title="Disconnected"></div>
+      <div id="connectionStatus" class="connection-status offline" title="Disconnected">
+        <span id="connectionDot" class="connection-dot offline"></span>
+        <span id="connectionLabel">Offline</span>
+      </div>
     </header>
 
-    <!-- Connection settings -->
-    <div class="section">
-      <div class="section-label">Connection</div>
+    <section class="hero-panel">
+      <p class="hero-kicker">Private archive</p>
+      <h1 class="hero-title">Save signal from X without living in the feed.</h1>
+      <p class="hero-copy">Pair the extension once, then capture threads, prompts, articles, and media straight into FeedSilo.</p>
+    </section>
 
+    <div class="section-card">
+      <div class="section-heading">
+        <div>
+          <div class="section-label">Connection</div>
+          <p class="section-copy">Point the extension at your hosted FeedSilo and pair it with your deployment token.</p>
+        </div>
+      </div>
       <div class="form-group">
-        <label>SERVER URL</label>
+        <label for="serverUrl">Server URL</label>
         <input type="text" id="serverUrl" placeholder="http://localhost:3000" spellcheck="false">
       </div>
 
       <div class="form-group">
-        <label>PAIRING TOKEN</label>
+        <label for="captureSecret">Pairing token</label>
         <input type="password" id="captureSecret" placeholder="Paste from Settings" spellcheck="false">
       </div>
 
       <div class="button-row">
-        <button id="saveBtn" class="btn btn-primary">Save</button>
-        <button id="testBtn" class="btn btn-ghost">Test</button>
+        <button id="saveBtn" class="btn btn-primary">Save settings</button>
+        <button id="testBtn" class="btn btn-secondary">Test connection</button>
       </div>
 
       <div id="statusMsg" class="status-msg"></div>
     </div>
 
-    <div class="divider"></div>
-
-    <!-- X API section -->
-    <div class="section">
-      <div class="section-label">
-        <span>X API</span>
-        <span id="xapiBadge" class="badge badge-muted">Optional</span>
+    <div class="section-card">
+      <div class="section-heading">
+        <div>
+          <div class="section-label">
+            <span>X API</span>
+            <span id="xapiBadge" class="badge badge-muted">Optional</span>
+          </div>
+          <p class="section-copy">Use a bearer token for safer bookmark and like syncing when you need bulk capture.</p>
+        </div>
       </div>
-      <p class="section-hint">Bearer token for safe bookmark & like syncing. Avoids ToS risk.</p>
 
       <div class="form-group">
-        <label>BEARER TOKEN</label>
+        <label for="bearerToken">Bearer token</label>
         <input type="password" id="bearerToken" placeholder="From developer.x.com" spellcheck="false">
       </div>
 
       <div class="button-row">
-        <button id="saveXapiBtn" class="btn btn-ghost">Save Token</button>
+        <button id="saveXapiBtn" class="btn btn-secondary">Save token</button>
         <a href="https://developer.x.com/en/portal/products" target="_blank" class="link-btn">Get access &rarr;</a>
       </div>
 
       <div id="xapiStatusMsg" class="status-msg"></div>
     </div>
 
-    <div class="divider"></div>
-
-    <!-- Bulk capture -->
-    <div class="section">
-      <button id="bulkBtn" class="btn btn-primary btn-full">Start Bulk Capture</button>
-      <div id="captureMode" class="capture-mode">
-        <span id="captureModeText" class="capture-mode-text">Page scraping mode</span>
+    <div class="section-card section-card-accent">
+      <div class="section-heading">
+        <div>
+          <div class="section-label">Bulk capture</div>
+          <p class="section-copy">Open Likes or Bookmarks on X, then start a pass from here.</p>
+        </div>
+        <div id="captureMode" class="capture-mode">
+          <span id="captureModeText" class="capture-mode-text">Page scraping mode</span>
+        </div>
       </div>
-      <p class="section-hint center">Navigate to your Likes or Bookmarks page on X first.</p>
+      <button id="bulkBtn" class="btn btn-primary btn-full">Start bulk capture</button>
+      <p class="section-hint">Navigate to your Likes or Bookmarks page on X first.</p>
     </div>
 
-    <!-- Footer -->
     <div class="popup-footer">
-      <span>Your data stays on your machine</span>
+      <span class="footer-chip">Private by default</span>
+      <span class="footer-chip">Pairs to your archive</span>
+      <span class="footer-chip">Built for signal</span>
     </div>
   </div>
 
