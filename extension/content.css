@@ -1,26 +1,55 @@
-/* --- Per-Tweet Save Button --- */
+:root {
+  --feedsilo-text: #f2ede5;
+  --feedsilo-text-muted: #b4ab9d;
+  --feedsilo-text-soft: #8f8678;
+  --feedsilo-gold: #b89462;
+  --feedsilo-gold-soft: rgba(184, 148, 98, 0.14);
+  --feedsilo-sage: #88aeb0;
+  --feedsilo-rose: #d78181;
+  --feedsilo-success: #8bb5a0;
+  --feedsilo-surface: rgba(17, 22, 30, 0.96);
+  --feedsilo-surface-strong: rgba(12, 16, 22, 0.98);
+  --feedsilo-border: rgba(214, 201, 178, 0.16);
+  --feedsilo-border-strong: rgba(214, 201, 178, 0.28);
+  --feedsilo-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+}
+
 .feedsilo-save-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 34px;
+  height: 34px;
   padding: 0 8px;
-  margin-left: 4px;
+  margin-left: 6px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   cursor: pointer;
   color: rgb(113, 118, 123);
-  background: none;
-  border: none;
-  border-radius: 9999px;
-  transition: background-color 0.2s, color 0.2s;
-  font-size: 12px;
+  background:
+    linear-gradient(180deg, rgba(20, 26, 34, 0), rgba(20, 26, 34, 0));
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+  font-size: 11px;
   font-weight: 700;
   font-family: inherit;
-  height: 34px;
-  min-width: 34px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .feedsilo-save-btn:hover {
-  background-color: rgba(0, 255, 200, 0.1);
-  color: #00ffc8;
+  color: var(--feedsilo-text);
+  border-color: var(--feedsilo-border);
+  background:
+    radial-gradient(circle at top left, rgba(184, 148, 98, 0.14), transparent 50%),
+    linear-gradient(180deg, rgba(22, 27, 35, 0.94), rgba(14, 18, 24, 0.96));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transform: translateY(-1px);
 }
 
 .feedsilo-save-btn svg {
@@ -29,102 +58,161 @@
 }
 
 .feedsilo-save-btn.saving {
-  color: #00ffc8;
-  animation: feedsilo-pulse 0.8s ease-in-out infinite;
+  color: var(--feedsilo-gold);
+  border-color: rgba(184, 148, 98, 0.18);
+  background:
+    radial-gradient(circle at center, rgba(184, 148, 98, 0.14), transparent 65%),
+    linear-gradient(180deg, rgba(22, 27, 35, 0.96), rgba(14, 18, 24, 0.98));
+  animation: feedsilo-pulse 1s ease-in-out infinite;
 }
 
 .feedsilo-save-btn.saved {
-  color: #00ffc8;
-  font-size: 16px;
+  color: var(--feedsilo-success);
+  border-color: rgba(139, 181, 160, 0.2);
+  background:
+    linear-gradient(180deg, rgba(20, 30, 28, 0.95), rgba(13, 19, 18, 0.98));
+  font-size: 13px;
+  letter-spacing: 0;
 }
 
 .feedsilo-save-btn.dupe {
-  color: #ff6b35;
-  font-size: 10px;
-  letter-spacing: 0.5px;
+  color: var(--feedsilo-gold);
+  border-color: rgba(184, 148, 98, 0.18);
+  background:
+    linear-gradient(180deg, rgba(30, 25, 18, 0.95), rgba(21, 17, 12, 0.98));
+  font-size: 9px;
 }
 
 .feedsilo-save-btn.error {
-  color: #ff4444;
+  color: var(--feedsilo-rose);
+  border-color: rgba(215, 129, 129, 0.2);
+  background:
+    linear-gradient(180deg, rgba(32, 21, 24, 0.95), rgba(22, 14, 17, 0.98));
 }
 
 @keyframes feedsilo-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(184, 148, 98, 0.14);
+  }
+  50% {
+    opacity: 0.75;
+    box-shadow: 0 0 0 6px rgba(184, 148, 98, 0.05);
+  }
 }
 
-/* --- Bulk Capture HUD --- */
 #feedsilo-hud {
   position: fixed;
-  bottom: 20px;
   right: 20px;
-  width: 220px;
-  background: rgba(10, 10, 15, 0.92);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 255, 200, 0.2);
-  border-radius: 12px;
-  padding: 14px;
+  bottom: 20px;
+  width: 268px;
+  padding: 16px;
+  border: 1px solid var(--feedsilo-border);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(184, 148, 98, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(22, 28, 37, 0.97), rgba(12, 16, 22, 0.99));
+  backdrop-filter: blur(16px);
+  color: var(--feedsilo-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  box-shadow: var(--feedsilo-shadow);
   z-index: 99999;
-  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-  font-size: 11px;
-  color: #e0e0e0;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 200, 0.05);
 }
 
 .feedsilo-hud-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
-  font-weight: 700;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.feedsilo-hud-title {
+  min-width: 0;
+}
+
+.feedsilo-hud-kicker {
+  color: var(--feedsilo-text-soft);
   font-size: 10px;
-  letter-spacing: 1px;
-  color: #00ffc8;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.feedsilo-hud-name {
+  margin-top: 4px;
+  color: var(--feedsilo-text);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.04em;
 }
 
 #feedsilo-hud-stop {
-  background: linear-gradient(135deg, #ff6b35, #e55a2b);
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 3px 10px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--feedsilo-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--feedsilo-text);
   font-family: inherit;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   cursor: pointer;
-  letter-spacing: 0.5px;
+  transition: border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
 }
 
 #feedsilo-hud-stop:hover {
-  opacity: 0.85;
+  border-color: var(--feedsilo-border-strong);
+  color: #fff8ef;
+  transform: translateY(-1px);
 }
 
 .feedsilo-hud-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: grid;
+  gap: 8px;
 }
 
 .feedsilo-hud-stats div {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  color: #888;
-  font-size: 10px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(214, 201, 178, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--feedsilo-text-soft);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .feedsilo-hud-stats .stat-captured {
-  color: #00ffc8;
+  color: #dce8e1;
+  border-color: rgba(139, 181, 160, 0.16);
+  background: rgba(139, 181, 160, 0.08);
 }
 
 .feedsilo-hud-stats .stat-skipped {
-  color: #ff6b35;
+  color: #e4d6c0;
+  border-color: rgba(184, 148, 98, 0.16);
+  background: rgba(184, 148, 98, 0.08);
 }
 
 .feedsilo-hud-stats .stat-errors {
-  color: #ff4444;
+  color: #f0d2d2;
+  border-color: rgba(215, 129, 129, 0.16);
+  background: rgba(215, 129, 129, 0.08);
 }
 
 .feedsilo-hud-stats span {
-  font-weight: 700;
-  color: inherit;
+  color: var(--feedsilo-text);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  text-transform: none;
 }

@@ -1150,7 +1150,10 @@ function createHUD() {
   hud.id = 'feedsilo-hud';
   hud.innerHTML = `
     <div class="feedsilo-hud-header">
-      <span>FeedSilo CAPTURE</span>
+      <div class="feedsilo-hud-title">
+        <div class="feedsilo-hud-kicker">FeedSilo</div>
+        <div class="feedsilo-hud-name">Capture run</div>
+      </div>
       <button id="feedsilo-hud-stop">STOP</button>
     </div>
     <div class="feedsilo-hud-stats">
@@ -1194,8 +1197,8 @@ async function startBulkCapture(useApi = false) {
 
   // Show API mode indicator in HUD
   if (useApi) {
-    const header = document.querySelector('.feedsilo-hud-header span');
-    if (header) header.textContent = 'BULK CAPTURE (API)';
+    const header = document.querySelector('.feedsilo-hud-name');
+    if (header) header.textContent = 'Capture run · API';
   }
 
   let unchangedScrollCount = 0;
@@ -1228,7 +1231,7 @@ async function startBulkCapture(useApi = false) {
       if (useApi) {
         // API mode: just collect the tweet ID
         idBatch.push(tweetId);
-        tweet.style.borderLeft = '3px solid #22d3ee'; // Cyan for API mode
+        tweet.style.borderLeft = '3px solid #88aeb0';
       } else {
         // Classic mode: extract full data from DOM
         const showMore = tweet.querySelector('[data-testid="tweet-text-show-more-link"]');
@@ -1240,7 +1243,7 @@ async function startBulkCapture(useApi = false) {
         const data = await extractTweetFromDOM(tweet);
         if (data) {
           batch.push(data);
-          tweet.style.borderLeft = '3px solid #00ffc8';
+          tweet.style.borderLeft = '3px solid #b89462';
         }
       }
 
@@ -1275,7 +1278,7 @@ async function startBulkCapture(useApi = false) {
             const data = await extractTweetFromDOM(tweet);
             if (data) {
               fallbackBatch.push(data);
-              tweet.style.borderLeft = '3px solid #ff6b35'; // Orange for DOM fallback
+              tweet.style.borderLeft = '3px solid #d78181';
             }
           }
           if (fallbackBatch.length > 0) {
@@ -1326,8 +1329,8 @@ async function startBulkCapture(useApi = false) {
 
   // Capture complete
   isBulkCapturing = false;
-  const hudHeader = document.querySelector('.feedsilo-hud-header span');
-  if (hudHeader) hudHeader.textContent = 'CAPTURE COMPLETE';
+  const hudHeader = document.querySelector('.feedsilo-hud-name');
+  if (hudHeader) hudHeader.textContent = 'Capture complete';
   const stopBtn = document.getElementById('feedsilo-hud-stop');
   if (stopBtn) {
     stopBtn.textContent = 'CLOSE';
