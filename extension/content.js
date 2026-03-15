@@ -871,33 +871,38 @@ function injectSaveButtons() {
         return;
       }
 
-      // If this is a thread, collect all siblings from cache and send as bulk
-      if (data.source_type === 'thread' && data.conversation_id) {
-        const threadItems = getThreadSiblingsFromCache(data.conversation_id, data.author_handle);
-        if (threadItems.length > 1) {
-          log(' Thread detected — saving', threadItems.length, 'tweets in conversation');
-          chrome.runtime.sendMessage({ type: 'CAPTURE_BULK', items: threadItems }, (response) => {
-            btn.classList.remove('saving');
-            if (chrome.runtime.lastError) {
-              console.error('FeedSilo: runtime error', chrome.runtime.lastError);
-              btn.classList.add('error');
-              setTimeout(() => resetButton(btn), 3000);
-              return;
-            }
-            if (response?.success) {
-              const total = (response.captured || 0) + (response.skipped || 0);
-              btn.classList.add('saved');
-              btn.innerHTML = `&#10003; ${total}`;
-              // Mark all other thread tweets' save buttons as saved too
-              markThreadButtonsSaved(data.conversation_id, data.author_handle);
-            } else {
-              btn.classList.add('error');
-              console.error('FeedSilo thread save failed:', response?.error);
-              setTimeout(() => resetButton(btn), 3000);
-            }
-          });
-          return;
-        }
+      let threadItems = [];
+      if (data.conversation_id && data.author_handle) {
+        threadItems = getThreadSiblingsFromCache(data.conversation_id, data.author_handle);
+      }
+      if (threadItems.length < 2) {
+        threadItems = await getThreadSiblingsFromDOM(tweet, data);
+      }
+
+      if (threadItems.length > 1) {
+        const threadConversationId = threadItems[0].conversation_id || data.conversation_id || data.external_id;
+        log(' Thread detected — saving', threadItems.length, 'tweets in conversation');
+        chrome.runtime.sendMessage({ type: 'CAPTURE_BULK', items: threadItems }, (response) => {
+          btn.classList.remove('saving');
+          if (chrome.runtime.lastError) {
+            console.error('FeedSilo: runtime error', chrome.runtime.lastError);
+            btn.classList.add('error');
+            setTimeout(() => resetButton(btn), 3000);
+            return;
+          }
+          if (response?.success) {
+            const total = (response.captured || 0) + (response.skipped || 0);
+            btn.classList.add('saved');
+            btn.innerHTML = `&#10003; ${total}`;
+            // Mark all other thread tweets' save buttons as saved too
+            markThreadButtonsSaved(threadConversationId, data.author_handle);
+          } else {
+            btn.classList.add('error');
+            console.error('FeedSilo thread save failed:', response?.error);
+            setTimeout(() => resetButton(btn), 3000);
+          }
+        });
+        return;
       }
 
       log(' sending capture data', JSON.stringify(data, null, 2));
@@ -971,6 +976,56 @@ function getThreadSiblingsFromCache(conversationId, authorHandle) {
   return siblings;
 }
 
+function getAuthorHandleFromTweetElement(tweetElement) {
+  if (!tweetElement) return null;
+  const link = tweetElement.querySelector('a[href*="/status/"]');
+  const match = link?.href.match(/\/([^/]+)\/status\//);
+  return match ? match[1].toLowerCase() : null;
+}
+
+async function getThreadSiblingsFromDOM(tweetElement, seedData = null) {
+  const authorHandle = (seedData?.author_handle || getAuthorHandleFromTweetElement(tweetElement) || '').toLowerCase();
+  if (!authorHandle || !isSelfThreadOnPage(tweetElement)) return [];
+
+  const allTweets = Array.from(document.querySelectorAll('article[data-testid="tweet"]'));
+  const index = allTweets.indexOf(tweetElement);
+  if (index === -1) return [];
+
+  const threadTweets = [tweetElement];
+
+  for (let i = index - 1; i >= 0; i--) {
+    if (getAuthorHandleFromTweetElement(allTweets[i]) !== authorHandle) break;
+    threadTweets.unshift(allTweets[i]);
+  }
+
+  for (let i = index + 1; i < allTweets.length; i++) {
+    if (getAuthorHandleFromTweetElement(allTweets[i]) !== authorHandle) break;
+    threadTweets.push(allTweets[i]);
+  }
+
+  if (threadTweets.length < 2) return [];
+
+  const extracted = [];
+  for (const threadTweet of threadTweets) {
+    const item = await extractTweetFromDOM(threadTweet);
+    if (item) extracted.push(item);
+  }
+  if (extracted.length < 2) return [];
+
+  const conversationId =
+    extracted.find((item) => item.conversation_id)?.conversation_id
+    || extracted[0]?.external_id
+    || seedData?.conversation_id
+    || seedData?.external_id
+    || null;
+
+  return extracted.map((item) => ({
+    ...item,
+    conversation_id: item.conversation_id || conversationId,
+    source_type: item.source_type === 'article' ? item.source_type : 'thread',
+  }));
+}
+
 // After saving a thread, mark all visible save buttons for those tweets as saved
 function markThreadButtonsSaved(conversationId, authorHandle) {
   const author = (authorHandle || '').toLowerCase();
@@ -1038,18 +1093,12 @@ function isThreadReply(tweetElement) {
 // Detect self-threads via DOM: checks if the current page shows multiple
 // tweets from the same author connected in a thread (for fallback when cache misses)
 function isSelfThreadOnPage(tweetElement) {
-  const getAuthorHandle = (el) => {
-    if (!el) return null;
-    const link = el.querySelector('a[href*="/status/"]');
-    const match = link?.href.match(/\/([^/]+)\/status\//);
-    return match ? match[1].toLowerCase() : null;
-  };
   const hasConnector = (el) => {
     const cell = el?.closest?.('[data-testid="cellInnerDiv"]');
     return !!cell?.querySelector('div[style*="width: 2px"]');
   };
 
-  const authorHandle = getAuthorHandle(tweetElement);
+  const authorHandle = getAuthorHandleFromTweetElement(tweetElement);
   if (!authorHandle) return false;
 
   const allTweets = Array.from(document.querySelectorAll('article[data-testid="tweet"]'));
@@ -1058,8 +1107,8 @@ function isSelfThreadOnPage(tweetElement) {
 
   const prevTweet = allTweets[index - 1] || null;
   const nextTweet = allTweets[index + 1] || null;
-  const prevSameAuthor = getAuthorHandle(prevTweet) === authorHandle;
-  const nextSameAuthor = getAuthorHandle(nextTweet) === authorHandle;
+  const prevSameAuthor = getAuthorHandleFromTweetElement(prevTweet) === authorHandle;
+  const nextSameAuthor = getAuthorHandleFromTweetElement(nextTweet) === authorHandle;
 
   if (!prevSameAuthor && !nextSameAuthor) return false;
 
