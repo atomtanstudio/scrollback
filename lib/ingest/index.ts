@@ -8,10 +8,11 @@ import type { CapturePayload, CaptureResult } from "@/lib/db/types";
 import { isR2Configured } from "@/lib/storage/r2";
 import { downloadAndStoreMedia } from "@/lib/storage/download";
 import { qualifiesAsArtCapture } from "@/lib/art-detection";
+import { normalizeCapturedText } from "@/lib/text-cleanup";
 
 function sanitizeText(s: string | null | undefined): string | null {
   if (!s) return null;
-  return Buffer.from(s, "utf-8").toString("utf-8").replace(/\0/g, "");
+  return normalizeCapturedText(Buffer.from(s, "utf-8").toString("utf-8"));
 }
 
 function detectMediaType(url: string): "image" | "video" | "gif" {

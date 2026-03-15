@@ -1,3 +1,5 @@
+import { normalizeCapturedText } from "@/lib/text-cleanup";
+
 export interface ParsedContent {
   segments: ContentSegment[];
 }
@@ -78,7 +80,9 @@ function tryParseJson(text: string): unknown | null {
  * 3. Everything else is plain text
  */
 export function parseBodyContent(bodyText: string): ParsedContent {
-  if (!bodyText || bodyText.trim() === '') {
+  const normalizedBodyText = normalizeCapturedText(bodyText);
+
+  if (!normalizedBodyText || normalizedBodyText.trim() === '') {
     return { segments: [] };
   }
 
@@ -99,7 +103,7 @@ export function parseBodyContent(bodyText: string): ParsedContent {
   // Pass 1: Find all markdown code fences
   let match: RegExpExecArray | null;
   codeFenceRegex.lastIndex = 0;
-  while ((match = codeFenceRegex.exec(bodyText)) !== null) {
+  while ((match = codeFenceRegex.exec(normalizedBodyText)) !== null) {
     const language = match[1] || undefined;
     const codeContent = match[2];
 
@@ -134,19 +138,19 @@ export function parseBodyContent(bodyText: string): ParsedContent {
   const isInProtectedRange = (idx: number): boolean =>
     ranges.some((r) => idx >= r.start && idx <= r.end);
 
-  for (let i = 0; i < bodyText.length; i++) {
-    const ch = bodyText[i];
+  for (let i = 0; i < normalizedBodyText.length; i++) {
+    const ch = normalizedBodyText[i];
 
     if (ch !== '{' && ch !== '[') continue;
     if (isInProtectedRange(i)) continue;
 
-    const end = findBalancedEnd(bodyText, i);
+    const end = findBalancedEnd(normalizedBodyText, i);
     if (end === -1) continue;
 
     // Make sure the entire candidate block is not inside a protected range
     if (isInProtectedRange(end)) continue;
 
-    const candidate = bodyText.slice(i, end + 1);
+    const candidate = normalizedBodyText.slice(i, end + 1);
     const parsed = tryParseJson(candidate);
     if (parsed === null) continue;
 
@@ -171,7 +175,7 @@ export function parseBodyContent(bodyText: string): ParsedContent {
   let cursor = 0;
   for (const range of ranges) {
     if (cursor < range.start) {
-      const textContent = bodyText.slice(cursor, range.start);
+      const textContent = normalizedBodyText.slice(cursor, range.start);
       if (textContent) {
         segments.push({ type: 'text', content: textContent });
       }
@@ -181,8 +185,8 @@ export function parseBodyContent(bodyText: string): ParsedContent {
   }
 
   // Remaining text after the last range
-  if (cursor < bodyText.length) {
-    const textContent = bodyText.slice(cursor);
+  if (cursor < normalizedBodyText.length) {
+    const textContent = normalizedBodyText.slice(cursor);
     if (textContent) {
       segments.push({ type: 'text', content: textContent });
     }
@@ -190,7 +194,7 @@ export function parseBodyContent(bodyText: string): ParsedContent {
 
   // If no segments were produced, return the whole thing as text
   if (segments.length === 0) {
-    return { segments: [{ type: 'text', content: bodyText }] };
+    return { segments: [{ type: 'text', content: normalizedBodyText }] };
   }
 
   return { segments };
