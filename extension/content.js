@@ -455,10 +455,14 @@ function cacheTweetData(tweet) {
     || legacy.user_id_str && null  // can't resolve from just user_id
     || null;
   const noteTweet = tweet.note_tweet?.note_tweet_results?.result;
+  const existingEntry = tweetCache.get(tweetId);
 
   // Get avatar URL - upgrade to full size by removing _normal suffix
   const avatarRaw = user.profile_image_url_https || null;
   const avatarUrl = avatarRaw ? avatarRaw.replace('_normal.', '_400x400.') : null;
+  const replyToHandle = normalizeHandle(
+    legacy.in_reply_to_screen_name || existingEntry?._replyToHandle || null
+  ) || null;
 
   // Detect X Articles (long-form content linked from tweets)
   let isArticle = false;
@@ -541,7 +545,6 @@ function cacheTweetData(tweet) {
   let conversationId = legacy.conversation_id_str || legacy.conversation_id || tweetId;
   // Preserve a good conversation_id from a previous cache hit — some API responses
   // return the same tweet without conversation_id_str, which would overwrite the good value
-  const existingEntry = tweetCache.get(tweetId);
   if (conversationId === tweetId && existingEntry?.conversation_id && existingEntry.conversation_id !== tweetId) {
     conversationId = existingEntry.conversation_id;
   }
@@ -567,6 +570,7 @@ function cacheTweetData(tweet) {
     posted_at: legacy.created_at ? new Date(legacy.created_at).toISOString() : null,
     media_urls: mediaUrls,
     _hasUnresolvedVideo: hasUnresolvedVideo,
+    _replyToHandle: replyToHandle,
     _cachedAt: Date.now(),
     likes: legacy.favorite_count || null,
     retweets: legacy.retweet_count || null,
@@ -593,14 +597,16 @@ function detectSelfThreadInCache(conversationId) {
   const authorCounts = {};
   for (const s of siblings) {
     const author = (s.author_handle || '').toLowerCase();
-    if (author) authorCounts[author] = (authorCounts[author] || 0) + 1;
+    if (author && isLikelySelfThreadEntry(s, author, conversationId)) {
+      authorCounts[author] = (authorCounts[author] || 0) + 1;
+    }
   }
 
   // If any author has 2+ tweets in the same conversation, it's a self-thread
   for (const [author, count] of Object.entries(authorCounts)) {
     if (count >= 2) {
       for (const s of siblings) {
-        if ((s.author_handle || '').toLowerCase() === author
+        if (isLikelySelfThreadEntry(s, author, conversationId)
             && (s.source_type === 'tweet' || s.source_type === 'image_prompt' || s.source_type === 'video_prompt')) {
           // Only upgrade to thread if it's not an article
           // Keep prompt classification if it was detected — just change the base type
@@ -611,9 +617,38 @@ function detectSelfThreadInCache(conversationId) {
   }
 }
 
+function normalizeHandle(handle) {
+  return (handle || '').replace(/^@/, '').trim().toLowerCase();
+}
+
+function isLikelySelfThreadEntry(item, authorHandle, conversationId) {
+  const author = normalizeHandle(authorHandle);
+  if (!author) return false;
+  if (normalizeHandle(item.author_handle) !== author) return false;
+
+  const replyToHandle = normalizeHandle(item._replyToHandle);
+  const itemConversationId = item.conversation_id || item.external_id || null;
+  const rootConversationId = conversationId || itemConversationId;
+  const isRootTweet = !!rootConversationId && item.external_id === rootConversationId;
+
+  if (isRootTweet) return true;
+  if (!replyToHandle || replyToHandle !== author) return false;
+  if (!rootConversationId || !itemConversationId) return true;
+
+  return itemConversationId === rootConversationId;
+}
+
+function stripInternalCaptureFields(item) {
+  const clean = { ...item };
+  delete clean._hasUnresolvedVideo;
+  delete clean._cachedAt;
+  delete clean._replyToHandle;
+  return clean;
+}
+
 
 // --- DOM Extraction Fallback ---
-function extractTweetFromDOM(tweetElement) {
+function extractTweetFromDOM(tweetElement, options = {}) {
   const statusLink = tweetElement.querySelector('a[href*="/status/"]');
   if (!statusLink) return null;
 
@@ -678,10 +713,7 @@ function extractTweetFromDOM(tweetElement) {
     }
 
     // Return a clean copy without internal fields
-    const data = { ...cached };
-    delete data._hasUnresolvedVideo;
-    delete data._cachedAt;
-    return data;
+    return options.includeInternal ? { ...cached } : stripInternalCaptureFields(cached);
   }
 
   // Fall back to DOM extraction
@@ -725,6 +757,7 @@ function extractTweetFromDOM(tweetElement) {
   // Check if this tweet is part of a self-thread via DOM signals
   const isThread = isSelfThreadOnPage(tweetElement);
   const sourceType = isThread ? 'thread' : detectSourceType(bodyText, mediaUrls, false, false);
+  const replyToHandle = getReplyingToHandleFromTweetElement(tweetElement);
 
   return {
     external_id: tweetId,
@@ -738,6 +771,7 @@ function extractTweetFromDOM(tweetElement) {
     posted_at: null,
     media_urls: mediaUrls,
     _hasUnresolvedVideo: hasVideo,
+    _replyToHandle: replyToHandle,
     likes: null,
     retweets: null,
     replies: null,
@@ -938,7 +972,7 @@ function injectSaveButtons() {
 
 // Collect all thread siblings from cache for a given conversation + author
 function getThreadSiblingsFromCache(conversationId, authorHandle) {
-  const author = (authorHandle || '').toLowerCase();
+  const author = normalizeHandle(authorHandle);
   const siblings = [];
   // First pass: find a sibling with full author info to use for backfill
   let refDisplayName = null;
@@ -952,20 +986,16 @@ function getThreadSiblingsFromCache(conversationId, authorHandle) {
   }
   for (const [, data] of tweetCache) {
     if (data.conversation_id !== conversationId) continue;
-    // Include if author matches OR author is null (API didn't resolve user data)
-    const entryAuthor = (data.author_handle || '').toLowerCase();
-    if (entryAuthor === author || !data.author_handle) {
+    if (isLikelySelfThreadEntry(data, author, conversationId)) {
       // Backfill missing author info from reference sibling
       const clean = { ...data };
-      if (!clean.author_handle && authorHandle) clean.author_handle = authorHandle;
+      if (!clean.author_handle && author) clean.author_handle = author;
       if (!clean.author_display_name && refDisplayName) clean.author_display_name = refDisplayName;
       if (!clean.author_avatar_url && refAvatarUrl) clean.author_avatar_url = refAvatarUrl;
       if (clean.source_url?.includes('/i/web/') && clean.author_handle) {
         clean.source_url = `https://x.com/${clean.author_handle}/status/${clean.external_id}`;
       }
-      delete clean._hasUnresolvedVideo;
-      delete clean._cachedAt;
-      siblings.push(clean);
+      siblings.push(stripInternalCaptureFields(clean));
     }
   }
   // Sort by posted_at to maintain thread order (oldest first)
@@ -980,46 +1010,49 @@ function getAuthorHandleFromTweetElement(tweetElement) {
   if (!tweetElement) return null;
   const link = tweetElement.querySelector('a[href*="/status/"]');
   const match = link?.href.match(/\/([^/]+)\/status\//);
-  return match ? match[1].toLowerCase() : null;
+  return match ? normalizeHandle(match[1]) : null;
+}
+
+function getReplyingToHandleFromTweetElement(tweetElement) {
+  const cell = tweetElement?.closest?.('[data-testid="cellInnerDiv"]') || tweetElement;
+  const textContent = cell?.textContent || '';
+  const match = textContent.match(/Replying to\s+@([A-Za-z0-9_]+)/i);
+  return match ? normalizeHandle(match[1]) : null;
 }
 
 async function getThreadSiblingsFromDOM(tweetElement, seedData = null) {
-  const authorHandle = (seedData?.author_handle || getAuthorHandleFromTweetElement(tweetElement) || '').toLowerCase();
-  if (!authorHandle || !isSelfThreadOnPage(tweetElement)) return [];
+  const authorHandle = normalizeHandle(seedData?.author_handle || getAuthorHandleFromTweetElement(tweetElement) || '');
+  if (!authorHandle) return [];
 
-  const allTweets = Array.from(document.querySelectorAll('article[data-testid="tweet"]'));
-  const index = allTweets.indexOf(tweetElement);
-  if (index === -1) return [];
-
-  const threadTweets = [tweetElement];
-
-  for (let i = index - 1; i >= 0; i--) {
-    if (getAuthorHandleFromTweetElement(allTweets[i]) !== authorHandle) break;
-    threadTweets.unshift(allTweets[i]);
-  }
-
-  for (let i = index + 1; i < allTweets.length; i++) {
-    if (getAuthorHandleFromTweetElement(allTweets[i]) !== authorHandle) break;
-    threadTweets.push(allTweets[i]);
-  }
-
-  if (threadTweets.length < 2) return [];
-
+  const seedConversationId = seedData?.conversation_id || seedData?.external_id || null;
+  const visibleTweets = Array.from(document.querySelectorAll('article[data-testid="tweet"]'));
   const extracted = [];
-  for (const threadTweet of threadTweets) {
-    const item = await extractTweetFromDOM(threadTweet);
-    if (item) extracted.push(item);
+  const seenIds = new Set();
+
+  for (const visibleTweet of visibleTweets) {
+    const item = await extractTweetFromDOM(visibleTweet, { includeInternal: true });
+    if (!item || seenIds.has(item.external_id)) continue;
+    seenIds.add(item.external_id);
+    extracted.push(item);
   }
-  if (extracted.length < 2) return [];
 
   const conversationId =
-    extracted.find((item) => item.conversation_id)?.conversation_id
+    extracted.find((item) => item.external_id === seedData?.external_id)?.conversation_id
+    || extracted.find((item) => item.conversation_id === seedConversationId)?.conversation_id
+    || seedConversationId
     || extracted[0]?.external_id
-    || seedData?.conversation_id
-    || seedData?.external_id
     || null;
 
-  return extracted.map((item) => ({
+  const threadItems = extracted
+    .filter((item) => isLikelySelfThreadEntry(item, authorHandle, conversationId))
+    .sort((a, b) => {
+      if (!a.posted_at || !b.posted_at) return 0;
+      return new Date(a.posted_at).getTime() - new Date(b.posted_at).getTime();
+    });
+
+  if (threadItems.length < 2) return [];
+
+  return threadItems.map((item) => stripInternalCaptureFields({
     ...item,
     conversation_id: item.conversation_id || conversationId,
     source_type: item.source_type === 'article' ? item.source_type : 'thread',
@@ -1028,11 +1061,10 @@ async function getThreadSiblingsFromDOM(tweetElement, seedData = null) {
 
 // After saving a thread, mark all visible save buttons for those tweets as saved
 function markThreadButtonsSaved(conversationId, authorHandle) {
-  const author = (authorHandle || '').toLowerCase();
+  const author = normalizeHandle(authorHandle);
   const threadIds = new Set();
   for (const [id, data] of tweetCache) {
-    if (data.conversation_id === conversationId
-        && (data.author_handle || '').toLowerCase() === author) {
+    if (isLikelySelfThreadEntry(data, author, conversationId)) {
       threadIds.add(id);
     }
   }
