@@ -21,7 +21,8 @@ export async function GET(
     return new Response("R2 not configured", { status: 503 });
   }
 
-  const object = await getR2Object(key);
+  const range = request.headers.get("range") || undefined;
+  const object = await getR2Object(key, range);
   if (!object) {
     return new Response("Not found", { status: 404 });
   }
@@ -33,6 +34,17 @@ export async function GET(
   if (object.contentLength) {
     headers["Content-Length"] = String(object.contentLength);
   }
+  if (object.acceptRanges) {
+    headers["Accept-Ranges"] = object.acceptRanges;
+  } else if (object.contentType.startsWith("video/")) {
+    headers["Accept-Ranges"] = "bytes";
+  }
+  if (object.contentRange) {
+    headers["Content-Range"] = object.contentRange;
+  }
 
-  return new Response(object.body, { headers });
+  return new Response(object.body, {
+    status: object.statusCode === 206 ? 206 : 200,
+    headers,
+  });
 }

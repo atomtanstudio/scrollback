@@ -74,10 +74,16 @@ export async function uploadMediaStream(
   return key;
 }
 
-export async function getR2Object(key: string): Promise<{
+export async function getR2Object(
+  key: string,
+  range?: string
+): Promise<{
   body: ReadableStream;
   contentType: string;
   contentLength: number | undefined;
+  contentRange?: string;
+  acceptRanges?: string;
+  statusCode?: number;
 } | null> {
   const client = getClient();
   try {
@@ -85,6 +91,7 @@ export async function getR2Object(key: string): Promise<{
       new GetObjectCommand({
         Bucket: process.env.R2_BUCKET_NAME!,
         Key: key,
+        Range: range,
       })
     );
     if (!response.Body) return null;
@@ -118,6 +125,9 @@ export async function getR2Object(key: string): Promise<{
       body: safeStream,
       contentType: response.ContentType || "application/octet-stream",
       contentLength: response.ContentLength,
+      contentRange: response.ContentRange,
+      acceptRanges: response.AcceptRanges,
+      statusCode: response.$metadata.httpStatusCode,
     };
   } catch (err) {
     const code = (err as { Code?: string; name?: string }).Code || (err as { name?: string }).name;
