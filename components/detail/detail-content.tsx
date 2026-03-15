@@ -372,13 +372,16 @@ function ArtContent({
   item: DetailItem;
   onMediaClick: (index: number) => void;
 }) {
+  const [showOriginal, setShowOriginal] = useState(false);
   const promptTypeLabel =
     item.source_type === "video_prompt" ? "Video Prompt" : "Image Prompt";
+  const translationAvailable = hasEnglishTranslation(item);
+  const bodyText = showOriginal ? (item.body_text || getDisplayBodyText(item)) : getDisplayBodyText(item);
 
   const hasJsonInText =
     (item.prompt_text && (item.prompt_text.includes("{") || item.prompt_text.includes("["))) ||
     (item.body_text && (item.body_text.includes("{") || item.body_text.includes("[")));
-  const normalizedBody = normalizePromptComparisonText(item.body_text);
+  const normalizedBody = normalizePromptComparisonText(bodyText);
   const normalizedPrompt = normalizePromptComparisonText(item.prompt_text);
   const promptIsDuplicatedInBody =
     !!normalizedBody &&
@@ -401,9 +404,23 @@ function ArtContent({
       >
         {promptTypeLabel}
       </span>
-      {item.body_text && (
+      {translationAvailable && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[18px] border border-[#d6c9b214] bg-[#ffffff05] px-4 py-3">
+          <p className="text-[12px] text-[#b4ab9d]">
+            Translated from {getLanguageLabel(item.language)}.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowOriginal((value) => !value)}
+            className="rounded-full border border-[#d6c9b214] bg-[#0f141b] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#f2ede5] transition-colors hover:border-[#d6c9b233] hover:text-white"
+          >
+            {showOriginal ? "Show English" : "Show original"}
+          </button>
+        </div>
+      )}
+      {bodyText && (
         <div className="mb-6 space-y-4 text-base leading-[1.75] text-[#cdc4b7]">
-          <BodySegments bodyText={item.body_text} />
+          <BodySegments bodyText={bodyText} />
         </div>
       )}
       {item.has_prompt && item.prompt_text && !promptIsDuplicatedInBody && (
