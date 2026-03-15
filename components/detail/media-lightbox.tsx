@@ -228,7 +228,7 @@ export function MediaLightbox({
                 <video
                   src={getMediaUrl(currentItem)}
                   controls
-                  autoPlay={isGif}
+                  autoPlay
                   muted={isGif}
                   loop={isGif}
                   playsInline
