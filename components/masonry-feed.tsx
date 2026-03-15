@@ -150,9 +150,7 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, initialHas
   }, []);
 
   // Load more via API with excludeIds
-  const loadMore = useCallback(async () => {
-    if (!hasMore || isLoading) return;
-
+  const fetchPage = useCallback(async (excludeIds: string[], replace = false) => {
     // Abort any previous in-flight request
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -160,10 +158,9 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, initialHas
 
     setIsLoading(true);
     try {
-      const loadedIds = items.map((i) => i.id);
       const params = new URLSearchParams({
         limit: "50",
-        excludeIds: loadedIds.join(","),
+        excludeIds: excludeIds.join(","),
       });
       if (type) params.set("type", type);
 
@@ -175,7 +172,7 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, initialHas
 
       const newItems = data.items.filter(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (item: any) => !loadedIds.includes(item.id)
+        (item: any) => !excludeIds.includes(item.id)
       );
 
       if (newItems.length === 0) {
@@ -184,7 +181,7 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, initialHas
       }
 
       setHasMeasuredLayout(false);
-      setItems((prev) => [...prev, ...newItems]);
+      setItems((prev) => (replace ? newItems : [...prev, ...newItems]));
       setHasMore(Boolean(data.hasMore));
       setTotalCount(data.totalCount);
     } catch {
@@ -192,7 +189,12 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, initialHas
     } finally {
       setIsLoading(false);
     }
-  }, [hasMore, isLoading, items, type]);
+  }, [type]);
+
+  const loadMore = useCallback(async () => {
+    if (!hasMore || isLoading) return;
+    await fetchPage(items.map((i) => i.id));
+  }, [fetchPage, hasMore, isLoading, items]);
 
   useEffect(() => {
     if (hasUserInteracted && hasMeasuredLayout && inView && hasMore && !isLoading) loadMore();
@@ -212,6 +214,11 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, initialHas
       calculatedIdsRef.current = "";
     }
   }, [type, filteredInitialItems, initialHasMore, initialTotal]);
+
+  useEffect(() => {
+    if (!type) return;
+    void fetchPage([], true);
+  }, [type, fetchPage]);
 
   const setItemRef = useCallback((id: string, el: HTMLDivElement | null) => {
     if (el) itemRefs.current.set(id, el);

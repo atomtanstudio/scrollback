@@ -491,7 +491,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                 <MasonryFeed
                   key={activeType}
                   initialItems={initialItems}
-                  totalCount={totalCount}
+                  totalCount={filteredTotalCount}
                   initialHasMore={initialHasMore}
                   type={activeType || undefined}
                 />
