@@ -86,10 +86,12 @@ Optional:
 - `R2_ACCESS_KEY_ID`
 - `R2_SECRET_ACCESS_KEY`
 - `R2_BUCKET_NAME`
-- `R2_PUBLIC_URL`
-- `X_CLIENT_ID`
-- `X_CLIENT_SECRET`
-- `X_REDIRECT_URI=https://your-domain.com/api/xapi/callback`
+- `XAPI_BEARER_TOKEN`
+- `XAPI_CONSUMER_KEY`
+- `XAPI_CONSUMER_SECRET`
+- `XAPI_CLIENT_ID`
+- `XAPI_CLIENT_SECRET`
+- `XAPI_ENCRYPTION_KEY`
 
 If your database runs as another Dokploy service, use the internal PostgreSQL connection string for the app's `DATABASE_URL`.
 
