@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { createHash } from "crypto";
 import { getClient } from "@/lib/db/client";
 import { getSearchProvider } from "@/lib/db/search-provider";
-import { generateEmbedding, classifyContent, describeImage } from "@/lib/embeddings/gemini";
+import { generateEmbedding, classifyContent, describeImage, translateToEnglish } from "@/lib/embeddings/gemini";
 import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { CapturePayload, CaptureResult } from "@/lib/db/types";
 import { isR2Configured } from "@/lib/storage/r2";
@@ -279,18 +279,36 @@ async function indexAndClassifyInBackground(
   const prisma = await getClient();
   try {
     const provider = await getSearchProvider();
+    let language: string | null = null;
+    let translatedTitle: string | null = null;
+    let translatedBodyText: string | null = null;
+    let englishTitle = title;
+    let englishBody = body;
+
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const translation = await translateToEnglish(title, body);
+        language = translation.language;
+        translatedTitle = translation.translated_title;
+        translatedBodyText = translation.translated_body_text;
+        if (translatedTitle) englishTitle = translatedTitle;
+        if (translatedBodyText) englishBody = translatedBodyText;
+      } catch (translationError) {
+        console.warn(`Translation failed for ${itemId}:`, translationError);
+      }
+    }
 
     // Update tsvector
     const authorParts = [authorHandle, authorDisplayName].filter(Boolean).join(" ");
     await provider.updateSearchVector(itemId, {
-      title,
-      body,
+      title: englishTitle,
+      body: englishBody,
       author: authorParts || undefined,
     });
 
     if (process.env.GEMINI_API_KEY) {
       // Generate embedding
-      const embeddingText = [title, body, authorHandle, authorDisplayName]
+      const embeddingText = [englishTitle, englishBody, authorHandle, authorDisplayName]
         .filter(Boolean)
         .join(" ");
       const embedding = await generateEmbedding(embeddingText);
@@ -302,7 +320,7 @@ async function indexAndClassifyInBackground(
         const categorySlugs = allCategories.map((c: { slug: string }) => c.slug);
 
         const classification = await classifyContent(
-          title, body, sourceType, categorySlugs, authorHandle
+          englishTitle, englishBody, sourceType, categorySlugs, authorHandle
         );
 
         // Update content item with AI results
@@ -310,6 +328,9 @@ async function indexAndClassifyInBackground(
         const updateData: Record<string, any> = {
           ai_summary: classification.ai_summary || null,
           processing_status: "indexed",
+          language,
+          translated_title: translatedTitle,
+          translated_body_text: translatedBodyText,
         };
 
         const canPromoteToArt =
@@ -357,7 +378,12 @@ async function indexAndClassifyInBackground(
         // Still mark as indexed since embedding succeeded
         await prisma.contentItem.update({
           where: { id: itemId },
-          data: { processing_status: "indexed" },
+          data: {
+            processing_status: "indexed",
+            language,
+            translated_title: translatedTitle,
+            translated_body_text: translatedBodyText,
+          },
         });
       }
     }

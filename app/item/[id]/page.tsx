@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { fetchItemById, fetchThreadChain } from "@/lib/db/queries";
 import { auth } from "@/lib/auth/auth";
+import { getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
 import type { Metadata } from "next";
 import type { DetailItem, ContentItemWithMedia } from "@/lib/db/types";
 import { ItemDetailPage } from "@/components/detail/item-detail-page";
@@ -11,10 +12,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const item = await fetchItemById(id);
   if (!item) return { title: "Not Found" };
+  const displayTitle = getDisplayTitle(item);
+  const displayBodyText = getDisplayBodyText(item);
 
   return {
-    title: `${item.title || item.body_text.slice(0, 60)} — FeedSilo`,
-    description: item.body_text.slice(0, 160),
+    title: `${displayTitle || displayBodyText.slice(0, 60)} — FeedSilo`,
+    description: displayBodyText.slice(0, 160),
   };
 }
 

@@ -28,6 +28,8 @@ model ContentItem {
   prompt_text         String?
   prompt_type         String?
   language            String?
+  translated_title    String?
+  translated_body_text String?
   ai_summary          String?
   raw_markdown        String
   source_file_path    String    @unique

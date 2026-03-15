@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { getDisplayBodyText } from "@/lib/content-display";
 import { formatTimeAgo } from "@/lib/format";
 import { MediaRenderer } from "./media-renderer";
 import { MediaLightbox } from "./media-lightbox";
@@ -40,7 +41,7 @@ export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
       author_display_name: currentItem.author_display_name,
       author_handle: currentItem.author_handle,
       author_avatar_url: currentItem.author_avatar_url,
-      body_text: currentItem.body_text,
+      body_text: getDisplayBodyText(currentItem),
       posted_at: currentItem.posted_at,
       media_items: currentItem.media_items,
     },
@@ -50,7 +51,7 @@ export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
       author_display_name: s.author_display_name,
       author_handle: s.author_handle,
       author_avatar_url: s.author_avatar_url,
-      body_text: s.body_text,
+      body_text: getDisplayBodyText(s),
       posted_at: s.posted_at,
       media_items: s.media_items ?? [],
     })),

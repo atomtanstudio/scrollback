@@ -2,6 +2,7 @@
 
 import { CardWrapper } from "./card-wrapper";
 import { VideoPoster } from "./video-poster";
+import { getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
 import { formatTimeAgo } from "@/lib/format";
 import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { ContentItemWithMedia } from "@/lib/db/types";
@@ -13,6 +14,8 @@ interface ArticleCardProps {
 
 export function ArticleCard({ item, href }: ArticleCardProps) {
   const thumbnail = item.media_items?.[0] || null;
+  const displayTitle = getDisplayTitle(item);
+  const displayBodyText = getDisplayBodyText(item);
   let sourceDomain: string | null = null;
   try {
     sourceDomain = item.original_url
@@ -30,7 +33,7 @@ export function ArticleCard({ item, href }: ArticleCardProps) {
             {thumbnail.media_type === "video" ? (
               <VideoPoster
                 src={getMediaDisplayUrl(thumbnail.stored_path, thumbnail.original_url)}
-                alt={thumbnail.alt_text || item.title}
+                alt={thumbnail.alt_text || displayTitle}
                 className="h-full w-full object-cover object-top"
                 fallbackClassName="h-full w-full bg-[#171d26]"
               />
@@ -40,7 +43,7 @@ export function ArticleCard({ item, href }: ArticleCardProps) {
                   thumbnail.stored_path,
                   thumbnail.original_url
                 )}
-                alt={thumbnail.alt_text || item.title}
+                alt={thumbnail.alt_text || displayTitle}
                 loading="lazy"
                 decoding="async"
                 className="h-full w-full object-cover object-top"
@@ -67,10 +70,10 @@ export function ArticleCard({ item, href }: ArticleCardProps) {
           </div>
         )}
         <h3 className="mb-2 font-heading text-[1.05rem] font-semibold leading-tight tracking-[-0.03em] text-[#f2ede5] line-clamp-2">
-          {item.title}
+          {displayTitle}
         </h3>
         <p className="mb-3 text-sm leading-7 text-[#b4ab9d] line-clamp-2">
-          {item.body_text}
+          {displayBodyText}
         </p>
         <div className="flex items-center justify-between gap-3 text-xs text-[#7d7569]">
           <span className="truncate">

@@ -201,6 +201,7 @@ export async function fetchRelatedItems(itemId: string, limit: number = 6) {
   const prisma = await getClient();
   const results = await prisma.$queryRawUnsafe(`
     SELECT ci.id, ci.source_type, ci.title, ci.body_text,
+           ci.translated_title, ci.translated_body_text,
            ci.author_handle, ci.author_display_name, ci.author_avatar_url,
            ci.original_url, ci.posted_at, ci.created_at,
            1 - (ci.embedding <=> (SELECT embedding FROM content_items WHERE id = $1)) as similarity
@@ -217,6 +218,8 @@ export async function fetchRelatedItems(itemId: string, limit: number = 6) {
     source_type: string;
     title: string;
     body_text: string;
+    translated_title?: string | null;
+    translated_body_text?: string | null;
     author_handle: string | null;
     author_display_name: string | null;
     author_avatar_url: string | null;

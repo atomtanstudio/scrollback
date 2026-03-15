@@ -2,6 +2,7 @@
 
 import { CardWrapper } from "./card-wrapper";
 import { VideoPoster } from "./video-poster";
+import { getDisplayBodyText } from "@/lib/content-display";
 import { formatTimeAgo } from "@/lib/format";
 import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { ContentItemWithMedia } from "@/lib/db/types";
@@ -14,6 +15,7 @@ interface TweetCardProps {
 export function TweetCard({ item, href }: TweetCardProps) {
   const media = item.media_items?.[0] ?? null;
   const hasMedia = !!(media?.stored_path || media?.original_url);
+  const displayBodyText = getDisplayBodyText(item);
 
   const initials = (item.author_display_name || item.author_handle || "??")
     .split(/\s+/)
@@ -84,7 +86,7 @@ export function TweetCard({ item, href }: TweetCardProps) {
           </div>
         </div>
         <p className="mb-3 text-sm leading-7 text-[#b4ab9d] line-clamp-3">
-          {item.body_text}
+          {displayBodyText}
         </p>
         <div className="flex items-center justify-between text-xs text-[#7d7569]">
           <span>Captured {formatTimeAgo(item.created_at)}</span>

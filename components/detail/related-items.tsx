@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
 
 interface RelatedItemsProps {
   itemId: string;
@@ -12,6 +13,8 @@ interface RelatedApiItem {
   source_type: string;
   title: string;
   body_text: string;
+  translated_title?: string | null;
+  translated_body_text?: string | null;
   author_handle: string | null;
   author_display_name: string | null;
   author_avatar_url: string | null;
@@ -72,7 +75,7 @@ function formatTypeLabel(type: string) {
 }
 
 function buildExcerpt(item: RelatedApiItem) {
-  const source = (item.body_text || item.title || "").replace(/\s+/g, " ").trim();
+  const source = (getDisplayBodyText(item) || getDisplayTitle(item) || "").replace(/\s+/g, " ").trim();
   if (!source) return "Captured without preview text.";
   return source.length > 132 ? `${source.slice(0, 131).trimEnd()}…` : source;
 }
@@ -96,7 +99,7 @@ function RelatedItemCard({ item }: { item: RelatedApiItem }) {
       </div>
 
       <h3 className="mt-4 line-clamp-3 font-heading text-[1.35rem] font-semibold leading-[1.02] tracking-[-0.04em] text-[#f2ede5]">
-        {item.title || buildExcerpt(item)}
+        {getDisplayTitle(item) || buildExcerpt(item)}
       </h3>
 
       <p className="mt-3 line-clamp-4 text-[14px] leading-6 text-[#b4ab9d]">

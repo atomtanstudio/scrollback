@@ -8,6 +8,7 @@ import { HomeCommandPalette } from "@/components/home-command-palette";
 import { MasonryFeed } from "@/components/masonry-feed";
 import { CardSkeletonGrid } from "@/components/card-skeleton";
 import { VideoPoster } from "@/components/cards/video-poster";
+import { getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
 import { formatTimeAgo } from "@/lib/format";
 import { getMediaDisplayUrl } from "@/lib/media-url";
 import { Command } from "lucide-react";
@@ -43,14 +44,14 @@ function normalizeCardText(value: string | null | undefined) {
 
 function getItemTitle(item: ContentItemWithMedia) {
   const raw = normalizeCardText(
-    item.title || item.prompt_text || item.body_text || "Untitled capture"
+    getDisplayTitle(item) || item.prompt_text || getDisplayBodyText(item) || "Untitled capture"
   );
   return raw || "Untitled capture";
 }
 
 function getItemExcerpt(item: ContentItemWithMedia, max = 180) {
   const source = normalizeCardText(
-    item.body_text || item.prompt_text || item.title || ""
+    getDisplayBodyText(item) || item.prompt_text || getDisplayTitle(item) || ""
   );
   if (!source) return "Captured without body text.";
   return source.length > max ? `${source.slice(0, max - 1).trimEnd()}…` : source;

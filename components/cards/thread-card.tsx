@@ -1,6 +1,7 @@
 "use client";
 
 import { CardWrapper } from "./card-wrapper";
+import { getDisplayBodyText } from "@/lib/content-display";
 import { formatTimeAgo } from "@/lib/format";
 import type { ContentItemWithMedia } from "@/lib/db/types";
 
@@ -10,6 +11,7 @@ interface ThreadCardProps {
 }
 
 export function ThreadCard({ item, href }: ThreadCardProps) {
+  const displayBodyText = getDisplayBodyText(item);
   const initials = (item.author_display_name || item.author_handle || "??")
     .split(/\s+/)
     .map((w) => w[0])
@@ -58,7 +60,7 @@ export function ThreadCard({ item, href }: ThreadCardProps) {
         Thread
       </div>
       <p className="mb-3 text-sm leading-7 text-[#b4ab9d] line-clamp-3">
-        {item.body_text}
+        {displayBodyText}
       </p>
       <div className="flex items-center justify-between text-xs text-[#7d7569]">
         <span>Captured {formatTimeAgo(item.created_at)}</span>

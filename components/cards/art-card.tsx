@@ -2,6 +2,7 @@
 
 import { CardWrapper } from "./card-wrapper";
 import { VideoPoster } from "./video-poster";
+import { getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
 import { formatTimeAgo } from "@/lib/format";
 import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { ContentItemWithMedia } from "@/lib/db/types";
@@ -12,6 +13,8 @@ interface ArtCardProps {
 }
 
 export function ArtCard({ item, href }: ArtCardProps) {
+  const displayTitle = getDisplayTitle(item);
+  const displayBodyText = getDisplayBodyText(item);
   const image = item.media_items?.find(
     (m) => m.media_type === "image" || m.media_type === "video"
   );
@@ -31,14 +34,14 @@ export function ArtCard({ item, href }: ArtCardProps) {
           {image!.media_type === "video" ? (
             <VideoPoster
               src={getMediaDisplayUrl(image!.stored_path, image!.original_url)}
-              alt={image!.alt_text || item.title}
+              alt={image!.alt_text || displayTitle}
               className="h-full w-full object-cover object-top"
               fallbackClassName="h-full w-full bg-[#19161d]"
             />
           ) : (
             <img
               src={getMediaDisplayUrl(image!.stored_path, image!.original_url)}
-              alt={image!.alt_text || item.title}
+              alt={image!.alt_text || displayTitle}
               loading="lazy"
               decoding="async"
               className="h-full w-full object-cover object-top"
@@ -71,9 +74,9 @@ export function ArtCard({ item, href }: ArtCardProps) {
             &ldquo;{item.prompt_text}&rdquo;
           </p>
         )}
-        {item.body_text && !item.prompt_text && (
+        {displayBodyText && !item.prompt_text && (
           <p className="mb-3 text-sm leading-7 text-[#b4ab9d] line-clamp-2">
-            {item.body_text}
+            {displayBodyText}
           </p>
         )}
         <div className="mb-3 flex items-center gap-2">

@@ -15,6 +15,7 @@ import {
   PanelTop,
   CircleDot,
 } from "lucide-react";
+import { getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
 import { formatTimeAgo } from "@/lib/format";
 import type { ContentItemWithMedia } from "@/lib/db/types";
 
@@ -261,7 +262,7 @@ export function HomeCommandPalette({
       items.push({
         id: `recent-${item.id}`,
         section: "Recent captures",
-        label: truncate(item.title || item.prompt_text || item.body_text, 60) || "Untitled capture",
+        label: truncate(getDisplayTitle(item) || item.prompt_text || getDisplayBodyText(item), 60) || "Untitled capture",
         detail: item.author_display_name || item.author_handle || itemLabel(item),
         meta: formatTimeAgo(item.created_at),
         icon: "recent",
@@ -277,10 +278,10 @@ export function HomeCommandPalette({
         id: `result-${result.id}`,
         section: searching ? "Searching" : "Search results",
         label:
-          truncate(result.title || result.prompt_text || result.body_text, 68) ||
+          truncate(getDisplayTitle(result) || result.prompt_text || getDisplayBodyText(result), 68) ||
           "Untitled capture",
         detail:
-          truncate(result.body_text || result.prompt_text, 82) ||
+          truncate(getDisplayBodyText(result) || result.prompt_text, 82) ||
           result.author_display_name ||
           result.author_handle ||
           itemLabel(result),

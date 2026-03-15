@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getDisplayBodyText, getDisplayTitle, getLanguageLabel, hasEnglishTranslation } from "@/lib/content-display";
 import { parseBodyContent } from "@/lib/content-parser";
 import { formatFullDate } from "@/lib/format";
 import type { DetailItem } from "@/lib/db/types";
@@ -95,6 +96,59 @@ function TagsSection({
   );
 }
 
+function TranslationToggle({
+  item,
+  titleClassName,
+  bodyClassName = "space-y-4",
+}: {
+  item: DetailItem;
+  titleClassName?: string;
+  bodyClassName?: string;
+}) {
+  const [showOriginal, setShowOriginal] = useState(false);
+  const hasTranslation = hasEnglishTranslation(item);
+  const displayTitle = getDisplayTitle(item);
+  const displayBodyText = getDisplayBodyText(item);
+  const title = showOriginal ? (item.title || displayTitle) : displayTitle;
+  const bodyText = showOriginal ? (item.body_text || displayBodyText) : displayBodyText;
+
+  if (!hasTranslation) {
+    return (
+      <>
+        {titleClassName && title ? <h1 className={titleClassName}>{title}</h1> : null}
+        {bodyText ? (
+          <div className={bodyClassName}>
+            <BodySegments bodyText={bodyText} />
+          </div>
+        ) : null}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[18px] border border-[#d6c9b214] bg-[#ffffff05] px-4 py-3">
+        <p className="text-[12px] text-[#b4ab9d]">
+          Translated from {getLanguageLabel(item.language)}.
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowOriginal((value) => !value)}
+          className="rounded-full border border-[#d6c9b214] bg-[#0f141b] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#f2ede5] transition-colors hover:border-[#d6c9b233] hover:text-white"
+        >
+          {showOriginal ? "Show English" : "Show original"}
+        </button>
+      </div>
+      {titleClassName && title ? <h1 className={titleClassName}>{title}</h1> : null}
+      {bodyText ? (
+        <div className={bodyClassName}>
+          <BodySegments bodyText={bodyText} />
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 function AuthorHeader({ item }: { item: DetailItem }) {
   const displayName = item.author_display_name || item.author_handle || "Unknown";
   const initials = displayName.slice(0, 2).toUpperCase();
@@ -149,14 +203,13 @@ function TweetThreadContent({
   cardType: CardType;
   onMediaClick: (index: number) => void;
 }) {
+  const displayBodyText = getDisplayBodyText(item);
   return (
     <div>
       <AuthorHeader item={item} />
       <div className="my-6 border-t border-[#d6c9b214]" />
       <div className="space-y-4 text-base leading-[1.75] text-[#cdc4b7]">
-        {item.body_text ? (
-          <BodySegments bodyText={item.body_text} />
-        ) : null}
+        {displayBodyText ? <TranslationToggle item={item} bodyClassName="space-y-4" /> : null}
       </div>
       {item.media_items && item.media_items.length > 0 && (
         <div className="mt-6">
@@ -197,8 +250,14 @@ function ArticleContent({
   item: DetailItem;
   onMediaClick: (index: number) => void;
 }) {
+  const [showOriginal, setShowOriginal] = useState(false);
   const displayName = item.author_display_name || item.author_handle || null;
   const initials = displayName ? displayName.slice(0, 2).toUpperCase() : "??";
+  const displayTitle = getDisplayTitle(item);
+  const displayBodyText = getDisplayBodyText(item);
+  const translationAvailable = hasEnglishTranslation(item);
+  const title = showOriginal ? (item.title || displayTitle) : displayTitle;
+  const bodyText = showOriginal ? (item.body_text || displayBodyText) : displayBodyText;
 
   let domain = "";
   if (item.original_url) {
@@ -222,9 +281,9 @@ function ArticleContent({
           {domain}
         </p>
       )}
-      {item.title && (
+      {title && (
         <h1 className="mb-4 font-heading text-[28px] font-extrabold leading-tight tracking-tight text-[#f2ede5]">
-          {item.title}
+          {title}
         </h1>
       )}
       <div className="flex items-center gap-2 mb-2">
@@ -261,6 +320,20 @@ function ArticleContent({
         <span className="text-[13px] text-[#a49b8b]">{readMinutes} min read</span>
       </div>
       <div className="my-6 border-t border-[#d6c9b214]" />
+      {translationAvailable && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[18px] border border-[#d6c9b214] bg-[#ffffff05] px-4 py-3">
+          <p className="text-[12px] text-[#b4ab9d]">
+            Translated from {getLanguageLabel(item.language)}.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowOriginal((value) => !value)}
+            className="rounded-full border border-[#d6c9b214] bg-[#0f141b] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#f2ede5] transition-colors hover:border-[#d6c9b233] hover:text-white"
+          >
+            {showOriginal ? "Show English" : "Show original"}
+          </button>
+        </div>
+      )}
       {item.media_items && item.media_items.length > 0 && (
         <div className="mb-6">
           <MediaRenderer
@@ -269,7 +342,7 @@ function ArticleContent({
           />
         </div>
       )}
-      {item.body_html ? (
+      {item.body_html && !translationAvailable ? (
         <div
           className="prose prose-invert prose-sm max-w-none
             prose-headings:font-heading prose-headings:text-[#f2ede5]
@@ -283,9 +356,9 @@ function ArticleContent({
             prose-img:rounded-xl"
           dangerouslySetInnerHTML={{ __html: item.body_html }}
         />
-      ) : item.body_text ? (
+      ) : bodyText ? (
         <div className="space-y-4">
-          <BodySegments bodyText={item.body_text} />
+          <BodySegments bodyText={bodyText} />
         </div>
       ) : null}
     </div>

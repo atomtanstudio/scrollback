@@ -68,6 +68,8 @@ model ContentItem {
   prompt_text         String?          @db.Text
   prompt_type         PromptType?
   language            String?          @db.Text
+  translated_title    String?          @db.Text
+  translated_body_text String?         @db.Text
   ai_summary          String?          @db.Text
   raw_markdown        String           @db.Text
   source_file_path    String           @unique @db.Text

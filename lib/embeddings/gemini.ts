@@ -27,6 +27,13 @@ export interface ClassificationResult {
   confidence: number;
 }
 
+export interface TranslationResult {
+  language: string | null;
+  translated_title: string | null;
+  translated_body_text: string | null;
+  translated: boolean;
+}
+
 /**
  * Unified content classification via Gemini.
  * Single API call produces: summary, tags, categories, and prompt detection.
@@ -131,6 +138,72 @@ function defaultResult(): ClassificationResult {
     prompt_type: null,
     confidence: 0,
   };
+}
+
+export async function translateToEnglish(
+  title: string,
+  bodyText: string
+): Promise<TranslationResult> {
+  const genai = getClient();
+  const truncatedTitle = title.slice(0, 500);
+  const truncatedBody = bodyText.slice(0, 4000);
+
+  const prompt = `Detect the primary language of this captured content and translate it to natural English only if needed.
+
+Title:
+${truncatedTitle || "(none)"}
+
+Body:
+${truncatedBody || "(none)"}
+
+Rules:
+- Return the primary language as a lowercase ISO 639-1 code when possible (examples: en, ja, zh, ko).
+- If the content is already English or mostly English, do not translate it.
+- Preserve URLs, @handles, hashtags, line breaks, emoji, and any structured prompt syntax.
+- Keep the translation faithful and readable, not overly literal.
+
+Return ONLY JSON in this exact shape:
+{
+  "language": "en",
+  "translated": false,
+  "translated_title": null,
+  "translated_body_text": null
+}`;
+
+  const result = await genai.models.generateContent({
+    model: CLASSIFY_MODEL,
+    contents: prompt,
+  });
+
+  const text = result.text?.trim();
+  if (!text) {
+    return { language: null, translated: false, translated_title: null, translated_body_text: null };
+  }
+
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    return { language: null, translated: false, translated_title: null, translated_body_text: null };
+  }
+
+  try {
+    const parsed = JSON.parse(jsonMatch[0]);
+    const translated = !!parsed.translated;
+    const language = typeof parsed.language === "string" ? parsed.language.toLowerCase().slice(0, 8) : null;
+    return {
+      language,
+      translated,
+      translated_title:
+        translated && typeof parsed.translated_title === "string"
+          ? parsed.translated_title.slice(0, 2000)
+          : null,
+      translated_body_text:
+        translated && typeof parsed.translated_body_text === "string"
+          ? parsed.translated_body_text.slice(0, 20000)
+          : null,
+    };
+  } catch {
+    return { language: null, translated: false, translated_title: null, translated_body_text: null };
+  }
 }
 
 // --- Image description via Gemini Vision ---
