@@ -8,6 +8,7 @@ import { SearchSection } from "./sections/search-section";
 import { EmbeddingsSection } from "./sections/embeddings-section";
 import { DataSection } from "./sections/data-section";
 import { XApiSection } from "./sections/xapi-section";
+import { RssSection } from "./sections/rss-section";
 
 interface SettingsData {
   configured: boolean;
@@ -126,6 +127,13 @@ export function SettingsPage({ stats, isAuthed }: SettingsPageProps) {
               description="Browser extension and content ingestion"
             >
               <ExtensionSection settings={settings} onRefresh={fetchSettings} />
+            </SectionGroup>
+
+            <SectionGroup
+              title="Sources"
+              description="Bring trusted feeds into the same archive"
+            >
+              <RssSection settings={settings} onRefresh={fetchSettings} />
             </SectionGroup>
 
             <SectionGroup

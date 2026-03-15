@@ -194,6 +194,9 @@ export function DetailSidebar({ item, cardType, isAuthed = false }: DetailSideba
       <CategoriesCard categories={item.categories} cardType={cardType} />
 
       <SidebarSection title="Meta">
+        {item.source_platform === "rss" && item.source_label && (
+          <MetaRow label="Source" value={item.source_label} />
+        )}
         <MetaRow label="Posted" value={item.posted_at ? formatFullDate(item.posted_at) : "Unknown"} />
         <MetaRow label="Captured" value={item.created_at ? formatFullDate(item.created_at) : "Unknown"} />
         <MetaRow label="Type" value={sourceTypeLabel} accentColor={accent} isLast />

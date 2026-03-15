@@ -19,6 +19,10 @@ model ContentItem {
   body_html           String?
   conversation_id     String?
   original_url        String?
+  source_platform     String    @default("x")
+  source_label        String?
+  source_domain       String?
+  rss_feed_id         String?
   posted_at           DateTime?
   likes               Int?
   retweets            Int?
@@ -42,11 +46,34 @@ model ContentItem {
   media_items Media[]
   categories  ContentCategory[]
   tags        ContentTag[]
+  rss_feed    RssFeed? @relation(fields: [rss_feed_id], references: [id], onDelete: SetNull)
 
   @@index([external_id])
   @@index([conversation_id])
   @@index([content_hash])
+  @@index([source_platform])
+  @@index([rss_feed_id])
   @@map("content_items")
+}
+
+model RssFeed {
+  id             String       @id @default(uuid())
+  feed_url       String       @unique
+  site_url       String?
+  title          String
+  description    String?
+  language       String?
+  active         Boolean      @default(true)
+  etag           String?
+  last_modified  String?
+  last_synced_at DateTime?
+  last_error     String?
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @default(now()) @updatedAt
+
+  items ContentItem[]
+
+  @@map("rss_feeds")
 }
 
 model Category {

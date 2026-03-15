@@ -48,6 +48,7 @@ export async function ingestItem(payload: CapturePayload): Promise<CaptureResult
 
   const itemId = uuidv4();
   const itemTitle = title || (bodyText.slice(0, 100) || "Untitled");
+  const sourcePlatform = payload.source_platform || "x";
 
   // Create content item via Prisma
   await prisma.contentItem.create({
@@ -64,13 +65,17 @@ export async function ingestItem(payload: CapturePayload): Promise<CaptureResult
       body_html: bodyHtml,
       conversation_id: payload.conversation_id || null,
       original_url: payload.source_url,
+      source_platform: sourcePlatform,
+      source_label: sanitizeText(payload.source_label),
+      source_domain: sanitizeText(payload.source_domain),
+      rss_feed_id: payload.rss_feed_id || null,
       posted_at: payload.posted_at ? new Date(payload.posted_at) : null,
       likes: payload.likes,
       retweets: payload.retweets,
       replies: payload.replies,
       views: payload.views,
       raw_markdown: bodyText,
-      source_file_path: `extension://${payload.external_id}`,
+      source_file_path: `${sourcePlatform}://${payload.external_id}`,
       content_hash: contentHash,
       processing_status: "parsed",
     },

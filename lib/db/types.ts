@@ -59,6 +59,10 @@ export interface CapturePayload {
   external_id: string;
   source_url: string;
   source_type?: string;
+  source_platform?: string;
+  source_label?: string | null;
+  source_domain?: string | null;
+  rss_feed_id?: string | null;
   author_handle?: string | null;
   author_display_name?: string | null;
   author_avatar_url?: string | null;

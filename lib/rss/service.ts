@@ -1,0 +1,358 @@
+import { createHash } from "crypto";
+import Parser from "rss-parser";
+import { getClient } from "@/lib/db/client";
+import { ingestItem } from "@/lib/ingest";
+import type { CapturePayload } from "@/lib/db/types";
+
+type ParsedFeed = {
+  title?: string;
+  description?: string;
+  language?: string;
+  link?: string;
+  items?: ParsedFeedItem[];
+};
+
+type ParsedFeedItem = {
+  title?: string;
+  link?: string;
+  guid?: string;
+  id?: string;
+  creator?: string;
+  author?: string;
+  isoDate?: string;
+  pubDate?: string;
+  content?: string;
+  contentSnippet?: string;
+  summary?: string;
+  categories?: string[];
+  enclosure?: {
+    url?: string;
+    type?: string;
+  };
+  "content:encoded"?: string;
+};
+
+const parser = new Parser<Record<string, never>, ParsedFeedItem>({
+  customFields: {
+    item: ["creator", "content:encoded"],
+  },
+});
+
+function normalizeFeedUrl(feedUrl: string): string {
+  const trimmed = feedUrl.trim();
+  if (!trimmed) {
+    throw new Error("Feed URL is required");
+  }
+
+  const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  const parsed = new URL(normalized);
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    throw new Error("Only HTTP(S) feed URLs are supported");
+  }
+  return parsed.toString();
+}
+
+function deriveDomain(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#39;/gi, "'")
+    .replace(/&quot;/gi, "\"")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getItemHtml(item: ParsedFeedItem): string | null {
+  return item["content:encoded"] || item.content || item.summary || null;
+}
+
+function getItemText(item: ParsedFeedItem): string {
+  const snippet = item.contentSnippet?.trim();
+  if (snippet) return snippet;
+
+  const html = getItemHtml(item);
+  if (html) return stripHtml(html);
+
+  return item.title?.trim() || "";
+}
+
+function extractMediaUrls(item: ParsedFeedItem): string[] {
+  const urls = new Set<string>();
+  const enclosureUrl = item.enclosure?.url?.trim();
+  if (enclosureUrl) {
+    urls.add(enclosureUrl);
+  }
+
+  const html = getItemHtml(item);
+  if (html) {
+    for (const match of Array.from(html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi))) {
+      if (match[1]) urls.add(match[1]);
+    }
+  }
+
+  return Array.from(urls).slice(0, 4);
+}
+
+function buildExternalId(feedId: string, item: ParsedFeedItem): string {
+  const stableKey =
+    item.guid?.trim() ||
+    item.id?.trim() ||
+    item.link?.trim() ||
+    `${item.title || ""}|${item.isoDate || item.pubDate || ""}`;
+
+  const hash = createHash("sha256").update(stableKey).digest("hex").slice(0, 24);
+  return `rss:${feedId}:${hash}`;
+}
+
+async function fetchParsedFeed(
+  feedUrl: string,
+  options: { etag?: string | null; lastModified?: string | null } = {}
+): Promise<{
+  status: number;
+  parsed?: ParsedFeed;
+  etag?: string | null;
+  lastModified?: string | null;
+}> {
+  const headers: HeadersInit = {
+    "User-Agent": "FeedSilo RSS Fetcher/1.0",
+    Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8",
+  };
+
+  if (options.etag) headers["If-None-Match"] = options.etag;
+  if (options.lastModified) headers["If-Modified-Since"] = options.lastModified;
+
+  const response = await fetch(feedUrl, { headers, redirect: "follow" });
+
+  if (response.status === 304) {
+    return {
+      status: 304,
+      etag: response.headers.get("etag"),
+      lastModified: response.headers.get("last-modified"),
+    };
+  }
+
+  if (!response.ok) {
+    throw new Error(`Feed request failed with ${response.status}`);
+  }
+
+  const xml = await response.text();
+  const parsed = await parser.parseString(xml) as ParsedFeed;
+
+  return {
+    status: response.status,
+    parsed,
+    etag: response.headers.get("etag"),
+    lastModified: response.headers.get("last-modified"),
+  };
+}
+
+export async function listRssFeeds() {
+  const prisma = await getClient();
+  return prisma.rssFeed.findMany({
+    orderBy: [{ updated_at: "desc" }],
+    include: {
+      _count: {
+        select: { items: true },
+      },
+    },
+  });
+}
+
+export async function createRssFeed(feedUrl: string) {
+  const prisma = await getClient();
+  const normalizedUrl = normalizeFeedUrl(feedUrl);
+  const fetched = await fetchParsedFeed(normalizedUrl);
+  const parsed = fetched.parsed;
+
+  if (!parsed?.title) {
+    throw new Error("Could not parse a valid RSS or Atom feed");
+  }
+
+  return prisma.rssFeed.upsert({
+    where: { feed_url: normalizedUrl },
+    update: {
+      title: parsed.title,
+      description: parsed.description || null,
+      language: parsed.language || null,
+      site_url: parsed.link || null,
+      etag: fetched.etag || null,
+      last_modified: fetched.lastModified || null,
+      last_error: null,
+      active: true,
+    },
+    create: {
+      feed_url: normalizedUrl,
+      title: parsed.title,
+      description: parsed.description || null,
+      language: parsed.language || null,
+      site_url: parsed.link || null,
+      etag: fetched.etag || null,
+      last_modified: fetched.lastModified || null,
+    },
+  });
+}
+
+export async function updateRssFeed(feedId: string, data: { active?: boolean }) {
+  const prisma = await getClient();
+  return prisma.rssFeed.update({
+    where: { id: feedId },
+    data,
+  });
+}
+
+export async function deleteRssFeed(feedId: string) {
+  const prisma = await getClient();
+  await prisma.rssFeed.delete({ where: { id: feedId } });
+}
+
+function mapFeedItemToPayload(
+  feed: {
+    id: string;
+    title: string;
+    site_url: string | null;
+    feed_url: string;
+  },
+  item: ParsedFeedItem
+): CapturePayload | null {
+  const originalUrl = item.link?.trim();
+  const bodyText = getItemText(item);
+  const title = item.title?.trim() || bodyText.slice(0, 140);
+
+  if (!originalUrl || !title) {
+    return null;
+  }
+
+  return {
+    external_id: buildExternalId(feed.id, item),
+    source_url: originalUrl,
+    source_type: "article",
+    source_platform: "rss",
+    source_label: feed.title,
+    source_domain: deriveDomain(feed.site_url || originalUrl || feed.feed_url),
+    rss_feed_id: feed.id,
+    author_handle: item.creator?.trim() || item.author?.trim() || null,
+    author_display_name: item.creator?.trim() || item.author?.trim() || null,
+    title,
+    body_text: bodyText,
+    body_html: getItemHtml(item),
+    posted_at: item.isoDate || item.pubDate || null,
+    media_urls: extractMediaUrls(item),
+  };
+}
+
+export async function syncRssFeed(feedId: string) {
+  const prisma = await getClient();
+  const feed = await prisma.rssFeed.findUnique({ where: { id: feedId } });
+
+  if (!feed) {
+    throw new Error("Feed not found");
+  }
+
+  const fetched = await fetchParsedFeed(feed.feed_url, {
+    etag: feed.etag,
+    lastModified: feed.last_modified,
+  });
+
+  if (fetched.status === 304) {
+    await prisma.rssFeed.update({
+      where: { id: feedId },
+      data: {
+        last_synced_at: new Date(),
+        last_error: null,
+        etag: fetched.etag || feed.etag,
+        last_modified: fetched.lastModified || feed.last_modified,
+      },
+    });
+    return { synced: 0, skipped: 0, errors: 0, notModified: true };
+  }
+
+  const parsed = fetched.parsed;
+  if (!parsed) {
+    throw new Error("Parsed feed was empty");
+  }
+
+  const entries = parsed.items || [];
+  let synced = 0;
+  let skipped = 0;
+  let errors = 0;
+
+  for (const entry of entries) {
+    const payload = mapFeedItemToPayload(feed, entry);
+    if (!payload) {
+      skipped++;
+      continue;
+    }
+
+    try {
+      const result = await ingestItem(payload);
+      if (result.already_exists) skipped++;
+      else synced++;
+    } catch (error) {
+      errors++;
+      console.error("RSS ingest error:", error instanceof Error ? error.message : error);
+    }
+  }
+
+  await prisma.rssFeed.update({
+    where: { id: feedId },
+    data: {
+      title: parsed.title || feed.title,
+      description: parsed.description || feed.description,
+      language: parsed.language || feed.language,
+      site_url: parsed.link || feed.site_url,
+      etag: fetched.etag || null,
+      last_modified: fetched.lastModified || null,
+      last_synced_at: new Date(),
+      last_error: errors > 0 && synced === 0 ? "Some feed items failed to ingest" : null,
+    },
+  });
+
+  return { synced, skipped, errors, notModified: false };
+}
+
+export async function syncAllRssFeeds() {
+  const feeds = await listRssFeeds();
+  const activeFeeds = feeds.filter((feed: Awaited<ReturnType<typeof listRssFeeds>>[number]) => feed.active);
+
+  let synced = 0;
+  let skipped = 0;
+  let errors = 0;
+  let feedsProcessed = 0;
+
+  for (const feed of activeFeeds) {
+    try {
+      const result = await syncRssFeed(feed.id);
+      synced += result.synced;
+      skipped += result.skipped;
+      errors += result.errors;
+      feedsProcessed++;
+    } catch (error) {
+      errors++;
+      feedsProcessed++;
+      const prisma = await getClient();
+      await prisma.rssFeed.update({
+        where: { id: feed.id },
+        data: {
+          last_error: error instanceof Error ? error.message : "Feed sync failed",
+          last_synced_at: new Date(),
+        },
+      });
+    }
+  }
+
+  return { feedsProcessed, synced, skipped, errors };
+}

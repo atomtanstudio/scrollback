@@ -59,6 +59,10 @@ model ContentItem {
   body_html           String?          @db.Text
   conversation_id     String?          @db.Text
   original_url        String?          @db.Text
+  source_platform     String           @default("x") @db.Text
+  source_label        String?          @db.Text
+  source_domain       String?          @db.Text
+  rss_feed_id         String?          @db.Uuid
   posted_at           DateTime?        @db.Timestamptz(6)
   likes               Int?
   retweets            Int?
@@ -84,13 +88,36 @@ model ContentItem {
   media_items Media[]
   categories  ContentCategory[]
   tags        ContentTag[]
+  rss_feed    RssFeed?         @relation(fields: [rss_feed_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([external_id], map: "ix_content_items_external_id")
   @@index([conversation_id], map: "ix_content_items_conversation_id")
   @@index([content_hash], map: "ix_content_items_content_hash")
+  @@index([source_platform], map: "ix_content_items_source_platform")
+  @@index([rss_feed_id], map: "ix_content_items_rss_feed_id")
   @@index([embedding], map: "idx_content_items_embedding")
   @@index([search_vector], map: "idx_content_items_search_vector", type: Gin)
   @@map("content_items")
+}
+
+model RssFeed {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  feed_url         String       @unique @db.Text
+  site_url         String?      @db.Text
+  title            String       @db.Text
+  description      String?      @db.Text
+  language         String?      @db.Text
+  active           Boolean      @default(true)
+  etag             String?      @db.Text
+  last_modified    String?      @db.Text
+  last_synced_at   DateTime?    @db.Timestamptz(6)
+  last_error       String?      @db.Text
+  created_at       DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+
+  items ContentItem[]
+
+  @@map("rss_feeds")
 }
 
 model Category {
