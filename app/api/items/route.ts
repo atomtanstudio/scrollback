@@ -5,13 +5,14 @@ import { getMediaDisplayUrl } from "@/lib/media-url";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
+  const type = searchParams.get("type") || undefined;
+  const preferPublishedAt = type === "rss";
 
   // excludeIds mode: when excludeIds param is present, use shared query function
   const excludeIdsParam = searchParams.get("excludeIds");
   if (excludeIdsParam !== null) {
     const excludeIds = excludeIdsParam ? excludeIdsParam.split(",") : [];
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)));
-    const type = searchParams.get("type") || undefined;
     const result = await fetchItems({ limit, type, excludeIds });
     return NextResponse.json(result);
   }
@@ -19,7 +20,6 @@ export async function GET(request: NextRequest) {
   // Existing offset-based pagination
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
   const perPage = Math.min(100, Math.max(1, parseInt(searchParams.get("per_page") || "20", 10)));
-  const type = searchParams.get("type") || undefined;
 
   const where: Record<string, unknown> = {
     processing_status: { not: "error" },
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     prisma.contentItem.findMany({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       where: where as any,
-      orderBy: [{ posted_at: "desc" }, { created_at: "desc" }],
+      orderBy: preferPublishedAt ? [{ posted_at: "desc" }, { created_at: "desc" }] : [{ created_at: "desc" }],
       skip: (page - 1) * perPage,
       take: perPage,
       include: {

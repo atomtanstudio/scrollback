@@ -12,6 +12,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
   const dbType = getDatabaseType();
   const { limit = 50, type, excludeIds = [] } = options;
   const batchSize = limit + 1;
+  const preferPublishedAt = type === "rss";
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const baseWhere: any = {};
@@ -41,7 +42,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
     tags: { include: { tag: true } },
   };
   const itemTimestamp = (item: { posted_at?: Date | null; created_at: Date }) =>
-    new Date(item.posted_at ?? item.created_at).getTime();
+    new Date((preferPublishedAt ? item.posted_at : null) ?? item.created_at).getTime();
 
   // Fetch non-thread items and deduplicated thread items separately, then merge.
   // This avoids the problem where a single thread with 100 replies drowns out
@@ -56,7 +57,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
       : prisma.contentItem.findMany({
           where: nonThreadWhere,
           include,
-          orderBy: [{ posted_at: "desc" }, { created_at: "desc" }],
+          orderBy: preferPublishedAt ? [{ posted_at: "desc" }, { created_at: "desc" }] : [{ created_at: "desc" }],
           take: batchSize,
         }),
     // One thread per author: the same thread can be captured multiple times
@@ -125,7 +126,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
             return prisma.contentItem.findMany({
               where: { id: { in: rows.map((r) => r.id) } },
               include,
-              orderBy: [{ posted_at: "desc" }, { created_at: "desc" }],
+              orderBy: [{ created_at: "desc" }],
             });
           })
       : Promise.resolve([]),
