@@ -208,6 +208,10 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
     }, delay);
   }, [scrollToFeed]);
 
+  const handleFilteredFeedReady = useCallback(() => {
+    scheduleScrollToFeed(120);
+  }, [scheduleScrollToFeed]);
+
   const applyFilter = useCallback(
     (type: string) => {
       setActiveType(type);
@@ -500,6 +504,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                   totalCount={filteredTotalCount}
                   initialHasMore={initialHasMore}
                   type={activeType || undefined}
+                  onInitialRenderReady={activeType ? handleFilteredFeedReady : undefined}
                 />
               )}
             </section>

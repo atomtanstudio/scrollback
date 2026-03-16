@@ -11,6 +11,7 @@ interface MasonryFeedProps {
   totalCount: number;
   initialHasMore?: boolean;
   type?: string;
+  onInitialRenderReady?: () => void;
 }
 
 const GAP = 20;
@@ -23,7 +24,13 @@ function filterByType(items: ContentItemWithMedia[], type?: string): ContentItem
   return items.filter(i => i.source_type === type);
 }
 
-export function MasonryFeed({ initialItems, totalCount: initialTotal, initialHasMore, type }: MasonryFeedProps) {
+export function MasonryFeed({
+  initialItems,
+  totalCount: initialTotal,
+  initialHasMore,
+  type,
+  onInitialRenderReady,
+}: MasonryFeedProps) {
   const filteredInitialItems = filterByType(initialItems, type);
   const [items, setItems] = useState(() => filteredInitialItems);
   const [, setTotalCount] = useState(initialTotal);
@@ -44,6 +51,7 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, initialHas
     rootMargin: "400px",
   });
   const abortRef = useRef<AbortController | null>(null);
+  const notifiedTypeRef = useRef<string | null>(null);
 
   // Responsive column count
   const updateColumnCount = useCallback(() => {
@@ -205,6 +213,7 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, initialHas
   useEffect(() => {
     if (prevTypeRef.current !== type) {
       prevTypeRef.current = type;
+      notifiedTypeRef.current = null;
       setItems(filteredInitialItems);
       setHasMore(initialHasMore ?? (filteredInitialItems.length < initialTotal));
       setTotalCount(initialTotal);
@@ -219,6 +228,14 @@ export function MasonryFeed({ initialItems, totalCount: initialTotal, initialHas
     if (!type) return;
     void fetchPage([], true);
   }, [type, fetchPage]);
+
+  useEffect(() => {
+    if (!type || !onInitialRenderReady) return;
+    if (notifiedTypeRef.current === type) return;
+    if (isLoading || !hasMeasuredLayout || items.length === 0) return;
+    notifiedTypeRef.current = type;
+    onInitialRenderReady();
+  }, [type, onInitialRenderReady, isLoading, hasMeasuredLayout, items.length]);
 
   const setItemRef = useCallback((id: string, el: HTMLDivElement | null) => {
     if (el) itemRefs.current.set(id, el);
