@@ -144,6 +144,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
   const [searchQuery, setSearchQuery] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const feedSectionRef = useRef<HTMLElement | null>(null);
+  const feedHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const scrollTimeoutRef = useRef<number | null>(null);
   const pendingPaletteScrollRef = useRef(false);
 
@@ -187,9 +188,9 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
   );
 
   const scrollToFeed = useCallback(() => {
-    if (!feedSectionRef.current) return;
-    const top =
-      feedSectionRef.current.getBoundingClientRect().top + window.scrollY - 20;
+    const target = feedHeadingRef.current || feedSectionRef.current;
+    if (!target) return;
+    const top = target.getBoundingClientRect().top + window.scrollY - 96;
     window.scrollTo({
       top: Math.max(0, top),
       behavior: "smooth",
@@ -463,7 +464,10 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
               <div className="mb-6 flex flex-col gap-3 border-b border-[#d6c9b214] pb-5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">Library feed</p>
-                  <h2 className="mt-2 font-heading text-[1.85rem] font-semibold tracking-[-0.04em] text-[#f2ede5]">
+                  <h2
+                    ref={feedHeadingRef}
+                    className="mt-2 font-heading text-[1.85rem] font-semibold tracking-[-0.04em] text-[#f2ede5]"
+                  >
                     {feedTitle}
                   </h2>
                 </div>
