@@ -329,6 +329,8 @@ const THREAD_CONTINUATION_PATTERNS = [
   /\bmore below\b/i,
   /\bsee (?:below|thread|replies)\b/i,
   /\b(?:prompt|details?|breakdown|examples?|steps?|tutorial|context|part)\s+(?:below|in replies|in the replies)\b/i,
+  /\bhere (?:are|is)\s+(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(?:prompts?|examples?|steps?|templates?|ideas|frameworks?|workflows?|tricks|ways)\b/i,
+  /\b\d+\s+(?:prompts?|examples?|steps?|templates?|ideas|frameworks?|workflows?|tricks|ways)\b/i,
   /\bin (?:the )?replies\b/i,
   /\bscroll down\b/i,
   /\b(?:1|one)\/\d+\b/i,
@@ -470,15 +472,15 @@ function shouldTreatItemsAsThread(items, authorHandle, conversationId) {
   const root = getRootTweetForConversation(candidates, conversationId);
   if (!root || root.source_type === 'article') return false;
 
-  const continuations = candidates.filter((item) =>
-    item.external_id !== root.external_id && isSubstantiveThreadReply(item)
-  );
+  const continuations = candidates.filter((item) => item.external_id !== root.external_id);
+  const substantiveContinuations = continuations.filter((item) => isSubstantiveThreadReply(item));
+  const highValueContinuations = continuations.filter((item) => isHighValueSingleContinuation(item));
 
-  if (continuations.length === 0) return false;
+  if (substantiveContinuations.length === 0 && highValueContinuations.length === 0) return false;
   if (hasThreadLeadCue(root.body_text || '')) return true;
-  if (continuations.length === 1 && isHighValueSingleContinuation(continuations[0])) return true;
+  if (continuations.length === 1 && highValueContinuations.length === 1) return true;
 
-  return continuations.length >= 2;
+  return substantiveContinuations.length >= 2;
 }
 
 function looksLikeNonArtVisualContent(text) {
