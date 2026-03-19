@@ -811,9 +811,16 @@ function detectSelfThreadInCache(conversationId) {
   }
 }
 
-function shouldFetchFullThread(data, tweetElement) {
+function shouldFetchViaBackgroundTab(data, tweetElement) {
   // Skip if this tab is a background fetch tab (opened by background.js)
   if (bgFetchConversationId) return false;
+
+  // Condition 0: article with truncated body — need full content_state
+  if (data.source_type === 'article') {
+    const body = (data.body_text || '').trim();
+    const isTruncated = !body || body.length < 500 || /^https?:\/\/t\.co\/\w+$/.test(body);
+    if (isTruncated) return true;
+  }
 
   const conversationId = data.conversation_id;
   const externalId = data.external_id;
@@ -1161,8 +1168,8 @@ function injectSaveButtons() {
         threadItems = getThreadSiblingsFromCache(data.conversation_id, data.author_handle);
       }
 
-      // If thread looks incomplete, try fetching via background tab
-      if (threadItems.length < 2 && shouldFetchFullThread(data, tweet)) {
+      // If thread looks incomplete or article is truncated, try fetching via background tab
+      if (shouldFetchViaBackgroundTab(data, tweet) && (threadItems.length < 2 || data.source_type === 'article')) {
         const tweetUrl = data.source_url || `https://x.com/i/web/status/${data.external_id}`;
         // Use conversation_id if available, fall back to external_id (root tweets have conv_id === ext_id)
         const fetchConversationId = data.conversation_id || data.external_id;
