@@ -21,6 +21,75 @@ document.addEventListener('feedsilo-api-response', (event) => {
   }
 });
 
+// --- Background Tab Thread Fetch ---
+// When this tab was opened by background.js to fetch a full thread,
+// wait for conversation data to arrive in tweetCache, then send it back.
+let bgFetchConversationId = null;
+let bgFetchTimer = null;
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'BG_FETCH_INIT' && message.conversationId) {
+    bgFetchConversationId = message.conversationId;
+    log('Background fetch mode — waiting for conversation', bgFetchConversationId);
+    // Check if data is already cached (fast path)
+    trySendThreadData();
+    // Also poll briefly in case data arrives after init
+    let checks = 0;
+    bgFetchTimer = setInterval(() => {
+      checks++;
+      trySendThreadData();
+      if (checks >= 15) { // 15 × 500ms = 7.5s max
+        clearInterval(bgFetchTimer);
+        bgFetchTimer = null;
+        // Send whatever we have
+        sendThreadData();
+      }
+    }, 500);
+    return;
+  }
+
+  if (message.type === 'MERGE_CACHE' && message.tweets) {
+    log('Merging', message.tweets.length, 'tweets from background fetch');
+    for (const tweet of message.tweets) {
+      if (tweet.external_id && !tweetCache.has(tweet.external_id)) {
+        tweetCache.set(tweet.external_id, tweet);
+      }
+    }
+    return;
+  }
+});
+
+function trySendThreadData() {
+  if (!bgFetchConversationId) return;
+  // Count how many tweets we have for this conversation
+  let count = 0;
+  for (const [, data] of tweetCache) {
+    if (data.conversation_id === bgFetchConversationId) count++;
+  }
+  // Need at least 2 tweets to consider the conversation loaded
+  if (count >= 2) {
+    clearInterval(bgFetchTimer);
+    bgFetchTimer = null;
+    sendThreadData();
+  }
+}
+
+function sendThreadData() {
+  if (!bgFetchConversationId) return;
+  const tweets = [];
+  for (const [, data] of tweetCache) {
+    if (data.conversation_id === bgFetchConversationId) {
+      tweets.push({ ...data });
+    }
+  }
+  log('Sending', tweets.length, 'thread tweets back to originating tab');
+  chrome.runtime.sendMessage({
+    type: 'THREAD_DATA_READY',
+    tweets,
+  });
+  bgFetchConversationId = null;
+}
+
 function extractTweetsFromApiResponse(data) {
   // Recursively walk the response to find tweet objects
   if (!data || typeof data !== 'object') return;
