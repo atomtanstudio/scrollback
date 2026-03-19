@@ -3,7 +3,7 @@
 // ============================================================
 
 // --- Debug logging (set to true for development) ---
-const DEBUG = false;
+const DEBUG = true;
 function log(...args) { if (DEBUG) console.log('FeedSilo:', ...args); }
 
 // --- API Interceptor (receives data from interceptor.js in MAIN world) ---
@@ -156,12 +156,14 @@ function extractTweetsFromApiResponse(data) {
   }
 }
 
-function formatContentStateBlocks(contentState) {
-  // Convert Draft.js content_state blocks to markdown text + extract image URLs
+function formatContentStateBlocks(contentState, mediaLookup = {}) {
+  // Convert Draft.js content_state blocks to markdown text + extract media URLs
+  // mediaLookup: { mediaId → { videoUrl, thumbnailUrl } } for resolving MEDIA entities
   const blocks = contentState.blocks || [];
   const entityMap = contentState.entityMap || {};
   const bodyParts = [];
   const imageUrls = [];
+  const _debugEntityTypes = new Set(); // Track all entity types for diagnostics
   let codeBuffer = []; // Merge consecutive code-block lines
 
   // Log ALL blocks for debugging — compact format
@@ -241,6 +243,7 @@ function formatContentStateBlocks(contentState) {
             if (!entity) continue;
             const eType = (entity.type || '').toUpperCase();
             const eData = entity.data || {};
+            _debugEntityTypes.add(eType);
 
             if (eType === 'MARKDOWN') {
               // X stores code blocks and rich content as markdown in entity data
@@ -253,20 +256,41 @@ function formatContentStateBlocks(contentState) {
               handled = true;
             }
             else if (eType === 'IMAGE' || eType === 'PHOTO' || eType === 'MEDIA' || eType === 'IMG') {
-              const imgUrl = eData.src || eData.url || eData.media_url_https
-                || eData.image || eData.original_url || eData.thumbnail;
-              if (imgUrl) { imageUrls.push(imgUrl); handled = true; }
+              // Check for video mediaItems first (X articles use MEDIA for both images and videos)
+              // Video mediaItems have mediaCategory: "AmplifyVideo" and a mediaId reference
+              const videoItem = (eData.mediaItems || []).find(
+                mi => mi.mediaCategory === 'AmplifyVideo' && mi.mediaId
+              );
+              if (videoItem && mediaLookup[videoItem.mediaId]) {
+                const resolved = mediaLookup[videoItem.mediaId];
+                if (resolved.videoUrl) {
+                  imageUrls.push(resolved.videoUrl);
+                  bodyParts.push(`[Video: ${resolved.videoUrl}]`);
+                  handled = true;
+                }
+                if (resolved.thumbnailUrl && !imageUrls.includes(resolved.thumbnailUrl)) {
+                  imageUrls.push(resolved.thumbnailUrl);
+                }
+              } else if (videoItem) {
+                // Video mediaItem but no lookup entry — log for debugging
+                log(' Unresolved video mediaItem:', videoItem.mediaId, '(not in mediaLookup)');
+              }
+              // Regular image handling
+              if (!handled) {
+                const imgUrl = eData.src || eData.url || eData.media_url_https
+                  || eData.image || eData.original_url || eData.thumbnail;
+                if (imgUrl) { imageUrls.push(imgUrl); handled = true; }
+              }
             }
             else if (eType === 'VIDEO' || eType === 'MOVIE' || eType === 'EMBED'
                      || eType === 'VIDEO_EMBED' || eType === 'IFRAME') {
               const videoUrl = eData.url || eData.video_url || eData.src
                 || eData.embed_url || eData.href;
               if (videoUrl) {
-                imageUrls.push(videoUrl); // Goes to media_urls for R2 download
-                bodyParts.push(`[Video: ${videoUrl}]`); // Inline marker for content position
+                imageUrls.push(videoUrl);
+                bodyParts.push(`[Video: ${videoUrl}]`);
                 handled = true;
               }
-              // Also capture thumbnail/poster for preview
               const thumb = eData.thumbnail || eData.poster || eData.poster_image
                 || eData.thumbnail_url || eData.preview_image;
               if (thumb && !imageUrls.includes(thumb)) {
@@ -325,6 +349,8 @@ function formatContentStateBlocks(contentState) {
   // Flush any remaining code lines
   flushCodeBuffer();
 
+  log(' formatContentStateBlocks entity types found:', [..._debugEntityTypes]);
+  log(' formatContentStateBlocks imageUrls:', imageUrls);
   return { body: bodyParts.join('\n\n'), imageUrls };
 }
 
@@ -721,42 +747,52 @@ function cacheTweetData(tweet) {
       log(' Article cover image:', coverUrl);
     }
 
-    // Extract images and videos from artResult.media_entities (inline article media)
+    // Build mediaLookup from artResult.media_entities for resolving MEDIA entities
+    // in content_state. Also extract standalone media URLs.
+    const mediaLookup = {}; // mediaId → { videoUrl, thumbnailUrl }
     if (artResult.media_entities) {
       const mediaEnts = Array.isArray(artResult.media_entities) ? artResult.media_entities : Object.values(artResult.media_entities);
       for (const me of mediaEnts) {
-        // Check for video entries
-        const meType = (me?.type || me?.media_type || '').toLowerCase();
-        if (meType === 'video' || meType === 'animated_gif') {
-          // Try to get mp4 URL from video_info variants
-          const variants = me?.video_info?.variants || me?.media_info?.video_info?.variants || [];
+        const mediaId = me?.media_id;
+        const typeName = (me?.media_info?.__typename || '').toLowerCase();
+        const isVideo = typeName.includes('video') || typeName.includes('gif');
+
+        if (isVideo) {
+          // Extract best mp4 URL from variants
+          const variants = me?.media_info?.variants || [];
           const mp4s = variants.filter(v => v.content_type === 'video/mp4' && v.url);
+          let videoUrl = null;
           if (mp4s.length > 0) {
-            mp4s.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
-            if (!articleMediaUrls.includes(mp4s[0].url)) {
-              articleMediaUrls.push(mp4s[0].url);
-              log(' Article video from media_entities:', mp4s[0].url);
-            }
+            mp4s.sort((a, b) => (b.bit_rate || b.bitrate || 0) - (a.bit_rate || a.bitrate || 0));
+            videoUrl = mp4s[0].url;
           }
-          // Fall back to thumbnail
-          const thumb = me?.media_info?.original_img_url || me?.media_url_https;
-          if (thumb && !articleMediaUrls.includes(thumb)) {
-            articleMediaUrls.push(thumb);
+          const thumbUrl = me?.media_info?.preview_image?.original_img_url || null;
+
+          if (mediaId) {
+            mediaLookup[mediaId] = { videoUrl, thumbnailUrl: thumbUrl };
+            log(' mediaLookup[' + mediaId + '] =', videoUrl, 'thumb:', thumbUrl);
           }
-          continue;
-        }
-        // Image entries
-        const imgUrl = me?.media_info?.original_img_url || me?.media_url_https || me?.url;
-        if (imgUrl && !articleMediaUrls.includes(imgUrl)) {
-          articleMediaUrls.push(imgUrl);
-          log(' Article inline image from media_entities:', imgUrl);
+          if (videoUrl && !articleMediaUrls.includes(videoUrl)) {
+            articleMediaUrls.push(videoUrl);
+            log(' Article video from media_entities:', videoUrl);
+          }
+          if (thumbUrl && !articleMediaUrls.includes(thumbUrl)) {
+            articleMediaUrls.push(thumbUrl);
+          }
+        } else {
+          // Image entries
+          const imgUrl = me?.media_info?.original_img_url || me?.media_url_https || me?.url;
+          if (imgUrl && !articleMediaUrls.includes(imgUrl)) {
+            articleMediaUrls.push(imgUrl);
+            log(' Article inline image from media_entities:', imgUrl);
+          }
         }
       }
     }
 
     // Extract article body from Draft.js content_state
     if (artResult.content_state?.blocks?.length > 0) {
-      const result = formatContentStateBlocks(artResult.content_state);
+      const result = formatContentStateBlocks(artResult.content_state, mediaLookup);
       articleBody = result.body;
       articleMediaUrls.push(...result.imageUrls);
       log(' Got full article body:', articleBody.length, 'chars from', artResult.content_state.blocks.length, 'blocks,', articleMediaUrls.length, 'images');
@@ -1258,6 +1294,8 @@ function injectSaveButtons() {
           // a fuller version (e.g., full article body, conversation_id)
           if (tweetCache.has(data.external_id)) {
             const updated = tweetCache.get(data.external_id);
+            log('Post-merge cache entry media_urls:', updated.media_urls);
+            log('Post-merge cache entry body_text length:', updated.body_text?.length);
             Object.assign(data, updated);
           }
           // Re-check cache with merged data — use fetchConversationId since
