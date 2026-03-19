@@ -8,6 +8,7 @@ import type { DetailItem } from "@/lib/db/types";
 import { MediaRenderer } from "./media-renderer";
 import { JsonCodeBlock } from "./json-code-block";
 import { MediaLightbox } from "./media-lightbox";
+import { getMediaDisplayUrl } from "@/lib/media-url";
 
 type CardType = "tweet" | "thread" | "article" | "art";
 
@@ -115,8 +116,48 @@ function splitReadableParagraphs(text: string): string[] {
   return paragraphs.length > 1 ? paragraphs : [normalized];
 }
 
-function ArticleTextSegments({ bodyText }: { bodyText: string }) {
+const VIDEO_MARKER_RE = /^\[Video:\s*(https?:\/\/[^\]]+)\]$/;
+
+function ArticleTextSegments({ bodyText, mediaItems }: { bodyText: string; mediaItems?: DetailItem["media_items"] }) {
   const { segments } = parseBodyContent(bodyText);
+
+  // Build a lookup from original_url to stored_path for R2-cached videos
+  const mediaLookup = new Map<string, { stored_path: string | null; id: string }>();
+  if (mediaItems) {
+    for (const mi of mediaItems) {
+      if (mi.original_url) {
+        mediaLookup.set(mi.original_url, { stored_path: mi.stored_path, id: mi.id });
+      }
+    }
+  }
+
+  function renderParagraphOrVideo(text: string, key: string) {
+    const videoMatch = text.trim().match(VIDEO_MARKER_RE);
+    if (videoMatch) {
+      const videoUrl = videoMatch[1];
+      const cached = mediaLookup.get(videoUrl);
+      const displayUrl = cached?.stored_path
+        ? getMediaDisplayUrl(cached.stored_path, videoUrl)
+        : videoUrl;
+      return (
+        <div key={key} className="my-8 overflow-hidden rounded-[22px] border border-[#d6c9b214] bg-[#10151c]">
+          <video
+            controls
+            preload="metadata"
+            playsInline
+            className="block w-full max-h-[70vh] rounded-[22px] bg-[#10151c]"
+          >
+            <source src={displayUrl} type="video/mp4" />
+          </video>
+        </div>
+      );
+    }
+    return (
+      <p key={key} className="max-w-[72ch] text-[17px] leading-[1.95] text-[#cdc4b7] [text-wrap:pretty]">
+        {text}
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -126,14 +167,9 @@ function ArticleTextSegments({ bodyText }: { bodyText: string }) {
 
           return (
             <div key={i} className="space-y-5">
-              {paragraphs.map((paragraph, paragraphIndex) => (
-                <p
-                  key={`${i}-${paragraphIndex}`}
-                  className="max-w-[72ch] text-[17px] leading-[1.95] text-[#cdc4b7] [text-wrap:pretty]"
-                >
-                  {paragraph}
-                </p>
-              ))}
+              {paragraphs.map((paragraph, paragraphIndex) =>
+                renderParagraphOrVideo(paragraph, `${i}-${paragraphIndex}`)
+              )}
             </div>
           );
         }
@@ -605,14 +641,23 @@ function ArticleContent({
             />
           </div>
         </div>
-      ) : item.media_items && item.media_items.length > 0 && (
-        <div className={`mb-6 ${isRssArticle ? "overflow-hidden rounded-[26px] border border-[#d6c9b214] bg-[#10151c] p-2" : ""}`}>
-          <MediaRenderer
-            mediaItems={item.media_items}
-            onMediaClick={onMediaClick}
-          />
-        </div>
-      )}
+      ) : (() => {
+        if (!item.media_items || item.media_items.length === 0) return null;
+        // For X articles with inline [Video:] markers, only show images (cover) at top — videos render inline in body
+        const hasInlineVideos = !isRssArticle && bodyText?.includes("[Video:");
+        const displayItems = hasInlineVideos
+          ? item.media_items.filter(mi => mi.media_type === "image")
+          : item.media_items;
+        if (displayItems.length === 0) return null;
+        return (
+          <div className={`mb-6 ${isRssArticle ? "overflow-hidden rounded-[26px] border border-[#d6c9b214] bg-[#10151c] p-2" : ""}`}>
+            <MediaRenderer
+              mediaItems={displayItems}
+              onMediaClick={onMediaClick}
+            />
+          </div>
+        );
+      })()}
       {shouldRenderHtml && decoratedBodyHtml && !translationAvailable ? (
         <div
           className="prose prose-invert max-w-none
@@ -635,11 +680,11 @@ function ArticleContent({
         />
       ) : fallbackHtmlText && !translationAvailable ? (
         <div className="space-y-5">
-          <ArticleTextSegments bodyText={fallbackHtmlText} />
+          <ArticleTextSegments bodyText={fallbackHtmlText} mediaItems={item.media_items} />
         </div>
       ) : bodyText ? (
         <div className="space-y-5">
-          <ArticleTextSegments bodyText={bodyText} />
+          <ArticleTextSegments bodyText={bodyText} mediaItems={item.media_items} />
         </div>
       ) : null}
     </div>
