@@ -1,6 +1,9 @@
 // FeedSilo Extension - Background Service Worker
 // Relays captured tweet data from content script to FeedSilo server.
 
+// Track pending thread fetches: backgroundTabId → { originTabId, conversationId, resolve, timer }
+const pendingThreadFetches = new Map();
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'CAPTURE_TWEET') {
     handleSingleCapture(message.data).then(sendResponse);
@@ -20,6 +23,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'CHECK_CONNECTION') {
     handleCheckConnection().then(sendResponse);
     return true;
+  }
+
+  if (message.type === 'FETCH_THREAD') {
+    const originTabId = sender.tab?.id;
+    if (!originTabId) {
+      sendResponse({ success: false, tweets: [] });
+      return;
+    }
+    handleFetchThread(message.url, message.conversationId, originTabId).then(sendResponse);
+    return true;
+  }
+
+  if (message.type === 'THREAD_DATA_READY') {
+    const bgTabId = sender.tab?.id;
+    const pending = pendingThreadFetches.get(bgTabId);
+    if (pending) {
+      clearTimeout(pending.timer);
+      pendingThreadFetches.delete(bgTabId);
+      // Forward tweets to the originating tab
+      chrome.tabs.sendMessage(pending.originTabId, {
+        type: 'MERGE_CACHE',
+        tweets: message.tweets || [],
+      }).catch(() => {});
+      // Close background tab
+      chrome.tabs.remove(bgTabId).catch(() => {});
+      pending.resolve({ success: true, tweets: message.tweets || [] });
+    }
+    return;
   }
 });
 
@@ -237,4 +268,39 @@ async function handleCheckConnection() {
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Connection failed' };
   }
+}
+
+async function handleFetchThread(url, conversationId, originTabId) {
+  return new Promise((resolve) => {
+    chrome.tabs.create({ url, active: false }, (tab) => {
+      if (chrome.runtime.lastError || !tab?.id) {
+        resolve({ success: false, tweets: [] });
+        return;
+      }
+
+      const timer = setTimeout(() => {
+        // Timeout — clean up and return empty
+        pendingThreadFetches.delete(tab.id);
+        chrome.tabs.remove(tab.id).catch(() => {});
+        resolve({ success: false, tweets: [], timeout: true });
+      }, 8000);
+
+      pendingThreadFetches.set(tab.id, {
+        originTabId,
+        conversationId,
+        resolve,
+        timer,
+      });
+
+      // Tell the new tab it's a background fetch once it's ready
+      chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
+        if (tabId !== tab.id || changeInfo.status !== 'complete') return;
+        chrome.tabs.onUpdated.removeListener(listener);
+        chrome.tabs.sendMessage(tab.id, {
+          type: 'BG_FETCH_INIT',
+          conversationId,
+        }).catch(() => {});
+      });
+    });
+  });
 }
