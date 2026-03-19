@@ -6,6 +6,19 @@
 const DEBUG = true;
 function log(...args) { if (DEBUG) console.log('FeedSilo:', ...args); }
 
+// Merge source into target without overwriting non-null values with null
+function mergeKeepNonNull(target, source) {
+  for (const key of Object.keys(source)) {
+    if (source[key] != null) {
+      target[key] = source[key];
+    } else if (!(key in target)) {
+      target[key] = source[key];
+    }
+    // If source[key] is null but target[key] already has a value, skip
+  }
+  return target;
+}
+
 // --- API Interceptor (receives data from interceptor.js in MAIN world) ---
 // Cache of intercepted tweet data: Map<tweetId, tweetData>
 log('content script loaded at', document.readyState);
@@ -56,7 +69,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (!existing) {
         tweetCache.set(tweet.external_id, tweet);
       } else if ((tweet.body_text || '').length > (existing.body_text || '').length) {
-        Object.assign(existing, tweet);
+        mergeKeepNonNull(existing, tweet);
       }
     }
     return;
@@ -1285,8 +1298,8 @@ function injectSaveButtons() {
               if (!existing) {
                 tweetCache.set(t.external_id, t);
               } else if ((t.body_text || '').length > (existing.body_text || '').length) {
-                // Incoming data has more content — update the cache entry
-                Object.assign(existing, t);
+                // Incoming data has more content — merge without overwriting non-null fields
+                mergeKeepNonNull(existing, t);
               }
             }
           }
@@ -1296,7 +1309,7 @@ function injectSaveButtons() {
             const updated = tweetCache.get(data.external_id);
             log('Post-merge cache entry media_urls:', updated.media_urls);
             log('Post-merge cache entry body_text length:', updated.body_text?.length);
-            Object.assign(data, updated);
+            mergeKeepNonNull(data, updated);
           }
           // Re-check cache with merged data — use fetchConversationId since
           // data.conversation_id may be null when tweet came from DOM extraction
