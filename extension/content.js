@@ -251,6 +251,22 @@ function formatContentStateBlocks(contentState) {
                 || eData.image || eData.original_url || eData.thumbnail;
               if (imgUrl) { imageUrls.push(imgUrl); handled = true; }
             }
+            else if (eType === 'VIDEO' || eType === 'MOVIE' || eType === 'EMBED'
+                     || eType === 'VIDEO_EMBED' || eType === 'IFRAME') {
+              const videoUrl = eData.url || eData.video_url || eData.src
+                || eData.embed_url || eData.href;
+              if (videoUrl) {
+                imageUrls.push(videoUrl); // Goes to media_urls for R2 download
+                bodyParts.push(`[Video: ${videoUrl}]`); // Inline marker for content position
+                handled = true;
+              }
+              // Also capture thumbnail/poster for preview
+              const thumb = eData.thumbnail || eData.poster || eData.poster_image
+                || eData.thumbnail_url || eData.preview_image;
+              if (thumb && !imageUrls.includes(thumb)) {
+                imageUrls.push(thumb);
+              }
+            }
             else if (eType === 'CODE' || eType === 'CODE-BLOCK' || eType === 'CODEBLOCK') {
               const code = eData.code || eData.content || eData.text || text;
               if (code) { bodyParts.push('```\n' + code + '\n```'); handled = true; }
@@ -266,9 +282,16 @@ function formatContentStateBlocks(contentState) {
           }
         }
 
-        // Check block.data for images/code
+        // Check block.data for images/videos/code
         const blockData = block.data || {};
         if (!handled) {
+          // Video in block.data
+          const blockVideoUrl = blockData.video_url || blockData.embed_url;
+          if (blockVideoUrl) {
+            imageUrls.push(blockVideoUrl);
+            bodyParts.push(`[Video: ${blockVideoUrl}]`);
+            handled = true;
+          }
           const imgUrl = blockData.src || blockData.media_url_https
             || blockData.image || blockData.original_url;
           if (imgUrl) { imageUrls.push(imgUrl); handled = true; }
@@ -692,10 +715,31 @@ function cacheTweetData(tweet) {
       log(' Article cover image:', coverUrl);
     }
 
-    // Extract images from artResult.media_entities (inline article images)
+    // Extract images and videos from artResult.media_entities (inline article media)
     if (artResult.media_entities) {
       const mediaEnts = Array.isArray(artResult.media_entities) ? artResult.media_entities : Object.values(artResult.media_entities);
       for (const me of mediaEnts) {
+        // Check for video entries
+        const meType = (me?.type || me?.media_type || '').toLowerCase();
+        if (meType === 'video' || meType === 'animated_gif') {
+          // Try to get mp4 URL from video_info variants
+          const variants = me?.video_info?.variants || me?.media_info?.video_info?.variants || [];
+          const mp4s = variants.filter(v => v.content_type === 'video/mp4' && v.url);
+          if (mp4s.length > 0) {
+            mp4s.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
+            if (!articleMediaUrls.includes(mp4s[0].url)) {
+              articleMediaUrls.push(mp4s[0].url);
+              log(' Article video from media_entities:', mp4s[0].url);
+            }
+          }
+          // Fall back to thumbnail
+          const thumb = me?.media_info?.original_img_url || me?.media_url_https;
+          if (thumb && !articleMediaUrls.includes(thumb)) {
+            articleMediaUrls.push(thumb);
+          }
+          continue;
+        }
+        // Image entries
         const imgUrl = me?.media_info?.original_img_url || me?.media_url_https || me?.url;
         if (imgUrl && !articleMediaUrls.includes(imgUrl)) {
           articleMediaUrls.push(imgUrl);
