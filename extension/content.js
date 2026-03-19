@@ -264,12 +264,10 @@ function formatContentStateBlocks(contentState, mediaLookup = {}) {
               if (videoItem && mediaLookup[videoItem.mediaId]) {
                 const resolved = mediaLookup[videoItem.mediaId];
                 if (resolved.videoUrl) {
-                  imageUrls.push(resolved.videoUrl);
+                  // Only insert body marker — video URL is already in media_urls
+                  // via artResult.media_entities extraction (avoids duplicates)
                   bodyParts.push(`[Video: ${resolved.videoUrl}]`);
                   handled = true;
-                }
-                if (resolved.thumbnailUrl && !imageUrls.includes(resolved.thumbnailUrl)) {
-                  imageUrls.push(resolved.thumbnailUrl);
                 }
               } else if (videoItem) {
                 // Video mediaItem but no lookup entry — log for debugging
@@ -776,9 +774,7 @@ function cacheTweetData(tweet) {
             articleMediaUrls.push(videoUrl);
             log(' Article video from media_entities:', videoUrl);
           }
-          if (thumbUrl && !articleMediaUrls.includes(thumbUrl)) {
-            articleMediaUrls.push(thumbUrl);
-          }
+          // Skip thumbnails — they're just preview frames, not standalone media
         } else {
           // Image entries
           const imgUrl = me?.media_info?.original_img_url || me?.media_url_https || me?.url;
@@ -802,9 +798,13 @@ function cacheTweetData(tweet) {
   // Extract media URLs with proper video support
   const mediaUrls = [];
   let hasUnresolvedVideo = false;
-  // For articles, start with article-specific media (cover + inline images)
+  // For articles, start with article-specific media (cover + inline media)
   if (isArticle && articleMediaUrls.length > 0) {
-    mediaUrls.push(...articleMediaUrls);
+    // Deduplicate before adding
+    const seen = new Set();
+    for (const url of articleMediaUrls) {
+      if (!seen.has(url)) { seen.add(url); mediaUrls.push(url); }
+    }
   }
   hasUnresolvedVideo = appendMediaEntries(legacy.extended_entities?.media || [], mediaUrls) || hasUnresolvedVideo;
 
