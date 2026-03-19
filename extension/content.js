@@ -1138,6 +1138,45 @@ function injectSaveButtons() {
       if (data.conversation_id && data.author_handle) {
         threadItems = getThreadSiblingsFromCache(data.conversation_id, data.author_handle);
       }
+
+      // If thread looks incomplete, try fetching via background tab
+      if (threadItems.length < 2 && shouldFetchFullThread(data)) {
+        const tweetUrl = data.source_url || `https://x.com/i/web/status/${data.external_id}`;
+        log('Fetching full thread via background tab:', tweetUrl);
+        try {
+          const result = await new Promise((resolve) => {
+            chrome.runtime.sendMessage({
+              type: 'FETCH_THREAD',
+              url: tweetUrl,
+              conversationId: data.conversation_id,
+            }, (response) => {
+              if (chrome.runtime.lastError) {
+                log('FETCH_THREAD error:', chrome.runtime.lastError.message);
+                resolve({ success: false, tweets: [] });
+                return;
+              }
+              resolve(response || { success: false, tweets: [] });
+            });
+          });
+          log('Background fetch returned', result.tweets?.length || 0, 'tweets, success:', result.success);
+          // Merge tweets directly into local cache (don't rely on MERGE_CACHE timing)
+          if (result.tweets?.length > 0) {
+            for (const t of result.tweets) {
+              if (t.external_id && !tweetCache.has(t.external_id)) {
+                tweetCache.set(t.external_id, t);
+              }
+            }
+          }
+          // Re-check cache with merged data
+          if (data.conversation_id && data.author_handle) {
+            threadItems = getThreadSiblingsFromCache(data.conversation_id, data.author_handle);
+          }
+        } catch (err) {
+          log('Background fetch failed:', err);
+        }
+      }
+
+      // Final DOM fallback
       if (threadItems.length < 2) {
         threadItems = await getThreadSiblingsFromDOM(tweet, data);
       }
