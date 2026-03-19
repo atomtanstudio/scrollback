@@ -809,6 +809,32 @@ function detectSelfThreadInCache(conversationId) {
   }
 }
 
+function shouldFetchFullThread(data) {
+  // Skip if this tab is a background fetch tab (opened by background.js)
+  if (bgFetchConversationId) return false;
+
+  const conversationId = data.conversation_id;
+  const externalId = data.external_id;
+  if (!conversationId) return false;
+
+  // Condition 1: tweet is a reply in a conversation (conversation_id ≠ own id)
+  if (conversationId !== externalId) return true;
+
+  // Condition 2: cache already has 2+ tweets with this conversation_id
+  let siblingCount = 0;
+  for (const [, cached] of tweetCache) {
+    if (cached.conversation_id === conversationId) {
+      siblingCount++;
+      if (siblingCount >= 2) return true;
+    }
+  }
+
+  // Condition 3: root tweet with self-replies (reply_count > 0, same author)
+  if (data.replies > 0) return true;
+
+  return false;
+}
+
 function normalizeHandle(handle) {
   return (handle || '').replace(/^@/, '').trim().toLowerCase();
 }
