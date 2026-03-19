@@ -4,6 +4,9 @@
 // Track pending thread fetches: backgroundTabId → { originTabId, conversationId, resolve, timer }
 const pendingThreadFetches = new Map();
 
+// Dedup: conversationId → Promise (reuse in-flight fetch for same conversation)
+const inflight = new Map();
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'CAPTURE_TWEET') {
     handleSingleCapture(message.data).then(sendResponse);
@@ -28,6 +31,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'FETCH_THREAD') {
     const originTabId = sender.tab?.id;
     if (!originTabId) {
+      sendResponse({ success: false, tweets: [] });
+      return;
+    }
+    if (!message.url || !message.conversationId) {
       sendResponse({ success: false, tweets: [] });
       return;
     }
@@ -271,36 +278,53 @@ async function handleCheckConnection() {
 }
 
 async function handleFetchThread(url, conversationId, originTabId) {
-  return new Promise((resolve) => {
+  if (inflight.has(conversationId)) {
+    return inflight.get(conversationId);
+  }
+
+  const promise = new Promise((resolve) => {
     chrome.tabs.create({ url, active: false }, (tab) => {
       if (chrome.runtime.lastError || !tab?.id) {
+        inflight.delete(conversationId);
         resolve({ success: false, tweets: [] });
         return;
       }
 
+      // Declare listener before the timeout so both can reference it
+      let listener;
+
       const timer = setTimeout(() => {
-        // Timeout — clean up and return empty
+        // Timeout — clean up listener, pending entry, tab, and inflight
+        chrome.tabs.onUpdated.removeListener(listener);
         pendingThreadFetches.delete(tab.id);
         chrome.tabs.remove(tab.id).catch(() => {});
+        inflight.delete(conversationId);
         resolve({ success: false, tweets: [], timeout: true });
       }, 8000);
 
       pendingThreadFetches.set(tab.id, {
         originTabId,
         conversationId,
-        resolve,
+        resolve: (result) => {
+          inflight.delete(conversationId);
+          resolve(result);
+        },
         timer,
       });
 
       // Tell the new tab it's a background fetch once it's ready
-      chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
+      listener = function (tabId, changeInfo) {
         if (tabId !== tab.id || changeInfo.status !== 'complete') return;
         chrome.tabs.onUpdated.removeListener(listener);
         chrome.tabs.sendMessage(tab.id, {
           type: 'BG_FETCH_INIT',
           conversationId,
         }).catch(() => {});
-      });
+      };
+      chrome.tabs.onUpdated.addListener(listener);
     });
   });
+
+  inflight.set(conversationId, promise);
+  return promise;
 }
