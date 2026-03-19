@@ -51,8 +51,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'MERGE_CACHE' && message.tweets) {
     log('Merging', message.tweets.length, 'tweets from background fetch');
     for (const tweet of message.tweets) {
-      if (tweet.external_id && !tweetCache.has(tweet.external_id)) {
+      if (!tweet.external_id) continue;
+      const existing = tweetCache.get(tweet.external_id);
+      if (!existing) {
         tweetCache.set(tweet.external_id, tweet);
+      } else if ((tweet.body_text || '').length > (existing.body_text || '').length) {
+        Object.assign(existing, tweet);
       }
     }
     return;
@@ -66,9 +70,11 @@ function trySendThreadData() {
   for (const [, data] of tweetCache) {
     if (data.conversation_id === bgFetchConversationId) count++;
   }
-  // Need at least 2 tweets AND count must stabilize (same as last check)
-  // to avoid sending a partial thread while X is still loading more tweets
-  if (count >= 2 && count === lastBgFetchCount) {
+  // Wait for count to stabilize (same as last check) before sending,
+  // to avoid sending partial data while X is still loading more tweets.
+  // Threshold is 1 (not 2) because articles are single tweets — thread
+  // filtering downstream still requires 2+ siblings from the same author.
+  if (count >= 1 && count === lastBgFetchCount) {
     clearInterval(bgFetchTimer);
     bgFetchTimer = null;
     sendThreadData();
@@ -1234,21 +1240,29 @@ function injectSaveButtons() {
             });
           });
           log('Background fetch returned', result.tweets?.length || 0, 'tweets, success:', result.success);
-          // Merge tweets directly into local cache (don't rely on MERGE_CACHE timing)
+          // Merge tweets into local cache — update existing entries if incoming
+          // data has a longer body (e.g., full article replacing truncated preview)
           if (result.tweets?.length > 0) {
             for (const t of result.tweets) {
-              if (t.external_id && !tweetCache.has(t.external_id)) {
+              if (!t.external_id) continue;
+              const existing = tweetCache.get(t.external_id);
+              if (!existing) {
                 tweetCache.set(t.external_id, t);
+              } else if ((t.body_text || '').length > (existing.body_text || '').length) {
+                // Incoming data has more content — update the cache entry
+                Object.assign(existing, t);
               }
             }
+          }
+          // Update data from cache — the background tab may have fetched
+          // a fuller version (e.g., full article body, conversation_id)
+          if (tweetCache.has(data.external_id)) {
+            const updated = tweetCache.get(data.external_id);
+            Object.assign(data, updated);
           }
           // Re-check cache with merged data — use fetchConversationId since
           // data.conversation_id may be null when tweet came from DOM extraction
           if (data.author_handle) {
-            // Update data.conversation_id from merged cache if it was null
-            if (!data.conversation_id && tweetCache.has(data.external_id)) {
-              data.conversation_id = tweetCache.get(data.external_id).conversation_id;
-            }
             const convId = data.conversation_id || fetchConversationId;
             threadItems = getThreadSiblingsFromCache(convId, data.author_handle);
           }
