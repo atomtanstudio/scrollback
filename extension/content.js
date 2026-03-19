@@ -811,28 +811,48 @@ function detectSelfThreadInCache(conversationId) {
   }
 }
 
-function shouldFetchFullThread(data) {
+function shouldFetchFullThread(data, tweetElement) {
   // Skip if this tab is a background fetch tab (opened by background.js)
   if (bgFetchConversationId) return false;
 
   const conversationId = data.conversation_id;
   const externalId = data.external_id;
-  if (!conversationId) return false;
 
-  // Condition 1: tweet is a reply in a conversation (conversation_id ≠ own id)
-  if (conversationId !== externalId) return true;
+  if (conversationId) {
+    // Condition 1: tweet is a reply in a conversation (conversation_id ≠ own id)
+    if (conversationId !== externalId) return true;
 
-  // Condition 2: cache already has 2+ tweets with this conversation_id
-  let siblingCount = 0;
-  for (const [, cached] of tweetCache) {
-    if (cached.conversation_id === conversationId) {
-      siblingCount++;
-      if (siblingCount >= 2) return true;
+    // Condition 2: cache already has 2+ tweets with this conversation_id
+    let siblingCount = 0;
+    for (const [, cached] of tweetCache) {
+      if (cached.conversation_id === conversationId) {
+        siblingCount++;
+        if (siblingCount >= 2) return true;
+      }
     }
   }
 
-  // Condition 3: root tweet with self-replies (reply_count > 0, same author)
+  // Condition 3: tweet has replies (from API cache)
   if (data.replies > 0) return true;
+
+  // Condition 4: DOM signals — thread connector line or "Show this thread" visible
+  // This catches cases where API data wasn't intercepted (conversation_id/replies null)
+  if (tweetElement) {
+    const cell = tweetElement.closest('[data-testid="cellInnerDiv"]');
+    if (cell) {
+      // Thread connector: a thin vertical line connecting tweets
+      const connector = cell.querySelector('div[style*="width: 2px"]');
+      if (connector) return true;
+      // "Show this thread" link
+      if (cell.textContent.includes('Show this thread')) return true;
+    }
+    // Also check the next sibling cell for a thread connector (root tweet with replies below)
+    const nextCell = cell?.nextElementSibling;
+    if (nextCell) {
+      const nextConnector = nextCell.querySelector('div[style*="width: 2px"]');
+      if (nextConnector) return true;
+    }
+  }
 
   return false;
 }
@@ -1142,15 +1162,17 @@ function injectSaveButtons() {
       }
 
       // If thread looks incomplete, try fetching via background tab
-      if (threadItems.length < 2 && shouldFetchFullThread(data)) {
+      if (threadItems.length < 2 && shouldFetchFullThread(data, tweet)) {
         const tweetUrl = data.source_url || `https://x.com/i/web/status/${data.external_id}`;
-        log('Fetching full thread via background tab:', tweetUrl);
+        // Use conversation_id if available, fall back to external_id (root tweets have conv_id === ext_id)
+        const fetchConversationId = data.conversation_id || data.external_id;
+        log('Fetching full thread via background tab:', tweetUrl, 'conversation:', fetchConversationId);
         try {
           const result = await new Promise((resolve) => {
             chrome.runtime.sendMessage({
               type: 'FETCH_THREAD',
               url: tweetUrl,
-              conversationId: data.conversation_id,
+              conversationId: fetchConversationId,
             }, (response) => {
               if (chrome.runtime.lastError) {
                 log('FETCH_THREAD error:', chrome.runtime.lastError.message);
@@ -1169,9 +1191,15 @@ function injectSaveButtons() {
               }
             }
           }
-          // Re-check cache with merged data
-          if (data.conversation_id && data.author_handle) {
-            threadItems = getThreadSiblingsFromCache(data.conversation_id, data.author_handle);
+          // Re-check cache with merged data — use fetchConversationId since
+          // data.conversation_id may be null when tweet came from DOM extraction
+          if (data.author_handle) {
+            // Update data.conversation_id from merged cache if it was null
+            if (!data.conversation_id && tweetCache.has(data.external_id)) {
+              data.conversation_id = tweetCache.get(data.external_id).conversation_id;
+            }
+            const convId = data.conversation_id || fetchConversationId;
+            threadItems = getThreadSiblingsFromCache(convId, data.author_handle);
           }
         } catch (err) {
           log('Background fetch failed:', err);
