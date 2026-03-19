@@ -26,13 +26,13 @@ document.addEventListener('feedsilo-api-response', (event) => {
 // wait for conversation data to arrive in tweetCache, then send it back.
 let bgFetchConversationId = null;
 let bgFetchTimer = null;
+let lastBgFetchCount = 0;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'BG_FETCH_INIT' && message.conversationId) {
     bgFetchConversationId = message.conversationId;
+    lastBgFetchCount = 0;
     log('Background fetch mode — waiting for conversation', bgFetchConversationId);
-    // Check if data is already cached (fast path)
-    trySendThreadData();
     // Also poll briefly in case data arrives after init
     let checks = 0;
     bgFetchTimer = setInterval(() => {
@@ -66,12 +66,14 @@ function trySendThreadData() {
   for (const [, data] of tweetCache) {
     if (data.conversation_id === bgFetchConversationId) count++;
   }
-  // Need at least 2 tweets to consider the conversation loaded
-  if (count >= 2) {
+  // Need at least 2 tweets AND count must stabilize (same as last check)
+  // to avoid sending a partial thread while X is still loading more tweets
+  if (count >= 2 && count === lastBgFetchCount) {
     clearInterval(bgFetchTimer);
     bgFetchTimer = null;
     sendThreadData();
   }
+  lastBgFetchCount = count;
 }
 
 function sendThreadData() {
