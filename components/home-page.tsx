@@ -245,7 +245,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
             ? "RSS"
             : activeType === "art"
               ? "Art & Prompts"
-              : "Recent Captures";
+              : "Latest Captures";
   const filteredTotalCount = searchResults
     ? searchResults.length
     : activeType === "tweet"
@@ -335,7 +335,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                 {/* Sort tabs */}
                 <div className="flex items-center gap-1 rounded-[10px] border border-[#d6c9b214] bg-[#ffffff05] p-1">
                   {([
-                    { label: "Recent", value: "recent" },
+                    { label: "Latest", value: "recent" },
                     { label: "Most Liked", value: "most_liked" },
                     { label: "Most Viewed", value: "most_viewed" },
                   ] as const).map((s) => (
