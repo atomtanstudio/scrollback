@@ -519,6 +519,9 @@ function TweetThreadContent({
   const hasInlineMedia = rawBodyText.includes("[Image:") || rawBodyText.includes("[Video:");
   // Use original body_text when it has inline markers (translation mangles them)
   const bodyForRendering = hasInlineMedia ? rawBodyText : displayBodyText;
+  if (typeof window !== "undefined") {
+    console.log("TweetThreadContent:", { hasInlineMedia, bodyLen: rawBodyText.length, markerCheck: rawBodyText.substring(0, 200), sourceType: item.source_type, mediaCount: item.media_items?.length });
+  }
   return (
     <div>
       <AuthorHeader item={item} />
