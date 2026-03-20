@@ -140,7 +140,7 @@ function ArticleTextSegments({ bodyText, mediaItems }: { bodyText: string; media
         ? getMediaDisplayUrl(cached.stored_path, videoUrl)
         : videoUrl;
       return (
-        <div key={key} className="my-8 -mx-8 sm:-mx-10">
+        <div key={key} className="my-8 -mx-4 sm:-mx-6">
           <video
             controls
             preload="metadata"
