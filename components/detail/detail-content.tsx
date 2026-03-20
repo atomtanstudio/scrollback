@@ -140,12 +140,12 @@ function ArticleTextSegments({ bodyText, mediaItems }: { bodyText: string; media
         ? getMediaDisplayUrl(cached.stored_path, videoUrl)
         : videoUrl;
       return (
-        <div key={key} className="my-8 -mx-4 sm:-mx-6">
+        <div key={key} className="my-8 flex justify-center">
           <video
             controls
             preload="metadata"
             playsInline
-            className="block w-full bg-black"
+            className="block max-h-[75vh] w-full rounded-xl bg-black object-contain"
           >
             <source src={displayUrl} type="video/mp4" />
           </video>
