@@ -116,8 +116,6 @@ function splitReadableParagraphs(text: string): string[] {
   return paragraphs.length > 1 ? paragraphs : [normalized];
 }
 
-const VIDEO_MARKER_RE = /^\[Video:\s*(https?:\/\/[^\]]+)\]\s*$/;
-const IMAGE_MARKER_RE = /^\[Image:\s*(https?:\/\/[^\]]+)\]\s*$/;
 const MEDIA_MARKER_SPLIT_RE = /(\[(?:Video|Image):\s*https?:\/\/[^\]]+\])/g;
 
 function ArticleTextSegments({ bodyText, mediaItems }: { bodyText: string; mediaItems?: DetailItem["media_items"] }) {

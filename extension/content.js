@@ -3,7 +3,7 @@
 // ============================================================
 
 // --- Debug logging (set to true for development) ---
-const DEBUG = true;
+const DEBUG = false;
 function log(...args) { if (DEBUG) console.log('FeedSilo:', ...args); }
 
 // Merge source into target without overwriting non-null values with null
