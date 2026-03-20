@@ -116,10 +116,32 @@ function splitReadableParagraphs(text: string): string[] {
   return paragraphs.length > 1 ? paragraphs : [normalized];
 }
 
-const VIDEO_MARKER_RE = /^\[Video:\s*(https?:\/\/[^\]]+)\]$/;
+const VIDEO_MARKER_RE = /^\[Video:\s*(https?:\/\/[^\]]+)\]\s*$/;
+const IMAGE_MARKER_RE = /^\[Image:\s*(https?:\/\/[^\]]+)\]\s*$/;
+const MEDIA_MARKER_SPLIT_RE = /(\[(?:Video|Image):\s*https?:\/\/[^\]]+\])/g;
 
 function ArticleTextSegments({ bodyText, mediaItems }: { bodyText: string; mediaItems?: DetailItem["media_items"] }) {
-  const { segments } = parseBodyContent(bodyText);
+  // Split body text on media markers so they become their own segments
+  // This ensures markers aren't merged with surrounding text by parseBodyContent
+  const parts = bodyText.split(MEDIA_MARKER_SPLIT_RE).filter(Boolean);
+  const processedSegments: Array<{ type: "text" | "video" | "image"; content: string }> = [];
+
+  for (const part of parts) {
+    const videoMatch = part.match(/^\[Video:\s*(https?:\/\/[^\]]+)\]$/);
+    if (videoMatch) {
+      processedSegments.push({ type: "video", content: videoMatch[1] });
+      continue;
+    }
+    const imageMatch = part.match(/^\[Image:\s*(https?:\/\/[^\]]+)\]$/);
+    if (imageMatch) {
+      processedSegments.push({ type: "image", content: imageMatch[1] });
+      continue;
+    }
+    if (part.trim()) {
+      processedSegments.push({ type: "text", content: part });
+    }
+  }
+
 
   // Build a lookup from original_url to stored_path for R2-cached videos
   const mediaLookup = new Map<string, { stored_path: string | null; id: string }>();
@@ -131,65 +153,73 @@ function ArticleTextSegments({ bodyText, mediaItems }: { bodyText: string; media
     }
   }
 
-  function renderParagraphOrVideo(text: string, key: string) {
-    const videoMatch = text.trim().match(VIDEO_MARKER_RE);
-    if (videoMatch) {
-      const videoUrl = videoMatch[1];
-      const cached = mediaLookup.get(videoUrl);
-      const displayUrl = cached?.stored_path
-        ? getMediaDisplayUrl(cached.stored_path, videoUrl)
-        : videoUrl;
-      return (
-        <div key={key} className="my-8 flex justify-center">
-          <video
-            controls
-            preload="metadata"
-            playsInline
-            className="block max-h-[75vh] w-full rounded-xl bg-black object-contain"
-          >
-            <source src={displayUrl} type="video/mp4" />
-          </video>
-        </div>
-      );
-    }
-    return (
-      <p key={key} className="max-w-[72ch] text-[17px] leading-[1.95] text-[#cdc4b7] [text-wrap:pretty]">
-        {text}
-      </p>
-    );
+  function resolveMediaUrl(url: string): string {
+    const cached = mediaLookup.get(url);
+    return cached?.stored_path ? getMediaDisplayUrl(cached.stored_path, url) : url;
   }
 
   return (
     <div className="space-y-5">
-      {segments.map((segment, i) => {
-        if (segment.type === "text") {
-          const paragraphs = splitReadableParagraphs(segment.content);
-
+      {processedSegments.map((segment, i) => {
+        if (segment.type === "video") {
           return (
-            <div key={i} className="space-y-5">
-              {paragraphs.map((paragraph, paragraphIndex) =>
-                renderParagraphOrVideo(paragraph, `${i}-${paragraphIndex}`)
-              )}
+            <div key={i} className="my-8 flex justify-center">
+              <video
+                controls
+                preload="metadata"
+                playsInline
+                className="block max-h-[75vh] w-full rounded-xl bg-black object-contain"
+              >
+                <source src={resolveMediaUrl(segment.content)} type="video/mp4" />
+              </video>
             </div>
           );
         }
 
-        if (segment.type === "json") {
-          return <JsonCodeBlock key={i} code={segment.content} />;
-        }
-
-        if (segment.type === "code") {
+        if (segment.type === "image") {
           return (
-            <div
-              key={i}
-              className="overflow-x-auto rounded-[18px] border border-[#d6c9b214] bg-[#0f141b] p-5 font-mono text-sm text-[#b4ab9d]"
-            >
-              <pre className="m-0 whitespace-pre-wrap">{segment.content}</pre>
+            <div key={i} className="my-6 overflow-hidden rounded-[22px] border border-[#d6c9b214] bg-[#10151c]">
+              <img
+                src={resolveMediaUrl(segment.content)}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="block max-h-[70vh] w-full object-contain"
+              />
             </div>
           );
         }
 
-        return null;
+        // Text segment — parse for code/JSON, then split into paragraphs
+        const { segments: textSegments } = parseBodyContent(segment.content);
+        return (
+          <div key={i} className="space-y-5">
+            {textSegments.map((seg, j) => {
+              if (seg.type === "json") {
+                return <JsonCodeBlock key={`${i}-${j}`} code={seg.content} />;
+              }
+              if (seg.type === "code") {
+                return (
+                  <div
+                    key={`${i}-${j}`}
+                    className="overflow-x-auto rounded-[18px] border border-[#d6c9b214] bg-[#0f141b] p-5 font-mono text-sm text-[#b4ab9d]"
+                  >
+                    <pre className="m-0 whitespace-pre-wrap">{seg.content}</pre>
+                  </div>
+                );
+              }
+              const paragraphs = splitReadableParagraphs(seg.content);
+              return paragraphs.map((paragraph, pi) => (
+                <p
+                  key={`${i}-${j}-${pi}`}
+                  className="max-w-[72ch] text-[17px] leading-[1.95] text-[#cdc4b7] [text-wrap:pretty]"
+                >
+                  {paragraph}
+                </p>
+              ));
+            })}
+          </div>
+        );
       })}
     </div>
   );
@@ -441,20 +471,47 @@ function TweetThreadContent({
   onMediaClick: (index: number) => void;
 }) {
   const displayBodyText = getDisplayBodyText(item);
+  const hasInlineMedia = displayBodyText?.includes("[Image:") || displayBodyText?.includes("[Video:");
   return (
     <div>
       <AuthorHeader item={item} />
       <div className="my-6 border-t border-[#d6c9b214]" />
-      <div className="space-y-4 text-base leading-[1.75] text-[#cdc4b7]">
-        {displayBodyText ? <TranslationToggle item={item} bodyClassName="space-y-4" /> : null}
-      </div>
-      {item.media_items && item.media_items.length > 0 && (
-        <div className="mt-6">
-          <MediaRenderer
-            mediaItems={item.media_items}
-            onMediaClick={onMediaClick}
-          />
-        </div>
+      {hasInlineMedia && displayBodyText ? (
+        <>
+          {item.media_items && item.media_items.length > 0 && (() => {
+            const heroImages = item.media_items.filter(mi => mi.media_type === "image");
+            if (heroImages.length === 0) return null;
+            return (
+              <div className="my-6 overflow-hidden rounded-[22px] border border-[#d6c9b214] bg-[#10151c]">
+                <img
+                  src={getMediaDisplayUrl(heroImages[0].stored_path, heroImages[0].original_url)}
+                  alt={heroImages[0].alt_text || ""}
+                  loading="lazy"
+                  decoding="async"
+                  className="block max-h-[70vh] w-full object-cover cursor-pointer"
+                  onClick={() => onMediaClick(item.media_items!.indexOf(heroImages[0]))}
+                />
+              </div>
+            );
+          })()}
+          <div className="space-y-5">
+            <ArticleTextSegments bodyText={displayBodyText} mediaItems={item.media_items} />
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="space-y-4 text-base leading-[1.75] text-[#cdc4b7]">
+            {displayBodyText ? <TranslationToggle item={item} bodyClassName="space-y-4" /> : null}
+          </div>
+          {item.media_items && item.media_items.length > 0 && (
+            <div className="mt-6">
+              <MediaRenderer
+                mediaItems={item.media_items}
+                onMediaClick={onMediaClick}
+              />
+            </div>
+          )}
+        </>
       )}
       {item.has_prompt && item.prompt_text && cardType === "art" && (
         <div className="mt-6">

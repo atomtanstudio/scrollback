@@ -3,7 +3,7 @@
 // ============================================================
 
 // --- Debug logging (set to true for development) ---
-const DEBUG = false;
+const DEBUG = true;
 function log(...args) { if (DEBUG) console.log('FeedSilo:', ...args); }
 
 // Merge source into target without overwriting non-null values with null
@@ -1268,7 +1268,11 @@ function injectSaveButtons() {
       }
 
       // If thread looks incomplete or article is truncated, try fetching via background tab
-      if (shouldFetchViaBackgroundTab(data, tweet) && (threadItems.length < 2 || data.source_type === 'article')) {
+      // Always fetch via background tab if: no thread found yet, article is truncated,
+      // or we found a partial thread but root tweet has more replies than we captured
+      const threadLooksIncomplete = threadItems.length >= 2
+        && data.replies != null && data.replies > threadItems.length;
+      if (shouldFetchViaBackgroundTab(data, tweet) && (threadItems.length < 2 || data.source_type === 'article' || threadLooksIncomplete)) {
         const tweetUrl = data.source_url || `https://x.com/i/web/status/${data.external_id}`;
         // Use conversation_id if available, fall back to external_id (root tweets have conv_id === ext_id)
         const fetchConversationId = data.conversation_id || data.external_id;
@@ -1328,9 +1332,51 @@ function injectSaveButtons() {
       }
 
       if (threadItems.length > 1) {
-        const threadConversationId = threadItems[0].conversation_id || data.conversation_id || data.external_id;
-        log(' Thread detected — saving', threadItems.length, 'tweets in conversation');
-        chrome.runtime.sendMessage({ type: 'CAPTURE_BULK', items: threadItems }, (response) => {
+        // Assemble thread into a single item: combine body text and media
+        // Sort by posted_at (oldest first) to maintain thread order
+        threadItems.sort((a, b) => {
+          if (!a.posted_at || !b.posted_at) return 0;
+          return new Date(a.posted_at).getTime() - new Date(b.posted_at).getTime();
+        });
+
+        const root = threadItems[0];
+        const allMediaUrls = [];
+        const bodyParts = [];
+
+        for (const item of threadItems) {
+          if (item.body_text) bodyParts.push(item.body_text);
+          // Insert media markers inline after each tweet's text
+          for (const url of (item.media_urls || [])) {
+            if (!allMediaUrls.includes(url)) allMediaUrls.push(url);
+            if (url.includes('.mp4') || url.includes('/vid/')) {
+              bodyParts.push(`[Video: ${url}]`);
+            } else {
+              bodyParts.push(`[Image: ${url}]`);
+            }
+          }
+        }
+
+        const assembled = {
+          external_id: root.external_id,
+          source_url: root.source_url,
+          source_type: 'thread',
+          conversation_id: root.conversation_id || root.external_id,
+          author_handle: root.author_handle,
+          author_display_name: root.author_display_name,
+          author_avatar_url: root.author_avatar_url,
+          body_text: bodyParts.join('\n\n---\n\n'),
+          posted_at: root.posted_at,
+          media_urls: allMediaUrls,
+          likes: root.likes,
+          retweets: root.retweets,
+          replies: root.replies,
+          views: root.views,
+        };
+
+        log(' Thread detected — assembled', threadItems.length, 'tweets into single item');
+        log(' Assembled body length:', assembled.body_text.length, 'media:', assembled.media_urls.length);
+
+        chrome.runtime.sendMessage({ type: 'CAPTURE_TWEET', data: assembled }, (response) => {
           btn.classList.remove('saving');
           if (chrome.runtime.lastError) {
             console.error('FeedSilo: runtime error', chrome.runtime.lastError);
@@ -1339,10 +1385,10 @@ function injectSaveButtons() {
             return;
           }
           if (response?.success) {
-            const total = (response.captured || 0) + (response.skipped || 0);
             btn.classList.add('saved');
-            btn.innerHTML = `&#10003; ${total}`;
+            btn.innerHTML = `&#10003; ${threadItems.length}`;
             // Mark all other thread tweets' save buttons as saved too
+            const threadConversationId = assembled.conversation_id;
             markThreadButtonsSaved(threadConversationId, data.author_handle);
           } else {
             btn.classList.add('error');
@@ -1400,14 +1446,35 @@ function getThreadSiblingsFromCache(conversationId, authorHandle) {
     if (data.author_avatar_url && !refAvatarUrl) refAvatarUrl = data.author_avatar_url;
     if (data.source_url && !data.source_url.includes('/i/web/') && !refSourceUrl) refSourceUrl = data.source_url;
   }
-  if (!shouldTreatItemsAsThread(conversationItems, author, conversationId)) return [];
-  const candidateIds = new Set(
-    getCandidateSelfThreadItems(conversationItems, author, conversationId).map((item) => item.external_id)
-  );
+  log('getThreadSiblingsFromCache: conversationId=', conversationId, 'author=', author);
+  log('  conversationItems:', conversationItems.length, 'total in cache for this conversation');
+
+  // Backfill author_handle for tweets that are likely self-replies.
+  // X's API often omits user data for conversation entries. A tweet is likely
+  // a self-reply if: it replies to the thread author, shares conversation_id,
+  // and body doesn't start with @ (which would indicate a reply from someone else).
+  for (const item of conversationItems) {
+    if (!item.author_handle && normalizeHandle(item._replyToHandle) === author) {
+      const body = (item.body_text || '').trimStart();
+      if (!body.startsWith('@')) {
+        item.author_handle = author;
+        log('  backfilled author for tweet', item.external_id, '→', author);
+      }
+    }
+    log('  tweet', item.external_id, 'author=', item.author_handle, 'replyTo=', item._replyToHandle, 'convId=', item.conversation_id, 'body=', (item.body_text || '').substring(0, 60));
+  }
+
+  if (!shouldTreatItemsAsThread(conversationItems, author, conversationId)) {
+    log('  shouldTreatItemsAsThread returned false — not a thread');
+    return [];
+  }
+  const candidates = getCandidateSelfThreadItems(conversationItems, author, conversationId);
+  log('  getCandidateSelfThreadItems returned', candidates.length, 'candidates:', candidates.map(c => c.external_id));
+  const candidateIds = new Set(candidates.map((item) => item.external_id));
   for (const [, data] of tweetCache) {
     if (data.conversation_id !== conversationId) continue;
     if (candidateIds.has(data.external_id)) {
-      // Backfill missing author info from reference sibling
+      // Backfill missing author info and mark as thread
       const clean = { ...data };
       if (!clean.author_handle && author) clean.author_handle = author;
       if (!clean.author_display_name && refDisplayName) clean.author_display_name = refDisplayName;
@@ -1415,6 +1482,11 @@ function getThreadSiblingsFromCache(conversationId, authorHandle) {
       if (clean.source_url?.includes('/i/web/') && clean.author_handle) {
         clean.source_url = `https://x.com/${clean.author_handle}/status/${clean.external_id}`;
       }
+      // Mark as thread so server groups them together
+      if (clean.source_type !== 'article') {
+        clean.source_type = 'thread';
+      }
+      log('  sibling', clean.external_id, 'media_urls:', clean.media_urls, 'source_type:', clean.source_type);
       siblings.push(stripInternalCaptureFields(clean));
     }
   }

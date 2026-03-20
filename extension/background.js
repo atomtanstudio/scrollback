@@ -153,9 +153,50 @@ async function resolveArticleContent(data) {
   }
 }
 
+async function resolveMissingMedia(data) {
+  // If tweet has no media_urls, try syndication API to fetch them
+  if (data.media_urls && data.media_urls.length > 0) return;
+  const tweetId = data.external_id;
+  if (!tweetId) return;
+
+  try {
+    const resp = await fetch(
+      `https://cdn.syndication.twimg.com/tweet-result?id=${tweetId}&token=x`
+    );
+    if (!resp.ok) return;
+    const syndicationData = await resp.json();
+
+    const allMedia = [...(syndicationData.mediaDetails || [])];
+    if (syndicationData.quoted_tweet?.mediaDetails) {
+      allMedia.push(...syndicationData.quoted_tweet.mediaDetails);
+    }
+
+    const mediaUrls = [];
+    for (const md of allMedia) {
+      if (md.type === 'video' || md.type === 'animated_gif') {
+        const variants = md.video_info?.variants || [];
+        const mp4s = variants.filter(v => v.content_type === 'video/mp4' && v.url);
+        if (mp4s.length > 0) {
+          mp4s.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
+          mediaUrls.push(mp4s[0].url);
+        }
+      } else if (md.media_url_https) {
+        mediaUrls.push(md.media_url_https);
+      }
+    }
+
+    if (mediaUrls.length > 0) {
+      data.media_urls = mediaUrls;
+    }
+  } catch (e) {
+    // Silently ignore — media is optional
+  }
+}
+
 async function handleSingleCapture(data) {
   await resolveVideoUrls(data);
   await resolveArticleContent(data);
+  await resolveMissingMedia(data);
 
   const settings = await getSettings();
   if (!settings.serverUrl || !settings.captureSecret) {
@@ -192,6 +233,7 @@ async function handleBulkCapture(items) {
   for (const item of items) {
     await resolveVideoUrls(item);
     await resolveArticleContent(item);
+    await resolveMissingMedia(item);
   }
 
   const settings = await getSettings();
