@@ -223,7 +223,7 @@ export function MediaLightbox({
           style={{ touchAction: total > 1 ? "pan-y" : "auto" }}
         >
           <div className="flex max-h-[90vh] max-w-[90vw] flex-col items-center gap-4">
-            <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[rgba(10,10,16,0.96)] shadow-[0_30px_100px_rgba(0,0,0,0.45)]">
+            <div className={`relative border border-white/10 bg-[rgba(10,10,16,0.96)] shadow-[0_30px_100px_rgba(0,0,0,0.45)] ${isVideo || isGif ? "rounded-xl" : "overflow-hidden rounded-[24px]"}`}>
               {isVideo || isGif ? (
                 <video
                   src={getMediaUrl(currentItem)}
@@ -232,7 +232,7 @@ export function MediaLightbox({
                   muted={isGif}
                   loop={isGif}
                   playsInline
-                  className="max-h-[78vh] max-w-[90vw] object-contain"
+                  className="max-h-[78vh] max-w-[90vw] rounded-xl object-contain"
                 />
               ) : (
                 <img
