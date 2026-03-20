@@ -514,14 +514,18 @@ function TweetThreadContent({
   onMediaClick: (index: number) => void;
 }) {
   const displayBodyText = getDisplayBodyText(item);
-  const hasInlineMedia = displayBodyText?.includes("[Image:") || displayBodyText?.includes("[Video:");
+  // Check original body_text for markers — translated version may strip them
+  const rawBodyText = item.body_text || "";
+  const hasInlineMedia = rawBodyText.includes("[Image:") || rawBodyText.includes("[Video:");
+  // Use original body_text when it has inline markers (translation mangles them)
+  const bodyForRendering = hasInlineMedia ? rawBodyText : displayBodyText;
   return (
     <div>
       <AuthorHeader item={item} />
       <div className="my-6 border-t border-[#d6c9b214]" />
-      {hasInlineMedia && displayBodyText ? (
+      {hasInlineMedia && bodyForRendering ? (
         <div className="space-y-5">
-          <ArticleTextSegments bodyText={displayBodyText} mediaItems={item.media_items} />
+          <ArticleTextSegments bodyText={bodyForRendering} mediaItems={item.media_items} />
         </div>
       ) : (
         <>
@@ -726,7 +730,8 @@ function ArticleContent({
       ) : (() => {
         if (!item.media_items || item.media_items.length === 0) return null;
         // For X articles with inline [Video:] markers, only show images (cover) at top — videos render inline in body
-        const hasInlineVideos = !isRssArticle && bodyText?.includes("[Video:");
+        const rawBody = item.body_text || "";
+        const hasInlineVideos = !isRssArticle && (rawBody.includes("[Video:") || rawBody.includes("[Image:"));
         const displayItems = hasInlineVideos
           ? item.media_items.filter(mi => mi.media_type === "image")
           : item.media_items;
