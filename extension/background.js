@@ -185,6 +185,20 @@ async function resolveMissingMedia(data) {
       }
     }
 
+    // Also check for link card preview image (Twitter Card / Open Graph)
+    if (mediaUrls.length === 0) {
+      const cardUrl =
+        syndicationData.card?.binding_values?.thumbnail_image_original?.image_value?.url
+        || syndicationData.card?.binding_values?.thumbnail_image?.image_value?.url
+        || syndicationData.card?.binding_values?.summary_photo_image_original?.image_value?.url
+        || syndicationData.card?.binding_values?.summary_photo_image?.image_value?.url
+        || syndicationData.card?.binding_values?.player_image_original?.image_value?.url
+        || syndicationData.card?.binding_values?.player_image?.image_value?.url;
+      if (cardUrl) {
+        mediaUrls.push(cardUrl);
+      }
+    }
+
     if (mediaUrls.length > 0) {
       data.media_urls = mediaUrls;
     }
