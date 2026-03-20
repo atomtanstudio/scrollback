@@ -475,27 +475,9 @@ function TweetThreadContent({
       <AuthorHeader item={item} />
       <div className="my-6 border-t border-[#d6c9b214]" />
       {hasInlineMedia && displayBodyText ? (
-        <>
-          {item.media_items && item.media_items.length > 0 && (() => {
-            const heroImages = item.media_items.filter(mi => mi.media_type === "image");
-            if (heroImages.length === 0) return null;
-            return (
-              <div className="my-6 overflow-hidden rounded-[22px] border border-[#d6c9b214] bg-[#10151c]">
-                <img
-                  src={getMediaDisplayUrl(heroImages[0].stored_path, heroImages[0].original_url)}
-                  alt={heroImages[0].alt_text || ""}
-                  loading="lazy"
-                  decoding="async"
-                  className="block max-h-[70vh] w-full object-cover cursor-pointer"
-                  onClick={() => onMediaClick(item.media_items!.indexOf(heroImages[0]))}
-                />
-              </div>
-            );
-          })()}
-          <div className="space-y-5">
-            <ArticleTextSegments bodyText={displayBodyText} mediaItems={item.media_items} />
-          </div>
-        </>
+        <div className="space-y-5">
+          <ArticleTextSegments bodyText={displayBodyText} mediaItems={item.media_items} />
+        </div>
       ) : (
         <>
           <div className="space-y-4 text-base leading-[1.75] text-[#cdc4b7]">

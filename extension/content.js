@@ -1347,15 +1347,12 @@ function injectSaveButtons() {
           const item = threadItems[idx];
           if (item.body_text) bodyParts.push(item.body_text);
           // Insert media markers inline after each tweet's text
-          // Skip root tweet's media — it renders as the hero image at the top
           for (const url of (item.media_urls || [])) {
             if (!allMediaUrls.includes(url)) allMediaUrls.push(url);
-            if (idx > 0) {
-              if (url.includes('.mp4') || url.includes('/vid/')) {
-                bodyParts.push(`[Video: ${url}]`);
-              } else {
-                bodyParts.push(`[Image: ${url}]`);
-              }
+            if (url.includes('.mp4') || url.includes('/vid/')) {
+              bodyParts.push(`[Video: ${url}]`);
+            } else {
+              bodyParts.push(`[Image: ${url}]`);
             }
           }
         }
