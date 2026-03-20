@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getClient } from "@/lib/db/client";
-import { fetchItems } from "@/lib/db/queries";
+import { fetchItems, type SortMode } from "@/lib/db/queries";
 import { getMediaDisplayUrl } from "@/lib/media-url";
+
+const VALID_SORTS = new Set<SortMode>(["recent", "most_liked", "most_viewed"]);
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -10,10 +12,13 @@ export async function GET(request: NextRequest) {
 
   // excludeIds mode: when excludeIds param is present, use shared query function
   const excludeIdsParam = searchParams.get("excludeIds");
+  const sortParam = searchParams.get("sort") as SortMode | null;
+  const sort: SortMode = sortParam && VALID_SORTS.has(sortParam) ? sortParam : "recent";
+
   if (excludeIdsParam !== null) {
     const excludeIds = excludeIdsParam ? excludeIdsParam.split(",") : [];
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)));
-    const result = await fetchItems({ limit, type, excludeIds });
+    const result = await fetchItems({ limit, type, excludeIds, sort });
     return NextResponse.json(result);
   }
 

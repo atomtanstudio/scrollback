@@ -1,18 +1,30 @@
 import { getClient, getDatabaseType } from "./client";
 
+export type SortMode = "recent" | "most_liked" | "most_viewed";
+
 export interface FetchItemsOptions {
   limit?: number;
   type?: string;
   excludeIds?: string[];
   search?: string;
+  sort?: SortMode;
 }
 
 export async function fetchItems(options: FetchItemsOptions = {}) {
   const prisma = await getClient();
   const dbType = getDatabaseType();
-  const { limit = 50, type, excludeIds = [] } = options;
+  const { limit = 50, type, excludeIds = [], sort = "recent" } = options;
   const batchSize = limit + 1;
   const preferPublishedAt = type === "rss";
+
+  const orderBy =
+    sort === "most_liked"
+      ? [{ likes: "desc" as const }, { created_at: "desc" as const }]
+      : sort === "most_viewed"
+        ? [{ views: "desc" as const }, { created_at: "desc" as const }]
+        : preferPublishedAt
+          ? [{ posted_at: "desc" as const }, { created_at: "desc" as const }]
+          : [{ created_at: "desc" as const }];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const baseWhere: any = {};
@@ -41,8 +53,12 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
     categories: { include: { category: true } },
     tags: { include: { tag: true } },
   };
-  const itemTimestamp = (item: { posted_at?: Date | null; created_at: Date }) =>
-    new Date((preferPublishedAt ? item.posted_at : null) ?? item.created_at).getTime();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const itemSortKey = (item: any) => {
+    if (sort === "most_liked") return item.likes ?? -1;
+    if (sort === "most_viewed") return item.views ?? -1;
+    return new Date((preferPublishedAt ? item.posted_at : null) ?? item.created_at).getTime();
+  };
 
   // Fetch non-thread items and deduplicated thread items separately, then merge.
   // This avoids the problem where a single thread with 100 replies drowns out
@@ -57,7 +73,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
       : prisma.contentItem.findMany({
           where: nonThreadWhere,
           include,
-          orderBy: preferPublishedAt ? [{ posted_at: "desc" }, { created_at: "desc" }] : [{ created_at: "desc" }],
+          orderBy,
           take: batchSize,
         }),
     // One thread per author: the same thread can be captured multiple times
@@ -105,7 +121,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
             }
 
             return Array.from(latestByAuthor.values())
-              .sort((a, b) => itemTimestamp(b) - itemTimestamp(a))
+              .sort((a, b) => itemSortKey(b) - itemSortKey(a))
               .slice(0, batchSize);
           })
         : (prisma.$queryRawUnsafe(
@@ -136,7 +152,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
   // Merge and sort by created_at descending, then trim to the requested batch size.
   // `hasMore` must be based on the deduplicated feed result, not raw content row counts.
   const mergedCandidates = [...nonThreadItems, ...threadItems]
-    .sort((a, b) => itemTimestamp(b) - itemTimestamp(a));
+    .sort((a, b) => itemSortKey(b) - itemSortKey(a));
   const hasMore = mergedCandidates.length > limit;
   const merged = mergedCandidates.slice(0, limit);
 
@@ -145,16 +161,52 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
 
 export async function fetchStats() {
   const prisma = await getClient();
-  const [total, tweets, threads, articles, rss, art] = await Promise.all([
+  const dbType = getDatabaseType();
+
+  const [total, tweets, rawThreads, articles, rss, art] = await Promise.all([
     prisma.contentItem.count(),
     prisma.contentItem.count({ where: { source_type: "tweet" } }),
-    prisma.contentItem.count({ where: { source_type: "thread" } }),
+    // Deduplicated thread count: one per conversation, then one per author
+    dbType === "sqlite"
+      ? prisma.contentItem.findMany({
+          where: { source_type: "thread", conversation_id: { not: null } },
+          select: { conversation_id: true, author_handle: true, posted_at: true, created_at: true },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }).then((rows: any[]) => {
+          // Pick earliest per conversation
+          const byConv = new Map<string, { author_handle: string | null }>();
+          for (const row of rows) {
+            if (!row.conversation_id) continue;
+            if (!byConv.has(row.conversation_id)) {
+              byConv.set(row.conversation_id, row);
+            }
+          }
+          // Unique authors
+          const authors = new Set<string>();
+          for (const row of Array.from(byConv.values())) {
+            authors.add((row.author_handle || "").toLowerCase());
+          }
+          return authors.size;
+        })
+      : (prisma.$queryRawUnsafe(
+          `SELECT COUNT(*) as count FROM (
+             SELECT DISTINCT ON (author_handle) author_handle FROM (
+               SELECT DISTINCT ON (conversation_id) author_handle
+               FROM content_items
+               WHERE source_type = 'thread' AND conversation_id IS NOT NULL
+               ORDER BY conversation_id, COALESCE(posted_at, created_at) ASC
+             ) roots
+             ORDER BY author_handle
+           ) deduped`
+        ) as Promise<Array<{ count: bigint }>>).then((rows) => Number(rows[0]?.count ?? 0)),
     prisma.contentItem.count({ where: { source_type: "article", source_platform: { not: "rss" } } }),
     prisma.contentItem.count({ where: { source_platform: "rss" } }),
     prisma.contentItem.count({
       where: { source_type: { in: ["image_prompt", "video_prompt"] } },
     }),
   ]);
+
+  const threads = typeof rawThreads === "number" ? rawThreads : 0;
 
   return { total, tweets, threads, articles, rss, art };
 }

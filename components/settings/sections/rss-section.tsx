@@ -55,9 +55,9 @@ function getHostname(url: string | null): string | null {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-interface RssSectionProps { settings: any; onRefresh: () => void }
+interface RssSectionProps { settings: any; onRefresh: () => void; isAdmin?: boolean }
 
-export function RssSection({ onRefresh }: RssSectionProps) {
+export function RssSection({ onRefresh, isAdmin = true }: RssSectionProps) {
   const [feeds, setFeeds] = useState<RssFeedRecord[]>([]);
   const [feedUrl, setFeedUrl] = useState("");
   const [loading, setLoading] = useState(true);
@@ -234,80 +234,86 @@ export function RssSection({ onRefresh }: RssSectionProps) {
             </p>
           </div>
         </div>
-        <button
-          onClick={handleSyncAll}
-          disabled={syncingAll || feeds.length === 0}
-          className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233] disabled:opacity-50 disabled:cursor-default"
-        >
-          {syncingAll ? "Syncing..." : "Sync all"}
-        </button>
+        {isAdmin && (
+          <button
+            onClick={handleSyncAll}
+            disabled={syncingAll || feeds.length === 0}
+            className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233] disabled:opacity-50 disabled:cursor-default"
+          >
+            {syncingAll ? "Syncing..." : "Sync all"}
+          </button>
+        )}
       </div>
 
-      <div className="mb-5 rounded-[16px] border border-[#d6c9b214] bg-[#0f141b] p-4">
-        <div className="flex flex-col gap-3 md:flex-row">
-          <input
-            type="url"
-            value={feedUrl}
-            onChange={(event) => setFeedUrl(event.target.value)}
-            placeholder="https://example.com/feed.xml"
-            className="h-11 flex-1 rounded-[12px] border border-[#d6c9b214] bg-[#111821] px-4 text-sm text-[#f2ede5] placeholder:text-[#6f695f] focus:border-[#d6c9b24d] focus:outline-none"
-          />
-          <button
-            onClick={handlePreviewFeed}
-            disabled={previewing || !feedUrl.trim()}
-            className="h-11 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-5 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233] disabled:opacity-50 disabled:cursor-default"
-          >
-            {previewing ? "Previewing..." : "Preview"}
-          </button>
-          <button
-            onClick={handleAddFeed}
-            disabled={saving || !feedUrl.trim()}
-            className="h-11 rounded-[12px] bg-[var(--accent-article)] px-5 text-sm font-medium text-[#090c11] transition-all duration-200 cursor-pointer hover:brightness-110 disabled:opacity-50 disabled:cursor-default"
-          >
-            {saving ? "Adding..." : "Add feed"}
-          </button>
-        </div>
-        <p className="mt-2 text-[11px] leading-5 text-[#8a8174]">
-          Start with manual sync. The first sync imports the latest 24 entries so a new feed does not overwhelm your library.
-        </p>
-      </div>
-
-      {preview && (
-        <div className="mb-5 rounded-[16px] border border-[#d6c9b214] bg-[#ffffff04] p-4">
-          <div className="mb-4">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">Preview</p>
-            <h4 className="mt-2 font-heading text-[1.05rem] font-semibold text-[#f2ede5]">
-              {preview.title}
-            </h4>
-            <p className="mt-2 text-xs text-[#8a8174]">
-              {(getHostname(preview.site_url) || preview.site_url || "Unknown source")} · {preview.item_count} visible feed entries
-              {preview.language ? ` · ${preview.language.toUpperCase()}` : ""}
+      {isAdmin && (
+        <>
+          <div className="mb-5 rounded-[16px] border border-[#d6c9b214] bg-[#0f141b] p-4">
+            <div className="flex flex-col gap-3 md:flex-row">
+              <input
+                type="url"
+                value={feedUrl}
+                onChange={(event) => setFeedUrl(event.target.value)}
+                placeholder="https://example.com/feed.xml"
+                className="h-11 flex-1 rounded-[12px] border border-[#d6c9b214] bg-[#111821] px-4 text-sm text-[#f2ede5] placeholder:text-[#6f695f] focus:border-[#d6c9b24d] focus:outline-none"
+              />
+              <button
+                onClick={handlePreviewFeed}
+                disabled={previewing || !feedUrl.trim()}
+                className="h-11 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-5 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233] disabled:opacity-50 disabled:cursor-default"
+              >
+                {previewing ? "Previewing..." : "Preview"}
+              </button>
+              <button
+                onClick={handleAddFeed}
+                disabled={saving || !feedUrl.trim()}
+                className="h-11 rounded-[12px] bg-[var(--accent-article)] px-5 text-sm font-medium text-[#090c11] transition-all duration-200 cursor-pointer hover:brightness-110 disabled:opacity-50 disabled:cursor-default"
+              >
+                {saving ? "Adding..." : "Add feed"}
+              </button>
+            </div>
+            <p className="mt-2 text-[11px] leading-5 text-[#8a8174]">
+              Start with manual sync. The first sync imports the latest 24 entries so a new feed does not overwhelm your library.
             </p>
-            {preview.description && (
-              <p className="mt-3 max-w-[74ch] text-sm leading-6 text-[#b4ab9d]">
-                {preview.description}
-              </p>
-            )}
           </div>
 
-          <div className="grid gap-3">
-            {preview.items.map((item) => (
-              <div key={item.source_url} className="rounded-[14px] border border-[#d6c9b214] bg-[#0f141b] p-4">
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] uppercase tracking-[0.12em] text-[#8a8174]">
-                  <span>{item.media_count > 0 ? `${item.media_count} media` : "No media"}</span>
-                  <span>{item.body_length.toLocaleString()} chars</span>
-                  {item.posted_at && <span>{formatSyncTime(item.posted_at)}</span>}
-                </div>
-                <p className="mt-2 font-heading text-[1rem] font-semibold leading-tight text-[#f2ede5]">
-                  {item.title}
+          {preview && (
+            <div className="mb-5 rounded-[16px] border border-[#d6c9b214] bg-[#ffffff04] p-4">
+              <div className="mb-4">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">Preview</p>
+                <h4 className="mt-2 font-heading text-[1.05rem] font-semibold text-[#f2ede5]">
+                  {preview.title}
+                </h4>
+                <p className="mt-2 text-xs text-[#8a8174]">
+                  {(getHostname(preview.site_url) || preview.site_url || "Unknown source")} · {preview.item_count} visible feed entries
+                  {preview.language ? ` · ${preview.language.toUpperCase()}` : ""}
                 </p>
-                <p className="mt-2 text-sm leading-6 text-[#b4ab9d]">
-                  {item.body_preview || "No article body preview extracted."}
-                </p>
+                {preview.description && (
+                  <p className="mt-3 max-w-[74ch] text-sm leading-6 text-[#b4ab9d]">
+                    {preview.description}
+                  </p>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
+
+              <div className="grid gap-3">
+                {preview.items.map((item) => (
+                  <div key={item.source_url} className="rounded-[14px] border border-[#d6c9b214] bg-[#0f141b] p-4">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] uppercase tracking-[0.12em] text-[#8a8174]">
+                      <span>{item.media_count > 0 ? `${item.media_count} media` : "No media"}</span>
+                      <span>{item.body_length.toLocaleString()} chars</span>
+                      {item.posted_at && <span>{formatSyncTime(item.posted_at)}</span>}
+                    </div>
+                    <p className="mt-2 font-heading text-[1rem] font-semibold leading-tight text-[#f2ede5]">
+                      {item.title}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-[#b4ab9d]">
+                      {item.body_preview || "No article body preview extracted."}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {message && (
@@ -366,27 +372,29 @@ export function RssSection({ onRefresh }: RssSectionProps) {
                     )}
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => handleSyncFeed(feed.id)}
-                      disabled={syncingFeedId === feed.id}
-                      className="h-9 rounded-[12px] bg-[var(--accent-article)] px-4 text-sm font-medium text-[#090c11] transition-all duration-200 cursor-pointer hover:brightness-110 disabled:opacity-50 disabled:cursor-default"
-                    >
-                      {syncingFeedId === feed.id ? "Syncing..." : "Sync now"}
-                    </button>
-                    <button
-                      onClick={() => handleToggleFeed(feed)}
-                      className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233]"
-                    >
-                      {feed.active ? "Pause" : "Resume"}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteFeed(feed)}
-                      className="h-9 rounded-[12px] border border-[#8d5f5d44] bg-[#8d5f5d14] px-4 text-sm font-medium text-[#ffb8a8] transition-all duration-200 cursor-pointer hover:border-[#8d5f5d66]"
-                    >
-                      Remove
-                    </button>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleSyncFeed(feed.id)}
+                        disabled={syncingFeedId === feed.id}
+                        className="h-9 rounded-[12px] bg-[var(--accent-article)] px-4 text-sm font-medium text-[#090c11] transition-all duration-200 cursor-pointer hover:brightness-110 disabled:opacity-50 disabled:cursor-default"
+                      >
+                        {syncingFeedId === feed.id ? "Syncing..." : "Sync now"}
+                      </button>
+                      <button
+                        onClick={() => handleToggleFeed(feed)}
+                        className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233]"
+                      >
+                        {feed.active ? "Pause" : "Resume"}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteFeed(feed)}
+                        className="h-9 rounded-[12px] border border-[#8d5f5d44] bg-[#8d5f5d14] px-4 text-sm font-medium text-[#ffb8a8] transition-all duration-200 cursor-pointer hover:border-[#8d5f5d66]"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );

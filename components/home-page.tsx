@@ -1,17 +1,15 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { SearchBar } from "@/components/search-bar";
 import { HomeCommandPalette } from "@/components/home-command-palette";
 import { MasonryFeed } from "@/components/masonry-feed";
 import { CardSkeletonGrid } from "@/components/card-skeleton";
-import { VideoPoster } from "@/components/cards/video-poster";
 import { getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
 import { formatTimeAgo } from "@/lib/format";
-import { getMediaDisplayUrl } from "@/lib/media-url";
-import { Command } from "lucide-react";
 import type { ContentItemWithMedia } from "@/lib/db/types";
 
 interface HomePageProps {
@@ -22,15 +20,12 @@ interface HomePageProps {
   isAuthed: boolean;
 }
 
-function isArtItem(item: ContentItemWithMedia) {
-  return item.source_type === "image_prompt" || item.source_type === "video_prompt";
-}
-
 function getItemLabel(item: ContentItemWithMedia) {
   if (item.source_platform === "rss") return "RSS";
   if (item.source_type === "thread") return "Thread";
   if (item.source_type === "article") return "Article";
-  if (isArtItem(item)) return item.source_type === "video_prompt" ? "Video Prompt" : "Image Prompt";
+  if (item.source_type === "image_prompt" || item.source_type === "video_prompt")
+    return item.source_type === "video_prompt" ? "Video Prompt" : "Image Prompt";
   return "Tweet";
 }
 
@@ -50,103 +45,49 @@ function getItemTitle(item: ContentItemWithMedia) {
   return raw || "Untitled capture";
 }
 
-function getItemExcerpt(item: ContentItemWithMedia, max = 180) {
-  const source = normalizeCardText(
-    getDisplayBodyText(item) || item.prompt_text || getDisplayTitle(item) || ""
-  );
-  if (!source) return "Captured without body text.";
-  return source.length > max ? `${source.slice(0, max - 1).trimEnd()}…` : source;
-}
+const VALID_TYPES = new Set(["tweet", "thread", "article", "rss", "art"]);
+const VALID_SORTS = new Set(["recent", "most_liked", "most_viewed"]);
 
-function getMedia(item: ContentItemWithMedia) {
-  return item.media_items?.find((media) => media.media_type === "image" || media.media_type === "video") ?? null;
-}
-
-function getDomain(url: string | null | undefined) {
-  if (!url) return null;
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return null;
+function buildUrl(params: Record<string, string>) {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v) sp.set(k, v);
   }
-}
-
-interface HomeFeatureCardProps {
-  item: ContentItemWithMedia;
-  eyebrow: string;
-  className?: string;
-  tall?: boolean;
-}
-
-function HomeFeatureCard({ item, eyebrow, className = "", tall = false }: HomeFeatureCardProps) {
-  const media = getMedia(item);
-  const mediaUrl = media ? getMediaDisplayUrl(media.stored_path, media.original_url) : null;
-
-  return (
-    <Link
-      href={`/item/${item.id}`}
-      className={`group rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 transition-colors hover:border-[#d6c9b233] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462] ${className}`}
-    >
-      <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">{eyebrow}</p>
-      <h2
-        className={`mt-3 max-w-[14ch] overflow-hidden font-heading text-[2rem] leading-[0.98] tracking-[-0.05em] text-[#f2ede5] [overflow-wrap:anywhere] group-hover:text-white ${
-          tall ? "line-clamp-6" : "line-clamp-5"
-        }`}
-      >
-        {getItemTitle(item)}
-      </h2>
-
-      {mediaUrl ? (
-        <div className={`mt-5 overflow-hidden rounded-[22px] bg-[#171b22] ${tall ? "h-[208px]" : "h-[168px]"}`}>
-          {media?.media_type === "video" ? (
-            <VideoPoster
-              src={mediaUrl}
-              alt={media.alt_text || item.title || item.body_text || ""}
-              className="h-full w-full object-cover object-top"
-              fallbackClassName="h-full w-full bg-[linear-gradient(135deg,rgba(91,63,41,0.78),rgba(38,62,77,0.86))]"
-            />
-          ) : (
-            <img
-              src={mediaUrl}
-              alt={media?.alt_text || item.title || item.body_text || ""}
-              loading="lazy"
-              decoding="async"
-              className="h-full w-full object-cover object-top"
-            />
-          )}
-        </div>
-      ) : null}
-
-      <p className={`mt-4 text-[15px] leading-7 text-[#b4ab9d] [overflow-wrap:anywhere] ${tall ? "line-clamp-5" : "line-clamp-4"}`}>
-        {getItemExcerpt(item, tall ? 180 : 144)}
-      </p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2 text-[12px] text-[#cdc4b7]">
-          {getItemLabel(item)}
-        </span>
-        <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2 text-[12px] text-[#cdc4b7]">
-          {formatTimeAgo(item.created_at)}
-        </span>
-        {(item.author_display_name || item.author_handle) && (
-          <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2 text-[12px] text-[#cdc4b7]">
-            {item.author_display_name || item.author_handle}
-          </span>
-        )}
-      </div>
-    </Link>
-  );
+  const qs = sp.toString();
+  return qs ? `/?${qs}` : "/";
 }
 
 export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAuthed }: HomePageProps) {
-  const [activeType, setActiveType] = useState("");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Read state from URL
+  const urlType = searchParams.get("type") || "";
+  const urlSort = searchParams.get("sort") || "recent";
+  const urlQ = searchParams.get("q") || "";
+
+  const activeType = VALID_TYPES.has(urlType) ? urlType : "";
+  const activeSort = VALID_SORTS.has(urlSort) ? urlSort : "recent";
+
   const [searchResults, setSearchResults] = useState<ContentItemWithMedia[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(urlQ);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const feedSectionRef = useRef<HTMLElement | null>(null);
   const feedHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const scrollTimeoutRef = useRef<number | null>(null);
   const pendingPaletteScrollRef = useRef(false);
+
+  // Re-run search when returning via back button with a query in URL
+  const initialSearchDone = useRef(false);
+  useEffect(() => {
+    if (urlQ && !initialSearchDone.current) {
+      initialSearchDone.current = true;
+      setSearchQuery(urlQ);
+      handleSearchDirect(urlQ);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const statEntries = [
     { label: "Tweets", count: stats.tweets, dot: "bg-[var(--accent-tweet)]" },
@@ -166,26 +107,6 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
   ];
 
   const recentItems = initialItems.slice(0, 3);
-  const featuredVisual =
-    initialItems.find((item) => item.source_type === "thread" && Boolean(getMedia(item))) ??
-    initialItems.find((item) => isArtItem(item) && Boolean(getMedia(item))) ??
-    initialItems.find((item) => item.source_type === "article" && Boolean(getMedia(item))) ??
-    initialItems.find((item) => Boolean(getMedia(item))) ??
-    initialItems[0] ??
-    null;
-  const usedFeatureIds = new Set<string>(featuredVisual ? [featuredVisual.id] : []);
-  const featuredThread =
-    initialItems.find((item) => item.source_type === "thread" && !usedFeatureIds.has(item.id)) ?? null;
-  if (featuredThread) usedFeatureIds.add(featuredThread.id);
-  const featuredArt =
-    initialItems.find((item) => isArtItem(item) && !usedFeatureIds.has(item.id)) ?? null;
-  if (featuredArt) usedFeatureIds.add(featuredArt.id);
-  const featuredArticle =
-    initialItems.find((item) => item.source_type === "article" && !usedFeatureIds.has(item.id)) ?? null;
-  const strongestLane = statEntries.slice(1).reduce(
-    (best, entry) => (entry.count > best.count ? entry : best),
-    statEntries[0]
-  );
 
   const scrollToFeed = useCallback(() => {
     const target = feedHeadingRef.current || feedSectionRef.current;
@@ -214,21 +135,29 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
 
   const applyFilter = useCallback(
     (type: string) => {
-      setActiveType(type);
       setSearchResults(null);
       setSearchQuery("");
+      router.push(buildUrl({ type, sort: activeSort }), { scroll: false });
       if (paletteOpen) {
         pendingPaletteScrollRef.current = true;
       } else {
         scheduleScrollToFeed();
       }
     },
-    [paletteOpen, scheduleScrollToFeed]
+    [paletteOpen, scheduleScrollToFeed, activeSort, router]
   );
 
-  const handleSearch = useCallback(async (query: string, options?: { scroll?: boolean }) => {
+  const applySort = useCallback(
+    (sort: string) => {
+      setSearchResults(null);
+      setSearchQuery("");
+      router.push(buildUrl({ type: activeType, sort }), { scroll: false });
+    },
+    [activeType, router]
+  );
+
+  const handleSearchDirect = useCallback(async (query: string, options?: { scroll?: boolean }) => {
     setIsSearching(true);
-    setActiveType("");
     setSearchQuery(query);
     try {
       const res = await fetch(
@@ -248,10 +177,16 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
     }
   }, [paletteOpen, scheduleScrollToFeed]);
 
+  const handleSearch = useCallback(async (query: string, options?: { scroll?: boolean }) => {
+    router.replace(buildUrl({ q: query }), { scroll: false });
+    await handleSearchDirect(query, options);
+  }, [router, handleSearchDirect]);
+
   const handleClearSearch = useCallback(() => {
     setSearchResults(null);
     setSearchQuery("");
-  }, []);
+    router.replace(buildUrl({ type: activeType, sort: activeSort }), { scroll: false });
+  }, [router, activeType, activeSort]);
 
   useEffect(() => {
     const shouldIgnoreShortcut = (target: EventTarget | null) => {
@@ -326,155 +261,111 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
             : totalCount;
 
   return (
-    <div className="relative z-10 mx-auto max-w-[1440px] px-4 pb-16 sm:px-6 lg:px-8">
-      <Header captureCount={stats.total} isAuthed={isAuthed} currentPath="/" />
+    <div className="min-h-screen px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1440px] pb-16">
+        <Header captureCount={stats.total} isAuthed={isAuthed} currentPath="/" />
 
-      <section className="overflow-hidden rounded-[32px] border border-[#d6c9b21a] bg-[linear-gradient(180deg,rgba(24,29,37,0.96),rgba(14,18,24,0.98))] shadow-[0_34px_90px_rgba(2,6,12,0.45)]">
-        <div className="grid lg:grid-cols-[264px_minmax(0,1fr)]">
-          <aside className="border-b border-[#d6c9b214] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-5 lg:border-b-0 lg:border-r lg:border-r-[#d6c9b214]">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-              <div className="rounded-[24px] border border-[#d6c9b214] bg-[#ffffff08] p-4">
-                <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">Filters</p>
-                <div className="grid gap-2">
-                  {filters.map((filter) => {
-                    const isActive = activeType === filter.value;
-                    return (
-                      <button
-                        key={filter.value || "all"}
-                        type="button"
-                        onClick={() => applyFilter(filter.value)}
-                        aria-pressed={isActive}
-                        className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left text-[14px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462] ${
-                          isActive
-                            ? "border-[#d6c9b242] bg-[#f2ede50a] text-[#f2ede5]"
-                            : "border-[#d6c9b214] bg-[#ffffff05] text-[#a49b8b] hover:border-[#d6c9b233] hover:text-[#f2ede5]"
-                        }`}
-                      >
-                        <span>{filter.label}</span>
-                        {filter.value && (
-                          <span className="text-[12px] text-[#b89462]">
-                            {statEntries.find((entry) => entry.label.toLowerCase() === filter.label.toLowerCase())?.count.toLocaleString()}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="rounded-[24px] border border-[#d6c9b214] bg-[#ffffff08] p-4 sm:col-span-2 lg:col-span-1">
-                <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">Recently added</p>
-                <div className="grid gap-3">
-                  {recentItems.map((item) => (
-                    <Link
-                      key={item.id}
-                      href={`/item/${item.id}`}
-                      className="rounded-[18px] border border-[#d6c9b214] bg-[#ffffff05] px-4 py-3 transition-colors hover:border-[#d6c9b233] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+        <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+          {/* Sidebar */}
+          <aside className="flex flex-col gap-4">
+            <div className="rounded-[16px] border border-[#d6c9b214] bg-[#ffffff08] p-4">
+              <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">Filters</p>
+              <div className="grid gap-1.5">
+                {filters.map((filter) => {
+                  const isActive = activeType === filter.value;
+                  return (
+                    <button
+                      key={filter.value || "all"}
+                      type="button"
+                      onClick={() => applyFilter(filter.value)}
+                      aria-pressed={isActive}
+                      className={`flex items-center justify-between rounded-[12px] border px-3.5 py-2.5 text-left text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462] ${
+                        isActive
+                          ? "border-[#d6c9b242] bg-[#f2ede50a] text-[#f2ede5]"
+                          : "border-transparent bg-transparent text-[#a49b8b] hover:bg-[#ffffff05] hover:text-[#f2ede5]"
+                      }`}
                     >
-                      <div className="flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.12em] text-[#8a8174]">
-                        <span>{getItemLabel(item)}</span>
-                        <span>{formatTimeAgo(item.created_at)}</span>
-                      </div>
-                      <p className="mt-2 line-clamp-2 text-[14px] leading-6 text-[#cdc4b7] [overflow-wrap:anywhere]">
-                        {getItemTitle(item)}
-                      </p>
-                    </Link>
-                  ))}
-                </div>
+                      <span>{filter.label}</span>
+                      {filter.value && (
+                        <span className="text-[12px] text-[#b89462]">
+                          {statEntries.find((entry) => entry.label.toLowerCase() === filter.label.toLowerCase())?.count.toLocaleString()}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rounded-[16px] border border-[#d6c9b214] bg-[#ffffff08] p-4">
+              <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">Recently added</p>
+              <div className="grid gap-2">
+                {recentItems.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/item/${item.id}`}
+                    className="rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-3.5 py-2.5 transition-colors hover:border-[#d6c9b233] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+                  >
+                    <div className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.12em] text-[#8a8174]">
+                      <span>{getItemLabel(item)}</span>
+                      <span>{formatTimeAgo(item.created_at)}</span>
+                    </div>
+                    <p className="mt-1.5 line-clamp-2 text-[13px] leading-5 text-[#cdc4b7] [overflow-wrap:anywhere]">
+                      {getItemTitle(item)}
+                    </p>
+                  </Link>
+                ))}
               </div>
             </div>
           </aside>
 
-          <div className="p-5 sm:p-6 lg:p-7">
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_340px]">
-              <div className="rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 sm:p-8">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">FeedSilo</p>
-                <h1 className="mt-3 max-w-[10.5ch] font-heading text-[clamp(2.7rem,6vw,5rem)] font-semibold leading-[0.94] tracking-[-0.03em] text-[#f2ede5]">
-                  Your feed, without the noise.
-                </h1>
-                <p className="mt-5 max-w-[58ch] text-[16px] leading-8 text-[#b4ab9d]">
-                  {stats.total.toLocaleString()} captures across {stats.tweets.toLocaleString()} tweets,{" "}
-                  {stats.threads.toLocaleString()} threads, {stats.articles.toLocaleString()} articles,{" "}
-                  {stats.rss.toLocaleString()} RSS items, and {stats.art.toLocaleString()} art items. Search, filters, and review cues stay close without hiding the content.
-                </p>
-                <div className="mt-8">
-                  <SearchBar onSearch={handleSearch} onClear={handleClearSearch} />
+          {/* Main content */}
+          <div>
+            {/* Compact intro + search */}
+            <div className="mb-5">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-baseline gap-3">
+                  <h1 className="font-heading text-2xl font-semibold tracking-[-0.04em] text-[#f2ede5]">
+                    Your Feed
+                  </h1>
+                  <span className="text-sm text-[#8a8174]">
+                    {stats.total.toLocaleString()} captures
+                  </span>
                 </div>
-                <div className="mt-3 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setPaletteOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-4 py-2 text-[12px] uppercase tracking-[0.16em] text-[#8a8174] transition-colors hover:border-[#d6c9b233] hover:text-[#f2ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
-                  >
-                    <Command size={14} />
-                    Open palette
-                  </button>
+                {/* Sort tabs */}
+                <div className="flex items-center gap-1 rounded-[10px] border border-[#d6c9b214] bg-[#ffffff05] p-1">
+                  {([
+                    { label: "Recent", value: "recent" },
+                    { label: "Most Liked", value: "most_liked" },
+                    { label: "Most Viewed", value: "most_viewed" },
+                  ] as const).map((s) => (
+                    <button
+                      key={s.value}
+                      type="button"
+                      onClick={() => applySort(s.value)}
+                      className={`cursor-pointer rounded-[8px] px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                        activeSort === s.value
+                          ? "bg-[#ffffff0a] text-[#f2ede5]"
+                          : "text-[#8a8174] hover:text-[#cdc4b7]"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
                 </div>
               </div>
-
-              <div className="grid gap-5">
-                <div className="rounded-[28px] border border-[#d6c9b214] bg-[radial-gradient(circle_at_top_left,rgba(184,148,98,0.14),transparent_30%),rgba(255,255,255,0.05)] p-6">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">Library size</p>
-                  <div className="mt-5 font-heading text-[clamp(4.5rem,8vw,6rem)] leading-none tracking-[-0.08em] text-[#f2ede5]">
-                    {stats.total.toLocaleString()}
-                  </div>
-                  <p className="mt-4 text-[15px] leading-7 text-[#b4ab9d]">
-                    Largest collection slice right now: {strongestLane.label.toLowerCase()} with {strongestLane.count.toLocaleString()} captures.
-                  </p>
-                </div>
-
-                {featuredArticle ? (
-                  <Link
-                    href={`/item/${featuredArticle.id}`}
-                    className="rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 transition-colors hover:border-[#d6c9b233] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
-                  >
-                    <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">Latest article</p>
-                    <h2 className="mt-3 line-clamp-3 font-heading text-[1.7rem] leading-[1] tracking-[-0.05em] text-[#f2ede5] [overflow-wrap:anywhere]">
-                      {getItemTitle(featuredArticle)}
-                    </h2>
-                    <p className="mt-4 text-[15px] leading-7 text-[#b4ab9d]">{getItemExcerpt(featuredArticle, 118)}</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {getDomain(featuredArticle.original_url) && (
-                        <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2 text-[12px] text-[#cdc4b7]">
-                          {getDomain(featuredArticle.original_url)}
-                        </span>
-                      )}
-                      <span className="rounded-full border border-[#d6c9b214] bg-[#ffffff05] px-3 py-2 text-[12px] text-[#cdc4b7]">
-                        {formatTimeAgo(featuredArticle.created_at)}
-                      </span>
-                    </div>
-                  </Link>
-                ) : (
-                  <div className="rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6">
-                    <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">Latest article</p>
-                    <p className="mt-4 text-[15px] leading-7 text-[#b4ab9d]">
-                      No article in the current surface window.
-                    </p>
-                  </div>
-                )}
-              </div>
+              <SearchBar onSearch={handleSearch} onClear={handleClearSearch} />
             </div>
 
-            <div className="mt-5 grid gap-5 xl:grid-cols-3">
-              {featuredVisual ? <HomeFeatureCard item={featuredVisual} eyebrow="Featured capture" tall /> : null}
-              {featuredThread ? <HomeFeatureCard item={featuredThread} eyebrow="Latest thread" /> : null}
-              {featuredArt ? <HomeFeatureCard item={featuredArt} eyebrow="Latest art" /> : null}
-            </div>
-
-            <section
-              ref={feedSectionRef}
-              className="mt-6 rounded-[28px] border border-[#d6c9b214] bg-[#12161d]/70 p-5 sm:p-6"
-            >
-              <div className="mb-6 flex flex-col gap-3 border-b border-[#d6c9b214] pb-5 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-[#a49b8b]">Library feed</p>
-                  <h2
-                    ref={feedHeadingRef}
-                    className="mt-2 font-heading text-[1.85rem] font-semibold tracking-[-0.04em] text-[#f2ede5]"
-                  >
-                    {feedTitle}
-                  </h2>
-                </div>
+            {/* Feed */}
+            <section ref={feedSectionRef}>
+              <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+                <h2
+                  ref={feedHeadingRef}
+                  className="font-heading text-lg font-semibold tracking-[-0.03em] text-[#f2ede5]"
+                >
+                  {feedTitle}
+                </h2>
                 <div className="flex flex-wrap items-center gap-3 text-[13px] text-[#8a8174]">
                   {searchQuery && searchResults && (
                     <span>for &ldquo;{searchQuery}&rdquo;</span>
@@ -499,18 +390,19 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                 )
               ) : (
                 <MasonryFeed
-                  key={activeType}
+                  key={`${activeType}-${activeSort}`}
                   initialItems={initialItems}
                   totalCount={filteredTotalCount}
                   initialHasMore={initialHasMore}
                   type={activeType || undefined}
+                  sort={activeSort}
                   onInitialRenderReady={activeType ? handleFilteredFeedReady : undefined}
                 />
               )}
             </section>
           </div>
         </div>
-      </section>
+      </div>
 
       <HomeCommandPalette
         open={paletteOpen}

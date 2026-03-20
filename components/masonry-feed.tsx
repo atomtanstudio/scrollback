@@ -11,6 +11,7 @@ interface MasonryFeedProps {
   totalCount: number;
   initialHasMore?: boolean;
   type?: string;
+  sort?: string;
   onInitialRenderReady?: () => void;
 }
 
@@ -29,6 +30,7 @@ export function MasonryFeed({
   totalCount: initialTotal,
   initialHasMore,
   type,
+  sort,
   onInitialRenderReady,
 }: MasonryFeedProps) {
   const filteredInitialItems = filterByType(initialItems, type);
@@ -171,6 +173,7 @@ export function MasonryFeed({
         excludeIds: excludeIds.join(","),
       });
       if (type) params.set("type", type);
+      if (sort && sort !== "recent") params.set("sort", sort);
 
       const res = await fetch(`/api/items?${params}`, {
         signal: controller.signal,
@@ -197,7 +200,7 @@ export function MasonryFeed({
     } finally {
       setIsLoading(false);
     }
-  }, [type]);
+  }, [type, sort]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || isLoading) return;
@@ -208,11 +211,13 @@ export function MasonryFeed({
     if (hasUserInteracted && hasMeasuredLayout && inView && hasMore && !isLoading) loadMore();
   }, [hasUserInteracted, hasMeasuredLayout, inView, loadMore, hasMore, isLoading]);
 
-  // Reset on type filter change
+  // Reset on type or sort change
   const prevTypeRef = useRef(type);
+  const prevSortRef = useRef(sort);
   useEffect(() => {
-    if (prevTypeRef.current !== type) {
+    if (prevTypeRef.current !== type || prevSortRef.current !== sort) {
       prevTypeRef.current = type;
+      prevSortRef.current = sort;
       notifiedTypeRef.current = null;
       setItems(filteredInitialItems);
       setHasMore(initialHasMore ?? (filteredInitialItems.length < initialTotal));
@@ -222,12 +227,12 @@ export function MasonryFeed({
       setPositions(new Map());
       calculatedIdsRef.current = "";
     }
-  }, [type, filteredInitialItems, initialHasMore, initialTotal]);
+  }, [type, sort, filteredInitialItems, initialHasMore, initialTotal]);
 
   useEffect(() => {
-    if (!type) return;
+    if (!type && (!sort || sort === "recent")) return;
     void fetchPage([], true);
-  }, [type, fetchPage]);
+  }, [type, sort, fetchPage]);
 
   useEffect(() => {
     if (!type || !onInitialRenderReady) return;

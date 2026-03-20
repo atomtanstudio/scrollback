@@ -8,9 +8,10 @@ interface DataSectionProps {
   stats: { total: number; tweets: number; threads: number; articles: number; rss: number; art: number };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   settings?: any;
+  isAdmin?: boolean;
 }
 
-export function DataSection({ stats, settings }: DataSectionProps) {
+export function DataSection({ stats, settings, isAdmin = true }: DataSectionProps) {
   const [deleteResult, setDeleteResult] = useState<string | null>(null);
   const r2 = settings?.r2;
 
@@ -64,8 +65,8 @@ export function DataSection({ stats, settings }: DataSectionProps) {
           <StatCard label="RSS" value={stats.rss} color="var(--accent-article)" />
         </div>
 
-        {/* Media Storage (R2) */}
-        {r2?.configured && (
+        {/* Media Storage (R2) — admin only */}
+        {isAdmin && r2?.configured && (
           <div className="flex flex-col gap-2">
             <h4 className="text-sm font-medium text-[#f2ede5]">Media Storage (R2)</h4>
             {r2.mediaWithoutStored > 0 ? (
@@ -105,18 +106,20 @@ export function DataSection({ stats, settings }: DataSectionProps) {
           </div>
         </div>
 
-        {/* Delete result */}
-        {deleteResult && (
-          <p className="text-xs text-emerald-300">{deleteResult}</p>
+        {/* Delete result + danger zone — admin only */}
+        {isAdmin && (
+          <>
+            {deleteResult && (
+              <p className="text-xs text-emerald-300">{deleteResult}</p>
+            )}
+            <DangerZone
+              title="Delete All Data"
+              description="This will permanently delete all captured content, media, and search indices. Categories and tags will be preserved. This action cannot be undone."
+              buttonLabel="Delete All Data"
+              onConfirm={handleDelete}
+            />
+          </>
         )}
-
-        {/* Danger zone */}
-        <DangerZone
-          title="Delete All Data"
-          description="This will permanently delete all captured content, media, and search indices. Categories and tags will be preserved. This action cannot be undone."
-          buttonLabel="Delete All Data"
-          onConfirm={handleDelete}
-        />
       </div>
     </div>
   );

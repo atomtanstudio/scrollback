@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { HomePage } from "@/components/home-page";
 import { fetchItems, fetchStats } from "@/lib/db/queries";
 import { auth } from "@/lib/auth/auth";
@@ -13,13 +14,15 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen">
-      <HomePage
-        initialItems={JSON.parse(JSON.stringify(items))}
-        totalCount={totalCount}
-        initialHasMore={hasMore}
-        stats={stats}
-        isAuthed={!!session?.user}
-      />
+      <Suspense>
+        <HomePage
+          initialItems={JSON.parse(JSON.stringify(items))}
+          totalCount={totalCount}
+          initialHasMore={hasMore}
+          stats={stats}
+          isAuthed={!!session?.user}
+        />
+      </Suspense>
     </main>
   );
 }

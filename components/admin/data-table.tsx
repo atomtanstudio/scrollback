@@ -60,6 +60,7 @@ interface DataTableProps {
   onEdit: (item: AdminItem) => void;
   onDelete: (item: AdminItem) => void;
   onReprocess: (item: AdminItem) => void;
+  isAdmin?: boolean;
 }
 
 export function DataTable({
@@ -69,6 +70,7 @@ export function DataTable({
   onEdit,
   onDelete,
   onReprocess,
+  isAdmin = true,
 }: DataTableProps) {
   const lastClickedIndex = useRef<number | null>(null);
 
@@ -126,36 +128,42 @@ export function DataTable({
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-[24px] border border-[#d6c9b214] bg-[#ffffff05] py-20">
+      <div className="flex flex-col items-center justify-center rounded-[16px] border border-[#d6c9b214] bg-[#ffffff05] py-20">
         <FileText className="mb-4 h-10 w-10 text-[#6f695f]" />
         <p className="text-[#a49b8b]">No items found</p>
       </div>
     );
   }
 
+  const hasActions = isAdmin || items.some((i) => i.original_url);
+
   return (
-    <div className="overflow-hidden rounded-[24px] border border-[#d6c9b214] bg-[#ffffff05]">
+    <div className="overflow-hidden rounded-[16px] border border-[#d6c9b214] bg-[#ffffff05]">
       <Table>
         <TableHeader>
           <TableRow className="border-[#d6c9b214] hover:bg-transparent">
-            <TableHead className="w-[40px]">
-              <Checkbox
-                checked={allSelected}
-                ref={(el) => {
-                  if (el) {
-                    (el as unknown as HTMLButtonElement).dataset.state =
-                      someSelected ? "indeterminate" : allSelected ? "checked" : "unchecked";
-                  }
-                }}
-                onCheckedChange={handleSelectAll}
-              />
-            </TableHead>
+            {isAdmin && (
+              <TableHead className="w-[40px]">
+                <Checkbox
+                  checked={allSelected}
+                  ref={(el) => {
+                    if (el) {
+                      (el as unknown as HTMLButtonElement).dataset.state =
+                        someSelected ? "indeterminate" : allSelected ? "checked" : "unchecked";
+                    }
+                  }}
+                  onCheckedChange={handleSelectAll}
+                />
+              </TableHead>
+            )}
             <TableHead className="w-[56px] text-[#8a8174]">Thumb</TableHead>
             <TableHead className="text-[#8a8174]">Title / Preview</TableHead>
             <TableHead className="text-[#8a8174]">Author</TableHead>
             <TableHead className="text-[#8a8174]">Type</TableHead>
             <TableHead className="text-[#8a8174]">Date</TableHead>
-            <TableHead className="w-[56px] text-[#8a8174]">Actions</TableHead>
+            {hasActions && (
+              <TableHead className="w-[56px] text-[#8a8174]" />
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -165,15 +173,17 @@ export function DataTable({
               className="border-[#d6c9b214] hover:bg-[#ffffff06] data-[state=selected]:bg-[#ffffff08]"
               data-state={selectedIds.has(item.id) ? "selected" : undefined}
             >
-              <TableCell>
-                <Checkbox
-                  checked={selectedIds.has(item.id)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRowSelect(index, e);
-                  }}
-                />
-              </TableCell>
+              {isAdmin && (
+                <TableCell>
+                  <Checkbox
+                    checked={selectedIds.has(item.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRowSelect(index, e);
+                    }}
+                  />
+                </TableCell>
+              )}
               <TableCell>
                 {item.thumbnail ? (
                   item.thumbnail.endsWith(".mp4") ? (
@@ -226,60 +236,66 @@ export function DataTable({
               <TableCell className="whitespace-nowrap text-sm text-[#a49b8b]">
                 {formatDate(item.posted_at)}
               </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 rounded-[10px] p-0 text-[#a49b8b] hover:bg-[#ffffff08] hover:text-[#f2ede5]"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    className="border-[#d6c9b214] bg-[#171b22]"
-                  >
-                    <DropdownMenuItem
-                      onClick={() => onEdit(item)}
-                      className="text-[#f2ede5] focus:bg-[#ffffff0a] focus:text-[#f2ede5]"
-                    >
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => onDelete(item)}
-                      className="text-red-300 focus:bg-[#ffffff0a] focus:text-red-300"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => onReprocess(item)}
-                      className="text-[#f2ede5] focus:bg-[#ffffff0a] focus:text-[#f2ede5]"
-                    >
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Reprocess
-                    </DropdownMenuItem>
-                    {item.original_url && (
-                      <DropdownMenuItem
-                        asChild
-                        className="text-[#f2ede5] focus:bg-[#ffffff0a] focus:text-[#f2ede5]"
+              {hasActions && (
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 rounded-[10px] p-0 text-[#a49b8b] hover:bg-[#ffffff08] hover:text-[#f2ede5]"
                       >
-                        <a
-                          href={item.original_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      className="border-[#d6c9b214] bg-[#171b22]"
+                    >
+                      {isAdmin && (
+                        <>
+                          <DropdownMenuItem
+                            onClick={() => onEdit(item)}
+                            className="text-[#f2ede5] focus:bg-[#ffffff0a] focus:text-[#f2ede5]"
+                          >
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onDelete(item)}
+                            className="text-red-300 focus:bg-[#ffffff0a] focus:text-red-300"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onReprocess(item)}
+                            className="text-[#f2ede5] focus:bg-[#ffffff0a] focus:text-[#f2ede5]"
+                          >
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Reprocess
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {item.original_url && (
+                        <DropdownMenuItem
+                          asChild
+                          className="text-[#f2ede5] focus:bg-[#ffffff0a] focus:text-[#f2ede5]"
                         >
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          View Original
-                        </a>
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+                          <a
+                            href={item.original_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            View Original
+                          </a>
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>
