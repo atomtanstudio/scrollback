@@ -519,13 +519,14 @@ function TweetThreadContent({
   const hasInlineMedia = rawBodyText.includes("[Image:") || rawBodyText.includes("[Video:");
   // Use original body_text when it has inline markers (translation mangles them)
   const bodyForRendering = hasInlineMedia ? rawBodyText : displayBodyText;
-  if (typeof window !== "undefined") {
-    console.log("TweetThreadContent:", { hasInlineMedia, bodyLen: rawBodyText.length, markerCheck: rawBodyText.substring(0, 200), sourceType: item.source_type, mediaCount: item.media_items?.length });
-  }
   return (
     <div>
       <AuthorHeader item={item} />
       <div className="my-6 border-t border-[#d6c9b214]" />
+      {/* DEBUG: remove after fixing */}
+      <div className="text-xs text-red-500 mb-2">
+        DEBUG: hasInlineMedia={String(hasInlineMedia)} bodyLen={rawBodyText.length} sourceType={item.source_type}
+      </div>
       {hasInlineMedia && bodyForRendering ? (
         <div className="space-y-5">
           <ArticleTextSegments bodyText={bodyForRendering} mediaItems={item.media_items} />
