@@ -889,6 +889,9 @@ export function DetailContent({ item, cardType }: DetailContentProps) {
 
   return (
     <>
+      <div style={{ color: "red", fontSize: 12, padding: 8, background: "#1a0000" }}>
+        DETAIL_CONTENT cardType={cardType} bodyHasMarkers={String((item.body_text || "").includes("[Image:"))}
+      </div>
       <div>
         {(cardType === "tweet" || cardType === "thread") && (
           <TweetThreadContent
