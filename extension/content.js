@@ -1333,10 +1333,14 @@ function injectSaveButtons() {
 
       if (threadItems.length > 1) {
         // Assemble thread into a single item: combine body text and media
-        // Sort by posted_at (oldest first) to maintain thread order
+        // Sort oldest first. Use posted_at if available, fall back to external_id
+        // (Twitter IDs are chronologically ordered — lower ID = earlier tweet)
         threadItems.sort((a, b) => {
-          if (!a.posted_at || !b.posted_at) return 0;
-          return new Date(a.posted_at).getTime() - new Date(b.posted_at).getTime();
+          if (a.posted_at && b.posted_at) {
+            return new Date(a.posted_at).getTime() - new Date(b.posted_at).getTime();
+          }
+          // Fall back to external_id comparison (numeric string, lower = older)
+          return (a.external_id || '').localeCompare(b.external_id || '', undefined, { numeric: true });
         });
 
         const root = threadItems[0];
