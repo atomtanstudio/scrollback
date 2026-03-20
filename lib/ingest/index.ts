@@ -307,7 +307,9 @@ async function indexAndClassifyInBackground(
             updateData.prompt_type = classification.prompt_type;
           }
           // Reclassify source_type if Gemini detected an image/video prompt with high confidence
-          if (canPromoteToArt) {
+          // Skip reclassification for assembled threads (body contains [Image:]/[Video:] markers)
+          const hasInlineMarkers = body.includes("[Image:") || body.includes("[Video:");
+          if (canPromoteToArt && !hasInlineMarkers) {
             if (classification.prompt_type === "image" && sourceType === "tweet") {
               updateData.source_type = "image_prompt";
             } else if (classification.prompt_type === "video" && sourceType === "tweet") {

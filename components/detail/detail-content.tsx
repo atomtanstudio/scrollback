@@ -523,10 +523,6 @@ function TweetThreadContent({
     <div>
       <AuthorHeader item={item} />
       <div className="my-6 border-t border-[#d6c9b214]" />
-      {/* DEBUG: remove after fixing */}
-      <div className="text-xs text-red-500 mb-2">
-        DEBUG: hasInlineMedia={String(hasInlineMedia)} bodyLen={rawBodyText.length} sourceType={item.source_type}
-      </div>
       {hasInlineMedia && bodyForRendering ? (
         <div className="space-y-5">
           <ArticleTextSegments bodyText={bodyForRendering} mediaItems={item.media_items} />
@@ -889,9 +885,6 @@ export function DetailContent({ item, cardType }: DetailContentProps) {
 
   return (
     <>
-      <div style={{ color: "red", fontSize: 12, padding: 8, background: "#1a0000" }}>
-        DETAIL_CONTENT cardType={cardType} bodyHasMarkers={String((item.body_text || "").includes("[Image:"))}
-      </div>
       <div>
         {(cardType === "tweet" || cardType === "thread") && (
           <TweetThreadContent
