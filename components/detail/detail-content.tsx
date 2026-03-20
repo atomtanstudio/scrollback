@@ -24,20 +24,65 @@ const accentColors: Record<CardType, string> = {
   art: "var(--accent-art)",
 };
 
+const INLINE_MEDIA_RE = /(\[(?:Video|Image):\s*https?:\/\/[^\]]+\])/g;
+
+function renderTextWithInlineMedia(text: string, keyPrefix: string) {
+  // Split on [Image:] and [Video:] markers and render them as media
+  const parts = text.split(INLINE_MEDIA_RE).filter(Boolean);
+  if (parts.length === 1 && !parts[0].startsWith("[")) {
+    // No markers — render as plain text
+    return (
+      <div key={keyPrefix} className="whitespace-pre-wrap text-base leading-[1.75] text-[#cdc4b7]">
+        {text}
+      </div>
+    );
+  }
+  return parts.map((part, j) => {
+    const videoMatch = part.match(/^\[Video:\s*(https?:\/\/[^\]]+)\]$/);
+    if (videoMatch) {
+      return (
+        <div key={`${keyPrefix}-${j}`} className="my-8 flex justify-center">
+          <video
+            controls
+            preload="metadata"
+            playsInline
+            className="block max-h-[75vh] w-full rounded-xl bg-black object-contain"
+          >
+            <source src={videoMatch[1]} type="video/mp4" />
+          </video>
+        </div>
+      );
+    }
+    const imageMatch = part.match(/^\[Image:\s*(https?:\/\/[^\]]+)\]$/);
+    if (imageMatch) {
+      return (
+        <div key={`${keyPrefix}-${j}`} className="my-6 overflow-hidden rounded-[22px] border border-[#d6c9b214] bg-[#10151c]">
+          <img
+            src={imageMatch[1]}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="block max-h-[70vh] w-full object-contain"
+          />
+        </div>
+      );
+    }
+    if (!part.trim()) return null;
+    return (
+      <div key={`${keyPrefix}-${j}`} className="whitespace-pre-wrap text-base leading-[1.75] text-[#cdc4b7]">
+        {part}
+      </div>
+    );
+  });
+}
+
 function BodySegments({ bodyText }: { bodyText: string }) {
   const { segments } = parseBodyContent(bodyText);
   return (
     <>
       {segments.map((segment, i) => {
         if (segment.type === "text") {
-          return (
-            <div
-              key={i}
-              className="whitespace-pre-wrap text-base leading-[1.75] text-[#cdc4b7]"
-            >
-              {segment.content}
-            </div>
-          );
+          return renderTextWithInlineMedia(segment.content, `seg-${i}`);
         }
         if (segment.type === "json") {
           return <JsonCodeBlock key={i} code={segment.content} />;
