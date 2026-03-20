@@ -3,7 +3,7 @@
 // ============================================================
 
 // --- Debug logging (set to true for development) ---
-const DEBUG = false;
+const DEBUG = true;
 function log(...args) { if (DEBUG) console.log('FeedSilo:', ...args); }
 
 // Merge source into target without overwriting non-null values with null
@@ -1347,8 +1347,10 @@ function injectSaveButtons() {
         const allMediaUrls = [];
         const bodyParts = [];
 
+        log('Thread assembly — sorted order:');
         for (let idx = 0; idx < threadItems.length; idx++) {
           const item = threadItems[idx];
+          log(`  [${idx}] id=${item.external_id} posted_at=${item.posted_at} media=${(item.media_urls||[]).length} body="${(item.body_text||'').substring(0,50)}"`);
           if (item.body_text) bodyParts.push(item.body_text);
           // Insert media markers inline after each tweet's text
           for (const url of (item.media_urls || [])) {
@@ -1360,11 +1362,18 @@ function injectSaveButtons() {
             }
           }
         }
+        log('Assembled bodyParts count:', bodyParts.length);
+        // Log position of image markers
+        bodyParts.forEach((part, i) => {
+          if (part.startsWith('[Image:') || part.startsWith('[Video:')) {
+            log(`  bodyPart[${i}] = ${part.substring(0, 80)}`);
+          }
+        });
 
         const assembled = {
           external_id: root.external_id,
           source_url: root.source_url,
-          source_type: 'thread',
+          source_type: 'tweet',
           conversation_id: root.conversation_id || root.external_id,
           author_handle: root.author_handle,
           author_display_name: root.author_display_name,
