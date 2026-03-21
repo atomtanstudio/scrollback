@@ -1250,28 +1250,17 @@ function injectSaveButtons() {
       e.preventDefault();
       e.stopPropagation();
 
-      btn.classList.add('saving');
-
-      // Quick connectivity check — if background.js is unreachable, fail fast
-      try {
-        await new Promise((resolve, reject) => {
-          chrome.runtime.sendMessage({ type: 'CHECK_CONNECTION' }, (response) => {
-            if (chrome.runtime.lastError) {
-              reject(new Error(chrome.runtime.lastError.message));
-            } else {
-              resolve(response);
-            }
-          });
-        });
-      } catch (err) {
-        log('Extension not connected:', err);
-        btn.classList.remove('saving');
+      // Check if extension context is still valid
+      if (!chrome.runtime?.id) {
         btn.classList.add('error');
-        btn.title = 'Extension disconnected — reload the page';
-        setTimeout(() => resetButton(btn), 5000);
+        btn.innerHTML = '⟳';
+        btn.title = 'Extension updated — refresh this page';
         return;
       }
 
+      btn.classList.add('saving');
+
+      try {
       // Try to expand long tweets first
       await expandTweetText(tweet, 800);
 
@@ -1483,6 +1472,22 @@ function injectSaveButtons() {
           setTimeout(() => resetButton(btn), 3000);
         }
       });
+
+      } catch (err) {
+        // Handle extension context invalidated (extension reloaded/updated)
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes('Extension context invalidated') || msg.includes('context invalidated')) {
+          btn.classList.remove('saving');
+          btn.classList.add('error');
+          btn.innerHTML = '⟳';
+          btn.title = 'Extension updated — refresh this page';
+        } else {
+          btn.classList.remove('saving');
+          btn.classList.add('error');
+          console.error('FeedSilo capture error:', err);
+          setTimeout(() => resetButton(btn), 3000);
+        }
+      }
     });
 
     actionBar.appendChild(btn);
