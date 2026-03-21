@@ -240,7 +240,25 @@ function ArticleTextSegments({ bodyText, mediaItems }: { bodyText: string; media
           );
         }
 
-        // Text segment — parse for code/JSON, then split into paragraphs
+        // Text segment — split into readable paragraphs
+        // Skip JSON/code extraction for assembled threads (inline markers present)
+        // to avoid false positives like font arrays ["Barlow", "sans-serif"]
+        const hasMarkers = bodyText.includes("[Image:") || bodyText.includes("[Video:");
+        if (hasMarkers) {
+          const paragraphs = splitReadableParagraphs(segment.content);
+          return (
+            <div key={i} className="space-y-5">
+              {paragraphs.map((paragraph, pi) => (
+                <p
+                  key={`${i}-${pi}`}
+                  className="max-w-[72ch] text-[17px] leading-[1.95] text-[#cdc4b7] [text-wrap:pretty]"
+                >
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          );
+        }
         const { segments: textSegments } = parseBodyContent(segment.content);
         return (
           <div key={i} className="space-y-5">
