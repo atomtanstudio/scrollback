@@ -45,81 +45,55 @@ For local development, copy `.env.example` to `.env.local` and fill in your valu
 | `R2_SECRET_ACCESS_KEY` | No | R2 API token secret key |
 | `R2_BUCKET_NAME` | No | R2 bucket name (e.g. `feedsilo-media`) |
 
-## Deploy (Dokploy / Nixpacks)
+## Production Deploy
 
-Use this path for hosted deploys. Do not use the onboarding wizard on your hosted container.
+For hosted deploys (VPS, Vercel, Railway, etc.). The onboarding wizard is for local dev only.
 
-### 1. Prepare a pgvector-enabled PostgreSQL database
+### 1. PostgreSQL with pgvector
 
-FeedSilo's PostgreSQL mode expects the `vector` extension to exist. A plain Postgres image is not enough.
-
-- Use a pgvector-enabled image such as `pgvector/pgvector:pg16`
-- Verify the extension exists:
+FeedSilo requires the `vector` extension. Use a pgvector-enabled image like `pgvector/pgvector:pg16`.
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
-### 2. Connect the GitHub repo in Dokploy
+### 2. Environment variables
 
-This repo is Nixpacks-ready and pinned to Node 22.
+Set these in your hosting platform:
 
-### 3. Set environment variables in Dokploy
+**Required:**
 
-Minimum required:
-
-- `DATABASE_URL` — your PostgreSQL connection string
+- `DATABASE_URL` — PostgreSQL connection string
 - `DATABASE_TYPE=postgresql`
 - `AUTH_SECRET` — generate with `openssl rand -hex 32`
 
-Recommended:
+**Recommended:**
 
-- `CAPTURE_SECRET` — generate with `openssl rand -hex 32`
-- `SEARCH_KEYWORD_WEIGHT=0.4`
-- `SEARCH_VECTOR_WEIGHT=0.6`
+- `CAPTURE_SECRET` — browser extension pairing token (`openssl rand -hex 32`)
 - `NODE_ENV=production`
 
-Optional:
+**Optional:**
 
-- `GEMINI_API_KEY` — enables semantic embeddings/classification
-- `R2_ACCOUNT_ID`
-- `R2_ACCESS_KEY_ID`
-- `R2_SECRET_ACCESS_KEY`
-- `R2_BUCKET_NAME`
-- `XAPI_BEARER_TOKEN`
-- `XAPI_CONSUMER_KEY`
-- `XAPI_CONSUMER_SECRET`
-- `XAPI_CLIENT_ID`
-- `XAPI_CLIENT_SECRET`
-- `XAPI_ENCRYPTION_KEY`
+- `GEMINI_API_KEY` — enables semantic search and AI classification
+- `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` — Cloudflare R2 media storage
+- `XAPI_BEARER_TOKEN`, `XAPI_CONSUMER_KEY`, `XAPI_CONSUMER_SECRET`, `XAPI_CLIENT_ID`, `XAPI_CLIENT_SECRET`, `XAPI_ENCRYPTION_KEY` — X API integration for bookmark/like sync
 
-If your database runs as another Dokploy service, use the internal PostgreSQL connection string for the app's `DATABASE_URL`.
-
-### 4. Set the start command
-
-Use:
+### 3. Build and start
 
 ```bash
 npm run db:push && npm run start
 ```
 
-This applies the schema on startup and launches the app. When the env vars above are set, the hosted app skips onboarding automatically.
+This applies the schema and launches the app. With env vars set, onboarding is skipped.
 
-### 5. Deploy
+### 4. Create admin account
 
-After the container starts:
+After the app starts, open `/login`. If no admin exists, you'll see a "Create admin account" form.
 
-- open `/login`
-- if no admin user exists yet, FeedSilo shows a first-run "Create admin account" form
-- create the admin there and continue into the app
+### 5. Branches
 
-### 6. Migrate existing data later, if needed
-
-For a real migration, prefer a PostgreSQL dump/restore from your local machine rather than the app's JSON/CSV export.
-
-- use the target app's normal `DATABASE_URL` in Dokploy
-- use an external database connection string from your laptop for `pg_dump` / `pg_restore`
-- do not use the hosted onboarding flow as a migration mechanism
+- **`main`** — Stable releases. Use this for self-hosting.
+- **`dev`** — Active development. May break without notice.
 
 ## Scripts
 

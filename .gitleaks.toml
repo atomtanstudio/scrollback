@@ -7,7 +7,6 @@ useDefault = true
 description = "Placeholder connection strings and example secrets in docs, examples, and tests"
 paths = [
   '''^\.env\.example$''',
-  '''^docs/superpowers/''',
   '''^lib/config/config\.test\.ts$''',
   '''^components/onboarding/steps/configure-step\.tsx$'''
 ]
