@@ -202,13 +202,17 @@ export function MasonryFeed({
     }
   }, [type, sort]);
 
+  const loadCooldownRef = useRef(false);
   const loadMore = useCallback(async () => {
-    if (!hasMore || isLoading) return;
+    if (!hasMore || isLoading || loadCooldownRef.current) return;
+    loadCooldownRef.current = true;
     await fetchPage(items.map((i) => i.id));
+    // Cooldown: wait for layout to settle before allowing another load
+    setTimeout(() => { loadCooldownRef.current = false; }, 500);
   }, [fetchPage, hasMore, isLoading, items]);
 
   useEffect(() => {
-    if (hasUserInteracted && hasMeasuredLayout && inView && hasMore && !isLoading) loadMore();
+    if (hasUserInteracted && hasMeasuredLayout && inView && hasMore && !isLoading && !loadCooldownRef.current) loadMore();
   }, [hasUserInteracted, hasMeasuredLayout, inView, loadMore, hasMore, isLoading]);
 
   // Reset on type or sort change
@@ -278,7 +282,7 @@ export function MasonryFeed({
         </div>
       )}
 
-      {hasMore && <div ref={ref} className="h-4" />}
+      {hasMore && !isLoading && <div ref={ref} className="h-4" />}
 
       {!hasMore && items.length > 0 && (
         <div className="flex justify-center py-8">
