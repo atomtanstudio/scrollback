@@ -6,6 +6,40 @@
 const DEBUG = false;
 function log(...args) { if (DEBUG) console.log('FeedSilo:', ...args); }
 
+// Send a message to background.js with retry on failure
+function sendMessageSafe(message) {
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.runtime.sendMessage(message, (response) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else {
+          resolve(response);
+        }
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+async function sendMessageWithRetry(message, retries = 1) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await sendMessageSafe(message);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('context invalidated')) throw err; // Can't retry this
+      if (attempt < retries) {
+        log('sendMessage failed, retrying...', msg);
+        await new Promise(r => setTimeout(r, 300));
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
 // Merge source into target without overwriting non-null values with null
 function mergeKeepNonNull(target, source) {
   for (const key of Object.keys(source)) {
@@ -1262,6 +1296,14 @@ function injectSaveButtons() {
 
       btn.classList.add('saving');
 
+      // Global timeout — never hang longer than 15 seconds
+      const saveTimeout = setTimeout(() => {
+        btn.classList.remove('saving');
+        btn.classList.add('error');
+        btn.title = 'Save timed out — try again';
+        setTimeout(() => resetButton(btn), 5000);
+      }, 15000);
+
       try {
       // Try to expand long tweets first
       await expandTweetText(tweet, 800);
@@ -1420,6 +1462,7 @@ function injectSaveButtons() {
         log(' Assembled body length:', assembled.body_text.length, 'media:', assembled.media_urls.length);
 
         chrome.runtime.sendMessage({ type: 'CAPTURE_TWEET', data: assembled }, (response) => {
+          clearTimeout(saveTimeout);
           btn.classList.remove('saving');
           if (chrome.runtime.lastError) {
             console.error('FeedSilo: runtime error', chrome.runtime.lastError);
@@ -1451,6 +1494,7 @@ function injectSaveButtons() {
 
       log(' sending capture data', JSON.stringify(data, null, 2));
       chrome.runtime.sendMessage({ type: 'CAPTURE_TWEET', data }, (response) => {
+        clearTimeout(saveTimeout);
         log(' capture response', response);
         btn.classList.remove('saving');
         if (chrome.runtime.lastError) {
@@ -1476,6 +1520,7 @@ function injectSaveButtons() {
       });
 
       } catch (err) {
+        clearTimeout(saveTimeout);
         // Handle extension context invalidated (extension reloaded/updated)
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.includes('Extension context invalidated') || msg.includes('context invalidated')) {

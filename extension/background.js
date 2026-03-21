@@ -1,6 +1,15 @@
 // FeedSilo Extension - Background Service Worker
 // Relays captured tweet data from content script to FeedSilo server.
 
+// Keep service worker alive — MV3 workers go to sleep after ~30s of inactivity.
+// A periodic alarm wakes it up to prevent stale connections with content scripts.
+chrome.alarms.create('keepalive', { periodInMinutes: 0.4 }); // ~24 seconds
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'keepalive') {
+    // No-op — the alarm firing is enough to keep the worker alive
+  }
+});
+
 // Track pending thread fetches: backgroundTabId → { originTabId, conversationId, resolve, timer }
 const pendingThreadFetches = new Map();
 

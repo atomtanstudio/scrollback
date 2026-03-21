@@ -5,7 +5,8 @@
   "description": "Capture tweets, threads, and articles from X/Twitter to your FeedSilo knowledge base.",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "alarms"
   ],
   "background": {
     "service_worker": "background.js"
