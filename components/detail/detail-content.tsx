@@ -77,6 +77,13 @@ function renderTextWithInlineMedia(text: string, keyPrefix: string) {
 }
 
 function BodySegments({ bodyText }: { bodyText: string }) {
+  // Skip JSON/code extraction for assembled threads — their body text contains
+  // design/technical content that gets falsely detected as JSON (e.g., font arrays)
+  const hasInlineMarkers = bodyText.includes("[Image:") || bodyText.includes("[Video:");
+  if (hasInlineMarkers) {
+    return <>{renderTextWithInlineMedia(bodyText, "seg-0")}</>;
+  }
+
   const { segments } = parseBodyContent(bodyText);
   return (
     <>
