@@ -2,14 +2,13 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { Header } from "@/components/header";
 import { SearchBar } from "@/components/search-bar";
 import { HomeCommandPalette } from "@/components/home-command-palette";
 import { MasonryFeed } from "@/components/masonry-feed";
 import { CardSkeletonGrid } from "@/components/card-skeleton";
-import { getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
-import { formatTimeAgo } from "@/lib/format";
+
+
 import type { ContentItemWithMedia } from "@/lib/db/types";
 
 interface HomePageProps {
@@ -18,31 +17,6 @@ interface HomePageProps {
   initialHasMore: boolean;
   stats: { total: number; tweets: number; threads: number; articles: number; rss: number; art: number };
   isAuthed: boolean;
-}
-
-function getItemLabel(item: ContentItemWithMedia) {
-  if (item.source_platform === "rss") return "RSS";
-  if (item.source_type === "thread") return "Thread";
-  if (item.source_type === "article") return "Article";
-  if (item.source_type === "image_prompt" || item.source_type === "video_prompt")
-    return item.source_type === "video_prompt" ? "Video Prompt" : "Image Prompt";
-  return "Tweet";
-}
-
-function normalizeCardText(value: string | null | undefined) {
-  if (!value) return "";
-  return value
-    .replace(/https?:\/\/t\.co\/\S+/gi, "")
-    .replace(/https?:\/\/\S+/gi, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function getItemTitle(item: ContentItemWithMedia) {
-  const raw = normalizeCardText(
-    getDisplayTitle(item) || item.prompt_text || getDisplayBodyText(item) || "Untitled capture"
-  );
-  return raw || "Untitled capture";
 }
 
 const VALID_TYPES = new Set(["tweet", "thread", "article", "rss", "art"]);
@@ -298,23 +272,37 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
             </div>
 
             <div className="rounded-[16px] border border-[#d6c9b214] bg-[#ffffff08] p-4">
-              <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">Recently added</p>
+              <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">From the maker</p>
               <div className="grid gap-2">
-                {recentItems.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={`/item/${item.id}`}
-                    className="rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-3.5 py-2.5 transition-colors hover:border-[#d6c9b233] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+                <a
+                  href="https://promptsilo.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-3.5 py-2.5 transition-colors hover:border-[#d6c9b233]"
+                >
+                  <p className="text-[13px] font-medium text-[#f2ede5] group-hover:text-white">Prompt Silo</p>
+                  <p className="mt-0.5 text-[11px] leading-4 text-[#8a8174]">Organize and manage your AI prompts</p>
+                </a>
+                <a
+                  href="https://personalab.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-3.5 py-2.5 transition-colors hover:border-[#d6c9b233]"
+                >
+                  <p className="text-[13px] font-medium text-[#f2ede5] group-hover:text-white">Persona Lab</p>
+                  <p className="mt-0.5 text-[11px] leading-4 text-[#8a8174]">Create and test AI personas</p>
+                </a>
+              </div>
+              <div className="mt-3 border-t border-[#d6c9b214] pt-3">
+                <p className="text-[11px] leading-4 text-[#8a8174]">
+                  Don&apos;t want to self-host?{" "}
+                  <a
+                    href="mailto:hello@feedsilo.app"
+                    className="text-[#b89462] hover:text-[#f0cf9f] transition-colors"
                   >
-                    <div className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.12em] text-[#8a8174]">
-                      <span>{getItemLabel(item)}</span>
-                      <span>{formatTimeAgo(item.created_at)}</span>
-                    </div>
-                    <p className="mt-1.5 line-clamp-2 text-[13px] leading-5 text-[#cdc4b7] [overflow-wrap:anywhere]">
-                      {getItemTitle(item)}
-                    </p>
-                  </Link>
-                ))}
+                    Request a hosted account
+                  </a>
+                </p>
               </div>
             </div>
           </aside>
