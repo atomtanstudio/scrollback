@@ -1251,7 +1251,9 @@ function injectSaveButtons() {
       e.stopPropagation();
 
       // Check if extension context is still valid
-      if (!chrome.runtime?.id) {
+      try {
+        chrome.runtime.getURL('');
+      } catch {
         btn.classList.add('error');
         btn.innerHTML = '⟳';
         btn.title = 'Extension updated — refresh this page';
