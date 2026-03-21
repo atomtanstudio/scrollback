@@ -3,7 +3,7 @@
 // ============================================================
 
 // --- Debug logging (set to true for development) ---
-const DEBUG = true;
+const DEBUG = false;
 function log(...args) { if (DEBUG) console.log('FeedSilo:', ...args); }
 
 // Merge source into target without overwriting non-null values with null
@@ -1252,6 +1252,26 @@ function injectSaveButtons() {
 
       btn.classList.add('saving');
 
+      // Quick connectivity check — if background.js is unreachable, fail fast
+      try {
+        await new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage({ type: 'CHECK_CONNECTION' }, (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            } else {
+              resolve(response);
+            }
+          });
+        });
+      } catch (err) {
+        log('Extension not connected:', err);
+        btn.classList.remove('saving');
+        btn.classList.add('error');
+        btn.title = 'Extension disconnected — reload the page';
+        setTimeout(() => resetButton(btn), 5000);
+        return;
+      }
+
       // Try to expand long tweets first
       await expandTweetText(tweet, 800);
 
@@ -1628,6 +1648,21 @@ function initDOM() {
   const observer = new MutationObserver(() => injectSaveButtons());
   observer.observe(document.body, { childList: true, subtree: true });
   injectSaveButtons(); // Initial injection
+
+  // Watch for SPA navigation (X uses pushState/replaceState for client-side routing)
+  // When the URL changes, re-inject save buttons after a short delay to let X render new content
+  let lastUrl = location.href;
+  const navigationObserver = new MutationObserver(() => {
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
+      log('SPA navigation detected:', lastUrl);
+      // Re-inject after X renders the new page content
+      setTimeout(() => injectSaveButtons(), 500);
+      setTimeout(() => injectSaveButtons(), 1500);
+      setTimeout(() => injectSaveButtons(), 3000);
+    }
+  });
+  navigationObserver.observe(document.body, { childList: true, subtree: true });
 }
 
 if (document.body) {
