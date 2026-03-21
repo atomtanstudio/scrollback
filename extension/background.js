@@ -18,6 +18,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === 'RESOLVE_MEDIA') {
+    resolveMissingMedia(message.data).then(() => sendResponse({ success: true, media_urls: message.data.media_urls || [] }));
+    return true;
+  }
+
   if (message.type === 'CAPTURE_BULK_VIA_API') {
     handleBulkCaptureViaApi(message.tweetIds).then(sendResponse);
     return true;

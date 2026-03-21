@@ -1347,6 +1347,24 @@ function injectSaveButtons() {
         const allMediaUrls = [];
         const bodyParts = [];
 
+        // Resolve missing media for tweets with empty media_urls (e.g., link card images)
+        const resolvePromises = threadItems
+          .filter(item => (!item.media_urls || item.media_urls.length === 0) && item.external_id)
+          .map(item => new Promise((resolve) => {
+            chrome.runtime.sendMessage({
+              type: 'RESOLVE_MEDIA',
+              data: { external_id: item.external_id, media_urls: [] },
+            }, (response) => {
+              if (chrome.runtime.lastError) { resolve(); return; }
+              if (response?.media_urls?.length > 0) {
+                item.media_urls = response.media_urls;
+                log('Resolved media for tweet', item.external_id, ':', response.media_urls);
+              }
+              resolve();
+            });
+          }));
+        await Promise.all(resolvePromises);
+
         log('Thread assembly — sorted order:');
         for (let idx = 0; idx < threadItems.length; idx++) {
           const item = threadItems[idx];
@@ -1399,11 +1417,18 @@ function injectSaveButtons() {
             return;
           }
           if (response?.success) {
-            btn.classList.add('saved');
-            btn.innerHTML = `&#10003; ${threadItems.length}`;
-            // Mark all other thread tweets' save buttons as saved too
-            const threadConversationId = assembled.conversation_id;
-            markThreadButtonsSaved(threadConversationId, data.author_handle);
+            if (response.already_exists) {
+              btn.classList.add('dupe');
+              btn.innerHTML = 'DUPE';
+              log('Thread already exists in DB (external_id:', assembled.external_id, ')');
+              setTimeout(() => resetButton(btn), 3000);
+            } else {
+              btn.classList.add('saved');
+              btn.innerHTML = `&#10003; ${threadItems.length}`;
+              // Mark all other thread tweets' save buttons as saved too
+              const threadConversationId = assembled.conversation_id;
+              markThreadButtonsSaved(threadConversationId, data.author_handle);
+            }
           } else {
             btn.classList.add('error');
             console.error('FeedSilo thread save failed:', response?.error);
