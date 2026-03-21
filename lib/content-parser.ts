@@ -52,17 +52,20 @@ function findBalancedEnd(text: string, start: number): number {
 }
 
 /**
- * Try to parse a substring as JSON with at least one key (for objects)
- * or at least one element (for arrays).
+ * Try to parse a substring as JSON with enough substance to be worth
+ * displaying as a code block. Requires at least 2 keys (objects) or
+ * 2 elements (arrays), and a minimum length of 20 chars to avoid
+ * extracting tiny snippets like [0.9] or {"x":1} as code blocks.
  */
 function tryParseJson(text: string): unknown | null {
+  if (text.length < 20) return null;
   try {
     const parsed = JSON.parse(text);
     if (typeof parsed === 'object' && parsed !== null) {
       if (Array.isArray(parsed)) {
-        return parsed.length > 0 ? parsed : null;
+        return parsed.length >= 2 ? parsed : null;
       }
-      return Object.keys(parsed).length >= 1 ? parsed : null;
+      return Object.keys(parsed).length >= 2 ? parsed : null;
     }
     return null;
   } catch {
