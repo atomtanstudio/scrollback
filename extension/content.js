@@ -2,12 +2,13 @@
 // FeedSilo Extension - Content Script
 // ============================================================
 
-// Guard against double-injection (manifest + programmatic reinject)
+// On re-injection (extension reload/update), remove old save buttons
+// so fresh ones with live chrome.runtime connections replace them
 if (window.__feedsiloContentScriptLoaded) {
-  // Already running — just re-inject save buttons in case DOM changed
-  if (typeof injectSaveButtons === 'function') injectSaveButtons();
-} else {
+  document.querySelectorAll('[data-feedsilo-btn]').forEach(btn => btn.remove());
+}
 window.__feedsiloContentScriptLoaded = true;
+{
 
 // --- Debug logging (set to true for development) ---
 const DEBUG = false;
