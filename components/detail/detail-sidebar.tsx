@@ -179,7 +179,7 @@ export function DetailSidebar({ item, cardType, isAuthed = false }: DetailSideba
         <span style={{ color: accent }}>{sourceTypeLabel}</span>
         {item.posted_at && <span>{formatFullDate(item.posted_at)}</span>}
         {item.created_at && item.posted_at !== item.created_at && (
-          <span>Captured {formatFullDate(item.created_at)}</span>
+          <span>Saved {formatFullDate(item.created_at)}</span>
         )}
       </div>
 

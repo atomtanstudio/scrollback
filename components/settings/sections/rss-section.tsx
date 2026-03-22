@@ -230,7 +230,7 @@ export function RssSection({ onRefresh, isAdmin = true }: RssSectionProps) {
               RSS sources
             </h3>
             <p className="text-xs text-[#a49b8b]">
-              Pull trusted feeds into the same searchable archive as your captures
+              Pull trusted feeds into the same searchable archive as your saves
             </p>
           </div>
         </div>

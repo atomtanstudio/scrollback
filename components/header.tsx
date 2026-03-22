@@ -31,7 +31,7 @@ export function Header({ captureCount, isAuthed, currentPath = "/" }: HeaderProp
           <span className="rounded-full border border-[#d6c9b21a] bg-[#ffffff08] px-3 py-2 sm:px-4">
             <span className="sm:hidden">{captureCount.toLocaleString()}</span>
             <span className="hidden sm:inline">
-              {captureCount.toLocaleString()} captures
+              {captureCount.toLocaleString()} saves
             </span>
           </span>
         )}

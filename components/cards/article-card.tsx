@@ -114,7 +114,7 @@ export function ArticleCard({ item, href }: ArticleCardProps) {
         </p>
         <div className="flex items-center justify-between gap-3 text-xs text-[#7d7569]">
           <span className="truncate">{attribution || "Archived item"}</span>
-          <span className="shrink-0">{isRss ? formatTimeAgo(item.posted_at || item.created_at) : `Captured ${formatTimeAgo(item.created_at)}`}</span>
+          <span className="shrink-0">{isRss ? formatTimeAgo(item.posted_at || item.created_at) : `Saved ${formatTimeAgo(item.created_at)}`}</span>
         </div>
       </div>
     </CardWrapper>

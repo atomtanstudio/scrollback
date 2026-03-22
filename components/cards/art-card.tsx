@@ -105,7 +105,7 @@ export function ArtCard({ item, href }: ArtCardProps) {
           </div>
         </div>
         <div className="text-xs text-[#7d7569]">
-          Captured {formatTimeAgo(item.created_at)}
+          Saved {formatTimeAgo(item.created_at)}
         </div>
       </div>
     </CardWrapper>

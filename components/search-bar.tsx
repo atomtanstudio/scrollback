@@ -70,7 +70,7 @@ export function SearchBar({ onSearch, onClear }: SearchBarProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search your captures..."
+            placeholder="Search your saves..."
             className="flex-1 border-none bg-transparent font-sans text-base text-[#f2ede5] outline-none placeholder:text-[#7d7569]"
           />
           {query && (

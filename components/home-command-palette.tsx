@@ -155,7 +155,7 @@ export function HomeCommandPalette({
       {
         id: "filter-all",
         section: "Quick actions",
-        label: "Show all captures",
+        label: "Show all saves",
         detail: "Reset the feed to the full library",
         meta: currentFilter || currentSearch ? "Reset" : "Current",
         icon: "filter",
@@ -170,7 +170,7 @@ export function HomeCommandPalette({
         id: "filter-tweets",
         section: "Quick actions",
         label: "Filter to tweets",
-        detail: "Jump straight into single-post captures",
+        detail: "Jump straight into single-post saves",
         meta: currentFilter === "tweet" ? "Current" : undefined,
         icon: "filter",
         tone: "tweet",
@@ -196,7 +196,7 @@ export function HomeCommandPalette({
         id: "filter-articles",
         section: "Quick actions",
         label: "Filter to articles",
-        detail: "Long-form captures only",
+        detail: "Long-form saves only",
         meta: currentFilter === "article" ? "Current" : undefined,
         icon: "filter",
         tone: "article",
@@ -222,7 +222,7 @@ export function HomeCommandPalette({
         id: "filter-art",
         section: "Quick actions",
         label: "Filter to art",
-        detail: "Image and video prompt captures",
+        detail: "Image and video prompt saves",
         meta: currentFilter === "art" ? "Current" : undefined,
         icon: "filter",
         tone: "art",
@@ -264,7 +264,7 @@ export function HomeCommandPalette({
         id: "jump-admin",
         section: "Navigate",
         label: "Open admin",
-        detail: "Review captures, edit items, and run bulk actions",
+        detail: "Review saves, edit items, and run bulk actions",
         icon: "jump",
         run: () => {
           onOpenChange(false);
@@ -276,7 +276,7 @@ export function HomeCommandPalette({
     for (const item of recentItems.slice(0, 4)) {
       items.push({
         id: `recent-${item.id}`,
-        section: "Recent captures",
+        section: "Recent saves",
         label: truncate(getDisplayTitle(item) || item.prompt_text || getDisplayBodyText(item), 60) || "Untitled capture",
         detail: getAttributionName(item) || itemLabel(item),
         meta: formatTimeAgo(item.created_at),
@@ -408,7 +408,7 @@ export function HomeCommandPalette({
                 setSelectedIndex(0);
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Search captures, jump to admin, or switch categories..."
+              placeholder="Search saves, jump to admin, or switch categories..."
               className="h-8 flex-1 border-none bg-transparent text-[15px] text-[#f2ede5] outline-none placeholder:text-[#7d7569]"
             />
             <span className="hidden text-[11px] uppercase tracking-[0.16em] text-[#8a8174] md:inline">

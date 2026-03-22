@@ -76,7 +76,7 @@ function formatTypeLabel(type: string) {
 
 function buildExcerpt(item: RelatedApiItem) {
   const source = (getDisplayBodyText(item) || getDisplayTitle(item) || "").replace(/\s+/g, " ").trim();
-  if (!source) return "Captured without preview text.";
+  if (!source) return "Saved without preview text.";
   return source.length > 132 ? `${source.slice(0, 131).trimEnd()}…` : source;
 }
 

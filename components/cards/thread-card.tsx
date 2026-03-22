@@ -63,7 +63,7 @@ export function ThreadCard({ item, href }: ThreadCardProps) {
         {displayBodyText}
       </p>
       <div className="flex items-center justify-between text-xs text-[#7d7569]">
-        <span>Captured {formatTimeAgo(item.created_at)}</span>
+        <span>Saved {formatTimeAgo(item.created_at)}</span>
         {item.original_url && (
           <button
             type="button"
