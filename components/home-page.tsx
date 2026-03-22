@@ -219,7 +219,11 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
             ? "RSS"
             : activeType === "art"
               ? "Art & Prompts"
-              : "Latest Saves";
+              : activeSort === "most_liked"
+                ? "Most Liked"
+                : activeSort === "most_viewed"
+                  ? "Most Viewed"
+                  : "Latest Saves";
   const filteredTotalCount = searchResults
     ? searchResults.length
     : activeType === "tweet"
