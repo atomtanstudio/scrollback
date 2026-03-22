@@ -271,38 +271,42 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
               </div>
             </div>
 
-            <div className="rounded-[16px] border border-[#d6c9b214] bg-[#ffffff08] p-4">
-              <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">From the maker</p>
+            <div className="rounded-[16px] border border-[#b8946222] bg-gradient-to-b from-[#b894620a] to-transparent p-4">
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#b89462]">Support our projects</p>
+              <p className="mb-3 text-[11px] leading-4 text-[#8a8174]">Free tools from the maker of FeedSilo</p>
               <div className="grid gap-2">
                 <a
                   href="https://promptsilo.app"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-3.5 py-2.5 transition-colors hover:border-[#d6c9b233]"
+                  className="group flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 transition-colors hover:bg-[#b894620a]"
                 >
-                  <p className="text-[13px] font-medium text-[#f2ede5] group-hover:text-white">Prompt Silo</p>
-                  <p className="mt-0.5 text-[11px] leading-4 text-[#8a8174]">Organize and manage your AI prompts</p>
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#b8946218] text-[11px]">PS</span>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium text-[#f2ede5] group-hover:text-white">Prompt Silo</p>
+                    <p className="text-[10px] leading-3 text-[#7d7569]">AI prompt manager</p>
+                  </div>
                 </a>
                 <a
                   href="https://personalab.app"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-3.5 py-2.5 transition-colors hover:border-[#d6c9b233]"
+                  className="group flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 transition-colors hover:bg-[#b894620a]"
                 >
-                  <p className="text-[13px] font-medium text-[#f2ede5] group-hover:text-white">Persona Lab</p>
-                  <p className="mt-0.5 text-[11px] leading-4 text-[#8a8174]">Create and test AI personas</p>
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#b8946218] text-[11px]">PL</span>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium text-[#f2ede5] group-hover:text-white">Persona Lab</p>
+                    <p className="text-[10px] leading-3 text-[#7d7569]">AI persona builder</p>
+                  </div>
                 </a>
               </div>
-              <div className="mt-3 border-t border-[#d6c9b214] pt-3">
-                <p className="text-[11px] leading-4 text-[#8a8174]">
-                  Don&apos;t want to self-host?{" "}
-                  <a
-                    href="mailto:hello@feedsilo.app"
-                    className="text-[#b89462] hover:text-[#f0cf9f] transition-colors"
-                  >
-                    Request a hosted account
-                  </a>
-                </p>
+              <div className="mt-3 pt-2">
+                <a
+                  href="mailto:hello@feedsilo.app"
+                  className="flex items-center justify-center gap-1.5 rounded-[10px] border border-[#b8946222] bg-[#b894620a] px-3 py-2 text-[11px] font-medium text-[#b89462] transition-colors hover:bg-[#b8946218] hover:text-[#f0cf9f]"
+                >
+                  Don&apos;t want to self-host? Get a hosted account
+                </a>
               </div>
             </div>
           </aside>
