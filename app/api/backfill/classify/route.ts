@@ -1,3 +1,5 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth/auth";
 import { getClient } from "@/lib/db/client";
 import { getSearchProvider } from "@/lib/db/search-provider";
 import { generateEmbedding, classifyContent, describeImage } from "@/lib/embeddings/gemini";
@@ -21,6 +23,10 @@ export const maxDuration = 300; // 5 min max for serverless
  *   ?limit=50        — Max items to process per run (default 50)
  */
 export async function GET(request: Request) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const url = new URL(request.url);
   const scope = url.searchParams.get("scope") || "all";
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 500);

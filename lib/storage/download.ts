@@ -33,6 +33,26 @@ export async function downloadAndStoreMedia(
   originalUrl: string
 ): Promise<string | null> {
   try {
+    // Validate URL before fetching
+    let parsed: URL;
+    try {
+      parsed = new URL(originalUrl);
+    } catch {
+      console.warn(`Invalid URL, skipping: ${originalUrl}`);
+      return null;
+    }
+
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      console.warn(`Disallowed protocol "${parsed.protocol}", skipping: ${originalUrl}`);
+      return null;
+    }
+
+    const forbiddenHosts = ["localhost", "127.0.0.1", "::1"];
+    if (forbiddenHosts.includes(parsed.hostname)) {
+      console.warn(`SSRF blocked for host "${parsed.hostname}", skipping: ${originalUrl}`);
+      return null;
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT);
 

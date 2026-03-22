@@ -18,6 +18,9 @@ export async function PUT(
     "source_type", "author_handle", "author_display_name",
     "title", "body_text", "original_url", "posted_at",
   ];
+
+  const VALID_SOURCE_TYPES = ["tweet", "article", "thread", "image_prompt", "video_prompt", "unknown"];
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data: any = {};
   for (const key of allowed) {
@@ -26,8 +29,35 @@ export async function PUT(
     }
   }
 
+  // Validate source_type enum value
+  if (data.source_type !== undefined) {
+    if (typeof data.source_type !== "string" || !VALID_SOURCE_TYPES.includes(data.source_type)) {
+      return NextResponse.json(
+        { error: `Invalid source_type. Must be one of: ${VALID_SOURCE_TYPES.join(", ")}` },
+        { status: 400 }
+      );
+    }
+  }
+
+  // Validate string fields
+  for (const field of ["author_handle", "author_display_name", "title", "body_text", "original_url"]) {
+    if (data[field] !== undefined && data[field] !== null && typeof data[field] !== "string") {
+      return NextResponse.json(
+        { error: `Field "${field}" must be a string` },
+        { status: 400 }
+      );
+    }
+  }
+
   if (data.posted_at) {
-    data.posted_at = new Date(data.posted_at);
+    const parsed = new Date(data.posted_at);
+    if (isNaN(parsed.getTime())) {
+      return NextResponse.json(
+        { error: "Field \"posted_at\" must be a valid date" },
+        { status: 400 }
+      );
+    }
+    data.posted_at = parsed;
   }
 
   const item = await db.contentItem.update({

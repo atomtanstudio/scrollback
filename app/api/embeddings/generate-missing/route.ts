@@ -1,3 +1,5 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth/auth";
 import { getClient } from "@/lib/db/client";
 import { getSearchProvider } from "@/lib/db/search-provider";
 import { generateEmbedding } from "@/lib/embeddings/gemini";
@@ -6,6 +8,10 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function GET(request: Request) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const encoder = new TextEncoder();
   let cancelled = false;
 

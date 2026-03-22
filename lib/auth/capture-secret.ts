@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { getConfig } from "@/lib/config";
 
 export function validateCaptureSecret(
@@ -18,7 +19,11 @@ export function validateCaptureSecret(
   }
 
   const token = auth.slice(7);
-  if (token !== captureSecret) {
+
+  // Use timing-safe comparison to prevent timing attacks
+  const tokenBuf = Buffer.from(token);
+  const secretBuf = Buffer.from(captureSecret);
+  if (tokenBuf.length !== secretBuf.length || !timingSafeEqual(tokenBuf, secretBuf)) {
     return { valid: false, error: "Invalid capture secret" };
   }
 

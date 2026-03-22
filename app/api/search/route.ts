@@ -116,10 +116,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Search error:", error);
     return NextResponse.json(
-      {
-        error: "Search failed",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Search failed" },
       { status: 500 }
     );
   }

@@ -1,3 +1,5 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth/auth";
 import { getClient } from "@/lib/db/client";
 import { classifyContent } from "@/lib/embeddings/gemini";
 import { qualifiesAsArtCapture } from "@/lib/art-detection";
@@ -15,6 +17,10 @@ export const maxDuration = 300;
  *   ?dry_run=1   — Preview changes without writing to DB
  */
 export async function GET(request: Request) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const url = new URL(request.url);
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 500);
   const dryRun = url.searchParams.get("dry_run") === "1";
