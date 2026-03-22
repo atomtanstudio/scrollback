@@ -7,6 +7,11 @@
 (function () {
   'use strict';
 
+  if (window.__feedsiloInterceptorInjected) {
+    return;
+  }
+  window.__feedsiloInterceptorInjected = true;
+
   // Patch fetch()
   const originalFetch = window.fetch;
   window.fetch = async function (...args) {

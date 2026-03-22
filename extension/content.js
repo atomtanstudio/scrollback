@@ -3,6 +3,11 @@
 // ============================================================
 
 {
+if (!globalThis.__feedsiloContentInjected) {
+  globalThis.__feedsiloContentInjected = true;
+
+const { shouldHydrateCaptureData } = globalThis.FeedSiloExtension || {};
+const contentBootstrappedLate = document.readyState !== 'loading';
 
 // --- Debug logging (set to true for development) ---
 const DEBUG = false;
@@ -78,6 +83,11 @@ let bgFetchTimer = null;
 let lastBgFetchCount = 0;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'PING') {
+    sendResponse({ ready: true });
+    return;
+  }
+
   if (message.type === 'BG_FETCH_INIT' && message.conversationId) {
     bgFetchConversationId = message.conversationId;
     lastBgFetchCount = 0;
@@ -1317,21 +1327,30 @@ function injectSaveButtons() {
         return;
       }
 
+      const hadCachedEntry = tweetCache.has(data.external_id);
       let threadItems = [];
       if (data.conversation_id && data.author_handle) {
         threadItems = getThreadSiblingsFromCache(data.conversation_id, data.author_handle);
       }
+
+      const needsHydration = typeof shouldHydrateCaptureData === 'function'
+        && shouldHydrateCaptureData({
+          hasCachedEntry: hadCachedEntry,
+          lateBootstrap: contentBootstrappedLate,
+          data,
+        });
 
       // If thread looks incomplete or article is truncated, try fetching via background tab
       // Always fetch via background tab if: no thread found yet, article is truncated,
       // or we found a partial thread but root tweet has more replies than we captured
       const threadLooksIncomplete = threadItems.length >= 2
         && data.replies != null && data.replies > threadItems.length;
-      if (shouldFetchViaBackgroundTab(data, tweet) && (threadItems.length < 2 || data.source_type === 'article' || threadLooksIncomplete)) {
+      if ((needsHydration || shouldFetchViaBackgroundTab(data, tweet))
+          && (needsHydration || threadItems.length < 2 || data.source_type === 'article' || threadLooksIncomplete)) {
         const tweetUrl = data.source_url || `https://x.com/i/web/status/${data.external_id}`;
         // Use conversation_id if available, fall back to external_id (root tweets have conv_id === ext_id)
         const fetchConversationId = data.conversation_id || data.external_id;
-        log('Fetching full thread via background tab:', tweetUrl, 'conversation:', fetchConversationId);
+        log('Fetching full thread via background tab:', tweetUrl, 'conversation:', fetchConversationId, 'needsHydration:', needsHydration);
         try {
           const result = await new Promise((resolve) => {
             chrome.runtime.sendMessage({
@@ -1994,4 +2013,5 @@ async function startBulkCapture(useApi = false) {
   }
 }
 
-} // end double-injection guard
+} // end content script
+}

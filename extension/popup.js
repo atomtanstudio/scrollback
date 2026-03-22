@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const { ensureTwitterTabReady, isTwitterTabUrl, sendTabMessage } = globalThis.FeedSiloExtension || {};
   const STORAGE_KEYS = ['serverUrl', 'captureSecret', 'bearerToken'];
   const serverUrlInput = document.getElementById('serverUrl');
   const captureSecretInput = document.getElementById('captureSecret');
@@ -14,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const connectionLabel = document.getElementById('connectionLabel');
   const xapiBadge = document.getElementById('xapiBadge');
   const captureModeText = document.getElementById('captureModeText');
+
+  bootstrapActiveTwitterTab();
 
   // Load saved settings
   loadSettings((result) => {
@@ -102,22 +105,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Bulk capture
   bulkBtn.addEventListener('click', () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       const tab = tabs[0];
-      if (!tab?.url?.includes('x.com') && !tab?.url?.includes('twitter.com')) {
+      if (!ensureTwitterTabReady || !isTwitterTabUrl || !sendTabMessage) {
+        showStatus(statusMsg, 'Extension bootstrap unavailable', 'error');
+        return;
+      }
+
+      if (!isTwitterTabUrl(tab?.url)) {
         showStatus(statusMsg, 'Navigate to x.com first', 'error');
         return;
       }
 
       const useApi = !!bearerTokenInput.value.trim();
-      chrome.tabs.sendMessage(tab.id, { type: 'START_BULK_CAPTURE', useApi }, () => {
-        if (chrome.runtime.lastError) {
-          showStatus(statusMsg, 'Reload the X page and try again', 'error');
-          return;
-        }
+      try {
+        await ensureTwitterTabReady(tab.id);
+        await sendTabMessage(tab.id, { type: 'START_BULK_CAPTURE', useApi });
         showStatus(statusMsg, `Bulk capture started${useApi ? ' (API mode)' : ''}`, 'success');
         window.close();
-      });
+      } catch (error) {
+        showStatus(statusMsg, error instanceof Error ? error.message : 'Unable to initialize X tab', 'error');
+      }
     });
   });
 
@@ -140,6 +148,21 @@ document.addEventListener('DOMContentLoaded', () => {
   function showStatus(el, text, type) {
     el.textContent = text;
     el.className = `status-msg ${type}`;
+  }
+
+  function bootstrapActiveTwitterTab() {
+    if (!ensureTwitterTabReady || !isTwitterTabUrl) return;
+
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      const tab = tabs[0];
+      if (!tab?.id || !isTwitterTabUrl(tab.url)) return;
+
+      try {
+        await ensureTwitterTabReady(tab.id);
+      } catch {
+        // Best effort only — explicit actions will surface errors.
+      }
+    });
   }
 
   function loadSettings(callback) {

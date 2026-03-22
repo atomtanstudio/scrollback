@@ -35,7 +35,7 @@
         "https://x.com/*",
         "https://twitter.com/*"
       ],
-      "js": ["content.js"],
+      "js": ["shared.js", "content.js"],
       "css": ["content.css"],
       "run_at": "document_start"
     }

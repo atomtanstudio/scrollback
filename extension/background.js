@@ -1,6 +1,10 @@
 // FeedSilo Extension - Background Service Worker
 // Relays captured tweet data from content script to FeedSilo server.
 
+importScripts('shared.js');
+
+const { ensureTwitterTabReady, isTwitterTabUrl } = self.FeedSiloExtension;
+
 // Keep service worker alive — MV3 workers go to sleep after ~30s of inactivity.
 // A periodic alarm wakes it up to prevent stale connections with content scripts.
 chrome.alarms.create('keepalive', { periodInMinutes: 0.4 }); // ~24 seconds
@@ -10,33 +14,17 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
-// Re-inject content scripts into existing X/Twitter tabs when the extension starts.
-// This handles extension reload/update — Chrome doesn't re-inject automatically,
-// so existing tabs would have dead content scripts without this.
-// When extension is reloaded/updated, notify existing X tabs to refresh.
-// Chrome can't revive dead content script contexts — a page reload is required.
-async function notifyStaleTabsToRefresh() {
+// Re-attach capture scripts to already-open X/Twitter tabs.
+// This covers extension reload/update without forcing a page reload.
+async function ensureExistingTwitterTabsReady() {
   try {
     const tabs = await chrome.tabs.query({ url: ['https://x.com/*', 'https://twitter.com/*'] });
     for (const tab of tabs) {
       if (!tab.id) continue;
       try {
-        // Inject a small script that shows a refresh banner
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: () => {
-            if (document.getElementById('feedsilo-refresh-banner')) return;
-            const banner = document.createElement('div');
-            banner.id = 'feedsilo-refresh-banner';
-            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a1510;border-bottom:1px solid #b8946233;padding:8px 16px;display:flex;align-items:center;justify-content:center;gap:12px;font-family:system-ui,sans-serif;font-size:13px;color:#f0cf9f;';
-            banner.innerHTML = '<span>FeedSilo extension was updated</span><button id="feedsilo-refresh-btn" style="background:#b89462;color:#0a0a0f;border:none;padding:4px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Refresh to activate</button><button id="feedsilo-dismiss-btn" style="background:none;border:none;color:#8a8174;cursor:pointer;font-size:16px;padding:0 4px;">✕</button>';
-            document.body.prepend(banner);
-            document.getElementById('feedsilo-refresh-btn').addEventListener('click', () => location.reload());
-            document.getElementById('feedsilo-dismiss-btn').addEventListener('click', () => banner.remove());
-          },
-        });
+        await ensureTwitterTabReady(tab.id);
       } catch {
-        // Tab might be restricted — ignore
+        // Tab might be mid-navigation or restricted — ignore
       }
     }
   } catch {
@@ -45,8 +33,14 @@ async function notifyStaleTabsToRefresh() {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  notifyStaleTabsToRefresh();
+  ensureExistingTwitterTabsReady();
 });
+
+chrome.runtime.onStartup.addListener(() => {
+  ensureExistingTwitterTabsReady();
+});
+
+ensureExistingTwitterTabsReady();
 
 // Track pending thread fetches: backgroundTabId → { originTabId, conversationId, resolve, timer }
 const pendingThreadFetches = new Map();
@@ -421,13 +415,20 @@ async function handleFetchThread(url, conversationId, originTabId) {
       });
 
       // Tell the new tab it's a background fetch once it's ready
-      listener = function (tabId, changeInfo) {
+      listener = async function (tabId, changeInfo, updatedTab) {
         if (tabId !== tab.id || changeInfo.status !== 'complete') return;
         chrome.tabs.onUpdated.removeListener(listener);
-        chrome.tabs.sendMessage(tab.id, {
-          type: 'BG_FETCH_INIT',
-          conversationId,
-        }).catch(() => {});
+        try {
+          if (isTwitterTabUrl(updatedTab?.url || tab.url)) {
+            await ensureTwitterTabReady(tab.id, { injectDelayMs: 250 });
+          }
+          chrome.tabs.sendMessage(tab.id, {
+            type: 'BG_FETCH_INIT',
+            conversationId,
+          }).catch(() => {});
+        } catch {
+          // If the helper cannot attach, let the normal timeout clean up.
+        }
       };
       chrome.tabs.onUpdated.addListener(listener);
     });
