@@ -10,6 +10,47 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
+// Re-inject content scripts into existing X/Twitter tabs when the extension starts.
+// This handles extension reload/update — Chrome doesn't re-inject automatically,
+// so existing tabs would have dead content scripts without this.
+async function reinjectContentScripts() {
+  try {
+    const tabs = await chrome.tabs.query({ url: ['https://x.com/*', 'https://twitter.com/*'] });
+    for (const tab of tabs) {
+      if (!tab.id) continue;
+      try {
+        // Inject interceptor first (MAIN world), then content script
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['interceptor.js'],
+          world: 'MAIN',
+        });
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content.js'],
+        });
+        // Also inject CSS
+        await chrome.scripting.insertCSS({
+          target: { tabId: tab.id },
+          files: ['content.css'],
+        });
+      } catch (err) {
+        // Tab might be restricted (chrome://, etc.) — ignore
+      }
+    }
+  } catch (err) {
+    // No tabs found or permission issue — ignore
+  }
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  reinjectContentScripts();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  reinjectContentScripts();
+});
+
 // Track pending thread fetches: backgroundTabId → { originTabId, conversationId, resolve, timer }
 const pendingThreadFetches = new Map();
 

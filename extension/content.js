@@ -2,6 +2,13 @@
 // FeedSilo Extension - Content Script
 // ============================================================
 
+// Guard against double-injection (manifest + programmatic reinject)
+if (window.__feedsiloContentScriptLoaded) {
+  // Already running — just re-inject save buttons in case DOM changed
+  if (typeof injectSaveButtons === 'function') injectSaveButtons();
+} else {
+window.__feedsiloContentScriptLoaded = true;
+
 // --- Debug logging (set to true for development) ---
 const DEBUG = false;
 function log(...args) { if (DEBUG) console.log('FeedSilo:', ...args); }
@@ -1991,3 +1998,5 @@ async function startBulkCapture(useApi = false) {
     });
   }
 }
+
+} // end double-injection guard
