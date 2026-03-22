@@ -659,7 +659,17 @@ function shouldTreatItemsAsThread(items, authorHandle, conversationId) {
   const substantiveContinuations = continuations.filter((item) => isSubstantiveThreadReply(item));
   const highValueContinuations = continuations.filter((item) => isHighValueSingleContinuation(item));
 
-  if (substantiveContinuations.length === 0 && highValueContinuations.length === 0) return false;
+  if (substantiveContinuations.length === 0 && highValueContinuations.length === 0) {
+    // Visual showcase thread: verified self-replies that are image-only or near-image-only.
+    // Common pattern: short teaser root tweet + series of image cards (e.g. gradient reveals,
+    // design showcases) where each reply has media but no/minimal text.
+    const mediaReplies = continuations.filter(item =>
+      (item.media_urls || []).length > 0
+      && isLikelySelfThreadEntry(item, authorHandle, conversationId)
+    );
+    if (mediaReplies.length >= 1 && mediaReplies.length === continuations.length) return true;
+    return false;
+  }
   if (hasThreadLeadCue(root.body_text || '')) return true;
   if (continuations.length === 1 && highValueContinuations.length === 1) return true;
 
@@ -1465,7 +1475,7 @@ function injectSaveButtons() {
         const assembled = {
           external_id: root.external_id,
           source_url: root.source_url,
-          source_type: 'tweet',
+          source_type: 'thread',
           conversation_id: root.conversation_id || root.external_id,
           author_handle: root.author_handle,
           author_display_name: root.author_display_name,

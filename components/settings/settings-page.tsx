@@ -9,6 +9,7 @@ import { EmbeddingsSection } from "./sections/embeddings-section";
 import { DataSection } from "./sections/data-section";
 import { XApiSection } from "./sections/xapi-section";
 import { RssSection } from "./sections/rss-section";
+import { AccountSection } from "./sections/account-section";
 
 interface SettingsData {
   configured: boolean;
@@ -92,6 +93,8 @@ export function SettingsPage({ stats, isAuthed, isAdmin = true }: SettingsPagePr
                 <SearchSection settings={settings} onRefresh={fetchSettings} />
               </>
             )}
+
+            <AccountSection />
 
             <DataSection stats={stats} settings={settings} isAdmin={isAdmin} />
           </div>

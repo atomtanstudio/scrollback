@@ -69,7 +69,7 @@ export function ItemDetailPage({ item, threadSiblings = [], isAuthed = false }: 
           <motion.div variants={itemVariants}>
             <div className="overflow-hidden rounded-[30px] border border-[#d6c9b214] bg-[linear-gradient(180deg,rgba(24,29,37,0.96),rgba(14,18,24,0.98))] shadow-[0_34px_90px_rgba(2,6,12,0.32)]">
               <div className={isArticle ? "p-8 sm:p-10" : "p-6 sm:p-8"}>
-                {isThread ? (
+                {isThread && threadSiblings.length > 0 ? (
                   <ThreadChain currentItem={item} siblings={threadSiblings} />
                 ) : (
                   <DetailContent item={item} cardType={cardType} />
