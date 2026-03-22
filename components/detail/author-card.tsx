@@ -86,7 +86,7 @@ export function AuthorCard({
             {primaryLinkLabel}
           </a>
         )}
-        {authorHandle && isXSource && (
+        {authorHandle && (
           <a
             href={`https://x.com/${authorHandle}`}
             target="_blank"
