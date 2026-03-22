@@ -316,14 +316,9 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
             {/* Compact intro + search */}
             <div className="mb-5">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-baseline gap-3">
-                  <h1 className="font-heading text-2xl font-semibold tracking-[-0.04em] text-[#f2ede5]">
-                    Your Feed
-                  </h1>
-                  <span className="text-sm text-[#8a8174]">
-                    {stats.total.toLocaleString()} captures
-                  </span>
-                </div>
+                <h1 className="font-heading text-2xl font-semibold tracking-[-0.04em] text-[#f2ede5]">
+                  Your Feed
+                </h1>
                 {/* Sort tabs */}
                 <div className="flex items-center gap-1 rounded-[10px] border border-[#d6c9b214] bg-[#ffffff05] p-1">
                   {([

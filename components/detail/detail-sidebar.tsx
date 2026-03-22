@@ -62,28 +62,6 @@ function SidebarSection({
   );
 }
 
-function MetaRow({
-  label,
-  value,
-  accentColor,
-  isLast = false,
-}: {
-  label: string;
-  value: string;
-  accentColor?: string;
-  isLast?: boolean;
-}) {
-  return (
-    <div
-      className={`flex items-center justify-between py-1.5 text-xs ${!isLast ? "border-b border-[#d6c9b214]" : ""}`}
-    >
-      <span className="text-[#8a8174]">{label}</span>
-      <span className="text-[#cdc4b7]" style={accentColor ? { color: accentColor } : undefined}>
-        {value}
-      </span>
-    </div>
-  );
-}
 
 function TableOfContents({ html }: { html: string }) {
   const headings = extractH2Headings(html);
@@ -115,49 +93,48 @@ function AiSummaryCard({ summary }: { summary: string }) {
   );
 }
 
-function TagsCard({ tags, cardType }: { tags: DetailItem["tags"]; cardType: CardType }) {
-  if (!tags || tags.length === 0) return null;
+function TagsAndCategories({
+  tags,
+  categories,
+  cardType,
+}: {
+  tags: DetailItem["tags"];
+  categories: DetailItem["categories"];
+  cardType: CardType;
+}) {
+  const hasTags = tags && tags.length > 0;
+  const hasCategories = categories && categories.length > 0;
+  if (!hasTags && !hasCategories) return null;
   const accent = accentColors[cardType];
 
   return (
     <SidebarSection title="Tags">
       <div className="flex flex-wrap gap-2">
-        {tags.map(({ tag }) => (
+        {hasCategories && categories.map(({ category }) => (
           <span
-            key={tag.id}
+            key={`cat-${category.id}`}
+            className="rounded-full border px-3 py-1 text-[11px] font-medium"
+            style={{
+              backgroundColor: `${accent}18`,
+              color: accent,
+              borderColor: `${accent}28`,
+            }}
+          >
+            {category.name}
+          </span>
+        ))}
+        {hasTags && tags.map(({ tag }) => (
+          <span
+            key={`tag-${tag.id}`}
             className="rounded-full border px-3 py-1 text-[11px]"
             style={{
-              backgroundColor: `${accent}14`,
+              backgroundColor: `${accent}0a`,
               color: accent,
-              borderColor: `${accent}22`,
+              borderColor: `${accent}18`,
             }}
           >
             {tag.name}
           </span>
-        ))}
-      </div>
-    </SidebarSection>
-  );
-}
-
-function CategoriesCard({
-  categories,
-  cardType,
-}: {
-  categories: DetailItem["categories"];
-  cardType: CardType;
-}) {
-  if (!categories || categories.length === 0) return null;
-  const accent = accentColors[cardType];
-
-  return (
-    <SidebarSection title="Categories">
-      <div className="space-y-2">
-        {categories.map(({ category }) => (
-          <div key={category.id} className="flex items-center gap-2 text-[13px]">
-            <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: accent }} />
-            <span className="text-[#cdc4b7]">{category.name}</span>
-          </div>
         ))}
       </div>
     </SidebarSection>
@@ -193,17 +170,18 @@ export function DetailSidebar({ item, cardType, isAuthed = false }: DetailSideba
 
       {isAuthed && <AdminActions item={item} />}
 
-      <TagsCard tags={item.tags} cardType={cardType} />
-      <CategoriesCard categories={item.categories} cardType={cardType} />
+      <TagsAndCategories tags={item.tags} categories={item.categories} cardType={cardType} />
 
-      <SidebarSection title="Meta">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 text-[11px] text-[#7d7569]">
         {item.source_platform === "rss" && item.source_label && (
-          <MetaRow label="Source" value={item.source_label} />
+          <span>{item.source_label}</span>
         )}
-        <MetaRow label="Posted" value={item.posted_at ? formatFullDate(item.posted_at) : "Unknown"} />
-        <MetaRow label="Captured" value={item.created_at ? formatFullDate(item.created_at) : "Unknown"} />
-        <MetaRow label="Type" value={sourceTypeLabel} accentColor={accent} isLast />
-      </SidebarSection>
+        <span style={{ color: accent }}>{sourceTypeLabel}</span>
+        {item.posted_at && <span>{formatFullDate(item.posted_at)}</span>}
+        {item.created_at && item.posted_at !== item.created_at && (
+          <span>Captured {formatFullDate(item.created_at)}</span>
+        )}
+      </div>
 
       {cardType === "article" && item.body_html && <TableOfContents html={item.body_html} />}
     </div>
