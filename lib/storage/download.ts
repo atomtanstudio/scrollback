@@ -1,4 +1,5 @@
-import { uploadMedia, uploadMediaStream } from "./r2";
+import { uploadMedia, uploadMediaStream, isR2Configured } from "./r2";
+import { isLocalStorageConfigured, saveMediaLocally, saveMediaLocallyStream } from "./local";
 
 const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB (videos can be large)
 const DOWNLOAD_TIMEOUT = 300_000; // 5 minutes (large video downloads)
@@ -77,21 +78,30 @@ export async function downloadAndStoreMedia(
     const contentType = response.headers.get("content-type") || "application/octet-stream";
     const ext = extractExtension(originalUrl, contentType);
     const key = `media/${contentItemId}/${mediaId}.${ext}`;
+    const useStreaming = contentLength > STREAM_THRESHOLD || (contentLength === 0 && contentType.startsWith("video/"));
 
-    // Use streaming upload for large files to avoid OOM
-    if (contentLength > STREAM_THRESHOLD || (contentLength === 0 && contentType.startsWith("video/"))) {
-      if (!response.body) {
-        console.warn(`No response body for streaming: ${originalUrl}`);
-        return null;
+    if (isR2Configured()) {
+      // Use streaming upload for large files to avoid OOM
+      if (useStreaming) {
+        if (!response.body) {
+          console.warn(`No response body for streaming: ${originalUrl}`);
+          return null;
+        }
+        return await uploadMediaStream(key, response.body, contentType);
       }
-      return await uploadMediaStream(key, response.body, contentType);
+      const arrayBuffer = await response.arrayBuffer();
+      return await uploadMedia(key, Buffer.from(arrayBuffer), contentType);
     }
 
-    // Small files: buffer in memory (faster)
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    if (isLocalStorageConfigured()) {
+      if (useStreaming && response.body) {
+        return await saveMediaLocallyStream(key, response.body);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      return await saveMediaLocally(key, Buffer.from(arrayBuffer));
+    }
 
-    return await uploadMedia(key, buffer, contentType);
+    return null;
   } catch (error) {
     console.warn(`Media download error for ${originalUrl}:`, error instanceof Error ? error.message : error);
     return null;

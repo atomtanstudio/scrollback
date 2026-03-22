@@ -23,12 +23,17 @@ export const searchConfigSchema = z.object({
   semanticWeight: z.number().min(0).max(1).default(0.6),
 });
 
+export const localMediaConfigSchema = z.object({
+  path: z.string().optional(),
+});
+
 export const configSchema = z.object({
   database: databaseConfigSchema,
   embeddings: embeddingsConfigSchema.default({ provider: "gemini" }),
   extension: extensionConfigSchema.default({}),
   xapi: xapiConfigSchema.default({}),
   search: searchConfigSchema.default({ keywordWeight: 0.4, semanticWeight: 0.6 }),
+  localMedia: localMediaConfigSchema.default({}),
 });
 
 export type FeedsiloConfig = z.infer<typeof configSchema>;

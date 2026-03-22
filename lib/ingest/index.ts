@@ -6,6 +6,7 @@ import { generateEmbedding, classifyContent, describeImage, translateToEnglish }
 import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { CapturePayload, CaptureResult } from "@/lib/db/types";
 import { isR2Configured } from "@/lib/storage/r2";
+import { isLocalStorageConfigured } from "@/lib/storage/local";
 import { downloadAndStoreMedia } from "@/lib/storage/download";
 import { qualifiesAsArtCapture } from "@/lib/art-detection";
 import { normalizeCapturedText } from "@/lib/text-cleanup";
@@ -368,12 +369,11 @@ async function downloadMediaInBackground(
   mediaRecords: Array<{ id: string; originalUrl: string; mediaType: string }>
 ): Promise<void> {
   const prisma = await getClient();
-  const hasR2 = isR2Configured();
+  const hasStorage = isR2Configured() || isLocalStorageConfigured();
 
   for (const { id, originalUrl, mediaType } of mediaRecords) {
     try {
-      // Download to R2
-      if (hasR2) {
+      if (hasStorage) {
         const storedPath = await downloadAndStoreMedia(id, contentItemId, originalUrl);
         if (storedPath) {
           await prisma.media.update({

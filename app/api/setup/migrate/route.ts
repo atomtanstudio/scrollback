@@ -127,6 +127,7 @@ export async function POST(request: NextRequest) {
       extension: parsed.data.extension || {},
       xapi: {},
       search: { keywordWeight: 0.4, semanticWeight: 0.6 },
+      localMedia: {},
     };
 
     // Write config files

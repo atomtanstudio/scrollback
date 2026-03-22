@@ -10,6 +10,7 @@ import { DataSection } from "./sections/data-section";
 import { XApiSection } from "./sections/xapi-section";
 import { RssSection } from "./sections/rss-section";
 import { AccountSection } from "./sections/account-section";
+import { LocalMediaSection } from "./sections/local-media-section";
 
 interface SettingsData {
   configured: boolean;
@@ -90,6 +91,7 @@ export function SettingsPage({ stats, isAuthed, isAdmin = true }: SettingsPagePr
                 <XApiSection settings={settings} onRefresh={fetchSettings} />
                 <EmbeddingsSection settings={settings} onRefresh={fetchSettings} />
                 <DatabaseSection settings={settings} onRefresh={fetchSettings} />
+                <LocalMediaSection settings={settings} onRefresh={fetchSettings} />
                 <SearchSection settings={settings} onRefresh={fetchSettings} />
               </>
             )}

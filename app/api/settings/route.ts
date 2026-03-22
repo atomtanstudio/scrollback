@@ -3,6 +3,7 @@ import { getConfig, writeConfig, readConfig, invalidateConfigCache } from "@/lib
 import { getClient, disconnectClient } from "@/lib/db/client";
 import { invalidateSearchProvider } from "@/lib/db/search-provider";
 import { isR2Configured } from "@/lib/storage/r2";
+import { isLocalStorageConfigured, getLocalMediaDir } from "@/lib/storage/local";
 import type { FeedsiloConfig } from "@/lib/config";
 import { sanitizeErrorMessage } from "@/lib/security/redact";
 
@@ -72,6 +73,10 @@ export async function GET() {
       semanticWeight: config.search.semanticWeight,
     },
     r2,
+    localMedia: {
+      configured: isLocalStorageConfigured(),
+      path: getLocalMediaDir() ?? config.localMedia?.path ?? null,
+    },
   }, { headers: NO_STORE_HEADERS });
 }
 
@@ -99,6 +104,9 @@ export async function POST(request: Request) {
     }
     if (body.search) {
       updated.search = { ...current.search, ...body.search };
+    }
+    if (body.localMedia !== undefined) {
+      updated.localMedia = { ...(current.localMedia || {}), ...body.localMedia };
     }
 
     writeConfig(updated);

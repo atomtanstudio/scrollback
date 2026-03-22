@@ -8,6 +8,7 @@
 export function getMediaDisplayUrl(storedPath: string | null, originalUrl: string): string {
   if (storedPath) {
     if (storedPath.startsWith("http")) return storedPath;
+    if (storedPath.startsWith("local/")) return `/api/local-media/${storedPath.slice(6)}`;
     // Strip leading ./ if present (legacy basex paths)
     const clean = storedPath.replace(/^\.\//, "");
     return `/api/r2/${clean}`;

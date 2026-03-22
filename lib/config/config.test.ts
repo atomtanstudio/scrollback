@@ -112,6 +112,7 @@ describe('writeConfig', () => {
       extension: { pairingToken: 'token456' },
       xapi: {},
       search: { keywordWeight: 0.4, semanticWeight: 0.6 },
+      localMedia: {},
     };
     const envPath = path.join(tmpDir, '.env.local');
     writeConfig(config, configPath, envPath);
@@ -147,6 +148,7 @@ describe('resolveConfig', () => {
       extension: {},
       xapi: {},
       search: { keywordWeight: 0.4, semanticWeight: 0.6 },
+      localMedia: {},
     };
     const resolved = resolveConfig(fileConfig);
     expect(resolved!.database.url).toBe('postgresql://env-override/db');
@@ -178,6 +180,7 @@ describe('resolveConfig', () => {
       extension: {},
       xapi: {},
       search: { keywordWeight: 0.4, semanticWeight: 0.6 },
+      localMedia: {},
     };
     const resolved = resolveConfig(fileConfig);
     expect(resolved!.database.type).toBe('sqlite');
@@ -197,6 +200,7 @@ describe('isConfigured', () => {
       extension: {},
       xapi: {},
       search: { keywordWeight: 0.4, semanticWeight: 0.6 },
+      localMedia: {},
     };
     expect(isConfigured(config)).toBe(true);
   });
