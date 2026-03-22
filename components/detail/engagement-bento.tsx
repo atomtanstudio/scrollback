@@ -28,12 +28,11 @@ export function EngagementBento({
   if (stats.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[16px] border border-[#d6c9b214] bg-[#ffffff08] px-4 py-3">
-      {stats.map((stat, i) => (
+    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 rounded-[16px] border border-[#d6c9b214] bg-[#ffffff08] px-4 py-3">
+      {stats.map((stat) => (
         <span key={stat.label} className="flex items-center gap-1.5 text-[13px]">
           <span className="font-semibold text-[#f2ede5]">{formatNumber(stat.value)}</span>
           <span className="text-[#8a8174]">{stat.label}</span>
-          {i < stats.length - 1 && <span className="ml-2.5 text-[#d6c9b214]">·</span>}
         </span>
       ))}
     </div>
