@@ -13,42 +13,39 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 // Re-inject content scripts into existing X/Twitter tabs when the extension starts.
 // This handles extension reload/update — Chrome doesn't re-inject automatically,
 // so existing tabs would have dead content scripts without this.
-async function reinjectContentScripts() {
+// When extension is reloaded/updated, notify existing X tabs to refresh.
+// Chrome can't revive dead content script contexts — a page reload is required.
+async function notifyStaleTabsToRefresh() {
   try {
     const tabs = await chrome.tabs.query({ url: ['https://x.com/*', 'https://twitter.com/*'] });
     for (const tab of tabs) {
       if (!tab.id) continue;
       try {
-        // Inject interceptor first (MAIN world), then content script
+        // Inject a small script that shows a refresh banner
         await chrome.scripting.executeScript({
           target: { tabId: tab.id },
-          files: ['interceptor.js'],
-          world: 'MAIN',
+          func: () => {
+            if (document.getElementById('feedsilo-refresh-banner')) return;
+            const banner = document.createElement('div');
+            banner.id = 'feedsilo-refresh-banner';
+            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a1510;border-bottom:1px solid #b8946233;padding:8px 16px;display:flex;align-items:center;justify-content:center;gap:12px;font-family:system-ui,sans-serif;font-size:13px;color:#f0cf9f;';
+            banner.innerHTML = '<span>FeedSilo extension was updated</span><button id="feedsilo-refresh-btn" style="background:#b89462;color:#0a0a0f;border:none;padding:4px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Refresh to activate</button><button id="feedsilo-dismiss-btn" style="background:none;border:none;color:#8a8174;cursor:pointer;font-size:16px;padding:0 4px;">✕</button>';
+            document.body.prepend(banner);
+            document.getElementById('feedsilo-refresh-btn').addEventListener('click', () => location.reload());
+            document.getElementById('feedsilo-dismiss-btn').addEventListener('click', () => banner.remove());
+          },
         });
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ['content.js'],
-        });
-        // Also inject CSS
-        await chrome.scripting.insertCSS({
-          target: { tabId: tab.id },
-          files: ['content.css'],
-        });
-      } catch (err) {
-        // Tab might be restricted (chrome://, etc.) — ignore
+      } catch {
+        // Tab might be restricted — ignore
       }
     }
-  } catch (err) {
-    // No tabs found or permission issue — ignore
+  } catch {
+    // No tabs or permission issue — ignore
   }
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  reinjectContentScripts();
-});
-
-chrome.runtime.onStartup.addListener(() => {
-  reinjectContentScripts();
+  notifyStaleTabsToRefresh();
 });
 
 // Track pending thread fetches: backgroundTabId → { originTabId, conversationId, resolve, timer }

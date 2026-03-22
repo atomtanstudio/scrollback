@@ -2,12 +2,6 @@
 // FeedSilo Extension - Content Script
 // ============================================================
 
-// On re-injection (extension reload/update), remove old save buttons
-// so fresh ones with live chrome.runtime connections replace them
-if (window.__feedsiloContentScriptLoaded) {
-  document.querySelectorAll('[data-feedsilo-btn]').forEach(btn => btn.remove());
-}
-window.__feedsiloContentScriptLoaded = true;
 {
 
 // --- Debug logging (set to true for development) ---
