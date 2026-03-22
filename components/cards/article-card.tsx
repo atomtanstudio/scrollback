@@ -109,7 +109,7 @@ export function ArticleCard({ item, href }: ArticleCardProps) {
         <h3 className={`mb-2 font-heading font-semibold leading-tight tracking-[-0.03em] text-[#f2ede5] ${isRss ? "line-clamp-3 text-[1.18rem]" : "line-clamp-2 text-[1.05rem]"}`}>
           {displayTitle}
         </h3>
-        <p className={`mb-3 text-[#b4ab9d] ${isRss ? "line-clamp-3 text-[14px] leading-6" : "line-clamp-2 text-sm leading-7"}`}>
+        <p className={`mb-3 text-[#b4ab9d] ${isRss ? "line-clamp-3 text-[14px] leading-6" : "line-clamp-3 text-sm leading-7"}`}>
           {articleDek || displayBodyText}
         </p>
         <div className="flex items-center justify-between gap-3 text-xs text-[#7d7569]">

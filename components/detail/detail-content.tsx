@@ -41,12 +41,12 @@ function renderTextWithInlineMedia(text: string, keyPrefix: string) {
     const videoMatch = part.match(/^\[Video:\s*(https?:\/\/[^\]]+)\]$/);
     if (videoMatch) {
       return (
-        <div key={`${keyPrefix}-${j}`} className="my-8 flex justify-center">
+        <div key={`${keyPrefix}-${j}`} className="my-8">
           <video
             controls
             preload="metadata"
             playsInline
-            className="block max-h-[75vh] w-full rounded-xl bg-black object-contain"
+            className="block max-h-[75vh] w-full bg-black object-contain"
           >
             <source src={videoMatch[1]} type="video/mp4" />
           </video>
@@ -213,12 +213,12 @@ function ArticleTextSegments({ bodyText, mediaItems }: { bodyText: string; media
       {processedSegments.map((segment, i) => {
         if (segment.type === "video") {
           return (
-            <div key={i} className="my-8 flex justify-center">
+            <div key={i} className="my-8">
               <video
                 controls
                 preload="metadata"
                 playsInline
-                className="block max-h-[75vh] w-full rounded-xl bg-black object-contain"
+                className="block max-h-[75vh] w-full bg-black object-contain"
               >
                 <source src={resolveMediaUrl(segment.content)} type="video/mp4" />
               </video>

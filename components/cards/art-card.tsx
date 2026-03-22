@@ -70,12 +70,12 @@ export function ArtCard({ item, href }: ArtCardProps) {
           </div>
         )}
         {item.prompt_text && (
-          <p className="mb-3 text-[13px] italic leading-7 text-[#c8a7ac] line-clamp-2">
+          <p className="mb-3 text-[13px] italic leading-7 text-[#c8a7ac] line-clamp-3">
             &ldquo;{item.prompt_text}&rdquo;
           </p>
         )}
         {displayBodyText && !item.prompt_text && (
-          <p className="mb-3 text-sm leading-7 text-[#b4ab9d] line-clamp-2">
+          <p className="mb-3 text-sm leading-7 text-[#b4ab9d] line-clamp-3">
             {displayBodyText}
           </p>
         )}
