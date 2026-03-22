@@ -302,10 +302,10 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
               </div>
               <div className="mt-3 pt-2">
                 <a
-                  href="mailto:hello@feedsilo.app"
+                  href="mailto:hello@feedsilo.app?subject=FeedSilo%20Cloud%20Waitlist&body=I%27m%20interested%20in%20a%20hosted%20FeedSilo%20account."
                   className="flex items-center justify-center gap-1.5 rounded-[10px] border border-[#b8946222] bg-[#b894620a] px-3 py-2 text-[11px] font-medium text-[#b89462] transition-colors hover:bg-[#b8946218] hover:text-[#f0cf9f]"
                 >
-                  Don&apos;t want to self-host? Get a hosted account
+                  Join the waitlist for FeedSilo Cloud
                 </a>
               </div>
             </div>
