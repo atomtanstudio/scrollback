@@ -273,7 +273,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
 
             <div className="rounded-[16px] border border-[#b8946222] bg-gradient-to-b from-[#b894620a] to-transparent p-4">
               <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#b89462]">Support our projects</p>
-              <p className="mb-3 text-[11px] leading-4 text-[#8a8174]">Free tools from the maker of FeedSilo</p>
+              <p className="mb-3 text-[11px] leading-4 text-[#8a8174]">Other tools from the maker of FeedSilo</p>
               <div className="grid gap-2">
                 <a
                   href="https://promptsilo.app"
