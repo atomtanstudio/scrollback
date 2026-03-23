@@ -92,15 +92,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const bgTabId = sender.tab?.id;
     const pending = pendingThreadFetches.get(bgTabId);
     if (pending) {
-      clearTimeout(pending.timer);
-      pendingThreadFetches.delete(bgTabId);
       // Forward tweets to the originating tab
       chrome.tabs.sendMessage(pending.originTabId, {
         type: 'MERGE_CACHE',
         tweets: message.tweets || [],
       }).catch(() => {});
-      // Close background tab
-      chrome.tabs.remove(bgTabId).catch(() => {});
+      // resolve() handles timeout clear, map cleanup, and window close
       pending.resolve({ success: true, tweets: message.tweets || [] });
     }
     return;
@@ -385,22 +382,29 @@ async function handleFetchThread(url, conversationId, originTabId) {
   }
 
   const promise = new Promise((resolve) => {
-    chrome.tabs.create({ url, active: false }, (tab) => {
+    // Open in a minimized window so it never appears in the user's tab bar
+    chrome.windows.create({ url, state: 'minimized', focused: false }, (win) => {
+      const tab = win?.tabs?.[0];
       if (chrome.runtime.lastError || !tab?.id) {
         inflight.delete(conversationId);
         resolve({ success: false, tweets: [] });
         return;
       }
 
+      const winId = win.id;
+
       // Declare listener before the timeout so both can reference it
       let listener;
 
-      const timer = setTimeout(() => {
-        // Timeout — clean up listener, pending entry, tab, and inflight
+      const cleanup = () => {
         chrome.tabs.onUpdated.removeListener(listener);
         pendingThreadFetches.delete(tab.id);
-        chrome.tabs.remove(tab.id).catch(() => {});
+        chrome.windows.remove(winId).catch(() => {});
         inflight.delete(conversationId);
+      };
+
+      const timer = setTimeout(() => {
+        cleanup();
         resolve({ success: false, tweets: [], timeout: true });
       }, 8000);
 
@@ -408,7 +412,8 @@ async function handleFetchThread(url, conversationId, originTabId) {
         originTabId,
         conversationId,
         resolve: (result) => {
-          inflight.delete(conversationId);
+          clearTimeout(timer);
+          cleanup();
           resolve(result);
         },
         timer,
