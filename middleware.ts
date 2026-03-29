@@ -1,8 +1,5 @@
-import { NextResponse } from "next/server";
-import NextAuth from "next-auth";
-import { authConfig } from "@/lib/auth/auth.config";
-
-const { auth } = NextAuth(authConfig);
+import { NextRequest, NextResponse } from "next/server";
+import { decode } from "@auth/core/jwt";
 
 // Pages that require authentication
 const PROTECTED_PAGES = ["/settings", "/admin"];
@@ -17,7 +14,6 @@ const EXTENSION_API_PATHS = [
 ];
 
 // API routes that are always public (any method)
-// Uses exact-or-prefix matching via matchPath()
 const PUBLIC_API_PATHS = [
   "/api/auth/",
   "/api/setup/",
@@ -35,7 +31,6 @@ const PUBLIC_POST_PATHS = [
 ];
 
 // GET routes that trigger mutations or expensive operations — admin only
-// These are checked BEFORE public API paths for non-admin users
 const ADMIN_ONLY_GET_PATHS = [
   "/api/backfill/",
   "/api/media/backfill",
@@ -49,11 +44,6 @@ const ADMIN_ONLY_GET_PATHS = [
 // Static/framework paths — skip entirely
 const SKIP_PATHS = ["/_next", "/favicon.ico"];
 
-/**
- * Check if a pathname matches a path pattern.
- * Pattern ending with / is a prefix match.
- * Pattern without trailing / matches exactly or as a prefix with / or ?.
- */
 function matchPath(pathname: string, pattern: string): boolean {
   if (pattern.endsWith("/")) {
     return pathname.startsWith(pattern);
@@ -67,9 +57,37 @@ function matchAny(pathname: string, patterns: string[]): boolean {
   return patterns.some((p) => matchPath(pathname, p));
 }
 
-export default auth((req) => {
-  const { pathname } = req.nextUrl;
-  const method = req.method;
+/**
+ * Extract role from the NextAuth JWT session cookie.
+ * Returns the role string, or null if the token can't be decoded.
+ */
+async function getRoleFromToken(request: NextRequest): Promise<string | null> {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) return null;
+
+  const sessionToken =
+    request.cookies.get("__Secure-authjs.session-token")?.value ||
+    request.cookies.get("authjs.session-token")?.value;
+
+  if (!sessionToken) return null;
+
+  try {
+    const token = await decode({
+      token: sessionToken,
+      secret,
+      salt: request.cookies.has("__Secure-authjs.session-token")
+        ? "__Secure-authjs.session-token"
+        : "authjs.session-token",
+    });
+    return (token?.role as string) ?? "admin";
+  } catch {
+    return null;
+  }
+}
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const method = request.method;
 
   // Skip framework paths
   if (SKIP_PATHS.some((p) => pathname.startsWith(p))) {
@@ -83,9 +101,9 @@ export default auth((req) => {
     !pathname.startsWith("/api/")
   ) {
     const hasEnv = Boolean(process.env.DATABASE_URL && process.env.DATABASE_TYPE);
-    const configured = req.cookies.get("feedsilo-configured");
+    const configured = request.cookies.get("feedsilo-configured");
     if (!hasEnv && configured?.value !== "true") {
-      return NextResponse.redirect(new URL("/onboarding", req.url));
+      return NextResponse.redirect(new URL("/onboarding", request.url));
     }
   }
 
@@ -110,7 +128,6 @@ export default auth((req) => {
     !matchAny(pathname, EXTENSION_API_PATHS) &&
     !matchAny(pathname, PUBLIC_API_PATHS);
 
-  // Admin-only GET paths that happen to be under public prefixes (e.g., /api/search/reindex)
   const isAdminOnlyGet = matchAny(pathname, ADMIN_ONLY_GET_PATHS);
 
   // Check if this request needs auth
@@ -123,18 +140,22 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  // Check for session
-  if (!req.auth?.user) {
+  // Check for NextAuth session token (same cookie check as the original middleware)
+  const sessionToken =
+    request.cookies.get("__Secure-authjs.session-token") ||
+    request.cookies.get("authjs.session-token");
+
+  if (!sessionToken) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const loginUrl = new URL("/login", req.url);
+    const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
   // --- Role enforcement for authenticated users ---
-  const role = req.auth.user.role ?? "admin";
+  const role = await getRoleFromToken(request) ?? "admin";
 
   if (role === "admin") {
     return NextResponse.next();
@@ -142,7 +163,7 @@ export default auth((req) => {
 
   // Non-admin: block admin-only pages
   if (ADMIN_ONLY_PAGES.some((p) => pathname.startsWith(p))) {
-    return NextResponse.redirect(new URL("/?denied=1", req.url));
+    return NextResponse.redirect(new URL("/?denied=1", request.url));
   }
 
   // Non-admin: block admin-only GET paths (mutations disguised as GETs)
@@ -162,7 +183,7 @@ export default auth((req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
