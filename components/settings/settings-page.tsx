@@ -26,9 +26,10 @@ interface SettingsPageProps {
   stats: { total: number; tweets: number; threads: number; articles: number; rss: number; art: number };
   isAuthed: boolean;
   isAdmin?: boolean;
+  isReadOnly?: boolean;
 }
 
-export function SettingsPage({ stats, isAuthed, isAdmin = true }: SettingsPageProps) {
+export function SettingsPage({ stats, isAuthed, isAdmin = true, isReadOnly = false }: SettingsPageProps) {
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -80,25 +81,35 @@ export function SettingsPage({ stats, isAuthed, isAdmin = true }: SettingsPagePr
           </div>
         ) : (
           <div className="flex flex-col gap-4">
+            {isReadOnly && (
+              <div className="rounded-[16px] border border-[#b8946233] bg-[#b894621a] px-5 py-3 text-sm text-[#e7d5be]">
+                You&apos;re viewing settings in read-only mode. Changes are disabled for demo accounts.
+              </div>
+            )}
+
             {isAdmin && (
               <ExtensionSection settings={settings} onRefresh={fetchSettings} />
             )}
 
-            <RssSection settings={settings} onRefresh={fetchSettings} isAdmin={isAdmin} />
+            <div className={isReadOnly ? "pointer-events-none opacity-60" : ""}>
+              <div className="flex flex-col gap-4">
+                <RssSection settings={settings} onRefresh={fetchSettings} isAdmin={isAdmin} />
 
-            {isAdmin && (
-              <>
-                <XApiSection settings={settings} onRefresh={fetchSettings} />
-                <EmbeddingsSection settings={settings} onRefresh={fetchSettings} />
-                <DatabaseSection settings={settings} onRefresh={fetchSettings} />
-                <LocalMediaSection settings={settings} onRefresh={fetchSettings} />
-                <SearchSection settings={settings} onRefresh={fetchSettings} />
-              </>
-            )}
+                {isAdmin && (
+                  <>
+                    <XApiSection settings={settings} onRefresh={fetchSettings} />
+                    <EmbeddingsSection settings={settings} onRefresh={fetchSettings} />
+                    <DatabaseSection settings={settings} onRefresh={fetchSettings} />
+                    <LocalMediaSection settings={settings} onRefresh={fetchSettings} />
+                    <SearchSection settings={settings} onRefresh={fetchSettings} />
+                  </>
+                )}
 
-            <AccountSection />
+                <AccountSection />
 
-            <DataSection stats={stats} settings={settings} isAdmin={isAdmin} />
+                <DataSection stats={stats} settings={settings} isAdmin={isAdmin} />
+              </div>
+            </div>
           </div>
         )}
       </div>

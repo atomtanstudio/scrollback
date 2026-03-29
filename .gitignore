@@ -54,3 +54,4 @@ feedsilo.config.json
 *.db
 *.db-journal
 *.db-wal
+.gstack/

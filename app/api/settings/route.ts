@@ -6,6 +6,7 @@ import { isR2Configured } from "@/lib/storage/r2";
 import { isLocalStorageConfigured, getLocalMediaDir } from "@/lib/storage/local";
 import type { FeedsiloConfig } from "@/lib/config";
 import { sanitizeErrorMessage } from "@/lib/security/redact";
+import { auth } from "@/lib/auth/auth";
 
 const NO_STORE_HEADERS = {
   "Cache-Control": "no-store, max-age=0",
@@ -25,6 +26,10 @@ function maskUrl(url: string): string {
 }
 
 export async function GET() {
+  const session = await auth();
+  const role = session?.user?.role ?? "admin";
+  const isAdmin = role === "admin";
+
   const config = getConfig();
   if (!config) {
     return NextResponse.json({ configured: false }, { headers: NO_STORE_HEADERS });
@@ -54,7 +59,7 @@ export async function GET() {
     configured: true,
     database: {
       type: config.database.type,
-      url: maskUrl(config.database.url),
+      url: isAdmin ? maskUrl(config.database.url) : "Hidden in demo mode",
     },
     embeddings: {
       provider: config.embeddings?.provider || "gemini",
@@ -75,7 +80,7 @@ export async function GET() {
     r2,
     localMedia: {
       configured: isLocalStorageConfigured(),
-      path: getLocalMediaDir() ?? config.localMedia?.path ?? null,
+      path: isAdmin ? (getLocalMediaDir() ?? config.localMedia?.path ?? null) : "Hidden in demo mode",
     },
   }, { headers: NO_STORE_HEADERS });
 }

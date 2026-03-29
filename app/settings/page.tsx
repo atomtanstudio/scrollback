@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SettingsPage } from "@/components/settings/settings-page";
+import { DemoBanner } from "@/components/demo-banner";
 import { fetchStats } from "@/lib/db/queries";
 import { auth } from "@/lib/auth/auth";
 
@@ -13,6 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function Page() {
   let stats = { total: 0, tweets: 0, threads: 0, articles: 0, rss: 0, art: 0 };
   const session = await auth();
+  const role = session?.user?.role ?? "admin";
 
   try {
     stats = await fetchStats();
@@ -20,5 +22,15 @@ export default async function Page() {
     // Config may not be set up yet
   }
 
-  return <SettingsPage stats={stats} isAuthed={!!session?.user} />;
+  return (
+    <>
+      <DemoBanner role={role} />
+      <SettingsPage
+        stats={stats}
+        isAuthed={!!session?.user}
+        isAdmin={role === "admin"}
+        isReadOnly={role !== "admin"}
+      />
+    </>
+  );
 }

@@ -4,6 +4,26 @@ import bcrypt from "bcryptjs";
 import { getClient } from "@/lib/db/client";
 import { sanitizeErrorMessage } from "@/lib/security/redact";
 
+declare module "next-auth" {
+  interface User {
+    role?: string;
+  }
+  interface Session {
+    user: {
+      id: string;
+      email: string;
+      role: string;
+    };
+  }
+}
+
+declare module "@auth/core/jwt" {
+  interface JWT {
+    id?: string;
+    role?: string;
+  }
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
   providers: [
@@ -30,7 +50,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           if (!valid) return null;
 
-          return { id: user.id, email: user.email };
+          return {
+            id: user.id,
+            email: user.email,
+            role: (user as Record<string, unknown>).role as string ?? "admin",
+          };
         } catch (err) {
           console.error("Auth error:", sanitizeErrorMessage(err, "Unknown error"));
           return null;
@@ -44,6 +68,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id;
         token.email = user.email;
+        token.role = user.role ?? "admin";
       }
       return token;
     },
@@ -51,6 +76,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
+        session.user.role = (token.role as string) ?? "admin";
       }
       return session;
     },

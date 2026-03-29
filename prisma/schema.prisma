@@ -47,6 +47,14 @@ enum MediaType {
   @@map("media_type_enum")
 }
 
+enum UserRole {
+  admin
+  demo
+  viewer
+
+  @@map("user_role_enum")
+}
+
 model ContentItem {
   id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   source_type         SourceType
@@ -203,7 +211,16 @@ model User {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email         String   @unique @db.Text
   password_hash String   @db.Text
+  role          UserRole @default(admin)
   created_at    DateTime @default(now()) @db.Timestamptz(6)
 
   @@map("users")
+}
+
+model WaitlistEntry {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email      String   @unique @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("waitlist_entries")
 }

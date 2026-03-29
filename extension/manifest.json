@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FeedSilo Capture",
-  "version": "2.0",
+  "version": "2.0.0",
   "description": "Capture tweets, threads, and articles from X/Twitter to your FeedSilo knowledge base.",
   "permissions": [
     "activeTab",
@@ -43,10 +43,11 @@
   "host_permissions": [
     "https://x.com/*",
     "https://twitter.com/*",
-    "https://cdn.syndication.twimg.com/*",
+    "https://cdn.syndication.twimg.com/*"
+  ],
+  "optional_host_permissions": [
     "https://*/*",
-    "http://localhost/*",
-    "http://127.0.0.1/*"
+    "http://*/*"
   ],
   "icons": {
     "16": "icons/icon-16.png",

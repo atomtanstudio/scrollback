@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -20,7 +21,13 @@ function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: st
   );
 }
 
-export function LoginForm({ bootstrapMode = false }: { bootstrapMode?: boolean }) {
+interface LoginFormProps {
+  bootstrapMode?: boolean;
+  demoEmail?: string;
+  demoPassword?: string;
+}
+
+export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword }: LoginFormProps) {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/admin";
   const errorParam = searchParams.get("error");
@@ -30,6 +37,18 @@ export function LoginForm({ bootstrapMode = false }: { bootstrapMode?: boolean }
     : errorParam
       ? "Invalid email or password"
       : "";
+
+  const formRef = useRef<HTMLFormElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  const handleDemoLogin = () => {
+    if (emailRef.current && passwordRef.current && formRef.current) {
+      emailRef.current.value = demoEmail || "";
+      passwordRef.current.value = demoPassword || "";
+      formRef.current.requestSubmit();
+    }
+  };
 
   return (
     <div className="w-full rounded-[28px] border border-[#d6c9b214] bg-[#ffffff08] p-6 sm:p-7">
@@ -51,13 +70,14 @@ export function LoginForm({ bootstrapMode = false }: { bootstrapMode?: boolean }
           : "Unlock settings and admin surfaces for this local instance."}
       </p>
 
-      <form action={bootstrapMode ? bootstrapAdminAction : loginAction} className="mt-6 flex flex-col gap-4">
+      <form ref={formRef} action={bootstrapMode ? bootstrapAdminAction : loginAction} className="mt-6 flex flex-col gap-4">
         <input type="hidden" name="callbackUrl" value={callbackUrl} />
         <div>
           <label className="mb-2 block text-[13px] font-medium text-[#e7e0d5]">
             Email
           </label>
           <input
+            ref={emailRef}
             name="email"
             type="email"
             placeholder="you@example.com"
@@ -71,6 +91,7 @@ export function LoginForm({ bootstrapMode = false }: { bootstrapMode?: boolean }
             Password
           </label>
           <input
+            ref={passwordRef}
             name="password"
             type="password"
             placeholder="Enter your password"
@@ -105,6 +126,39 @@ export function LoginForm({ bootstrapMode = false }: { bootstrapMode?: boolean }
           pendingLabel={bootstrapMode ? "Creating account..." : "Signing in..."}
         />
       </form>
+
+      {demoEmail && demoPassword && !bootstrapMode && (
+        <>
+          <div className="my-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-[#d6c9b214]" />
+            <span className="text-[11px] uppercase tracking-[0.14em] text-[#7d7569]">or try the demo</span>
+            <div className="h-px flex-1 bg-[#d6c9b214]" />
+          </div>
+
+          <div className="rounded-[16px] border border-[#d6c9b214] bg-[#ffffff06] p-4">
+            <p className="mb-3 text-sm text-[#b4ab9d]">
+              Browse a pre-loaded library with 300+ captured tweets, articles, and RSS items.
+            </p>
+            <div className="mb-3 grid grid-cols-2 gap-2 text-xs">
+              <div className="rounded-[10px] bg-[#ffffff08] px-3 py-2">
+                <span className="text-[#7d7569]">Email:</span>{" "}
+                <span className="font-mono text-[#cdc4b7]">{demoEmail}</span>
+              </div>
+              <div className="rounded-[10px] bg-[#ffffff08] px-3 py-2">
+                <span className="text-[#7d7569]">Password:</span>{" "}
+                <span className="font-mono text-[#cdc4b7]">{demoPassword}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              className="w-full rounded-[12px] border border-[#d6c9b21a] bg-[#ffffff0a] px-4 py-2.5 text-sm font-medium text-[#e7e0d5] transition-colors hover:bg-[#ffffff14]"
+            >
+              Log in as Demo
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { HomePage } from "@/components/home-page";
+import { DemoBanner } from "@/components/demo-banner";
 import { fetchItems, fetchStats } from "@/lib/db/queries";
 import { auth } from "@/lib/auth/auth";
 
@@ -14,6 +15,7 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen">
+      <DemoBanner role={session?.user?.role} />
       <Suspense>
         <HomePage
           initialItems={JSON.parse(JSON.stringify(items))}

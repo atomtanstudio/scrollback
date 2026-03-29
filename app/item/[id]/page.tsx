@@ -5,6 +5,7 @@ import { getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
 import type { Metadata } from "next";
 import type { DetailItem, ContentItemWithMedia } from "@/lib/db/types";
 import { ItemDetailPage } from "@/components/detail/item-detail-page";
+import { DemoBanner } from "@/components/demo-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,7 @@ export default async function ItemDetailPageRoute({ params }: { params: Promise<
 
   return (
     <main className="min-h-screen">
+      <DemoBanner role={session?.user?.role} />
       <ItemDetailPage item={serializedItem} threadSiblings={threadSiblings} isAuthed={!!session?.user} />
     </main>
   );

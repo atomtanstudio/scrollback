@@ -1,30 +1,72 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth/auth";
 
 // Pages that require authentication
 const PROTECTED_PAGES = ["/settings", "/admin"];
 
+// Pages that require admin role specifically
+const ADMIN_ONLY_PAGES = ["/admin"];
+
 // API routes that use their own auth (Bearer token)
 const EXTENSION_API_PATHS = [
   "/api/extension/",
-  "/api/ingest/",
+  "/api/ingest",
 ];
 
-// API routes that are always public
+// API routes that are always public (any method)
+// Uses exact-or-prefix matching via matchPath()
 const PUBLIC_API_PATHS = [
-  "/api/auth/",      // NextAuth routes
-  "/api/setup/",     // Onboarding
-  "/api/admin/setup", // First-time admin account creation
-  "/api/stats",      // Stats for home page
-  "/api/items",      // Public feed API
-  "/api/search",     // Public search
-  "/api/r2/",        // Media proxy
+  "/api/auth/",
+  "/api/setup/",
+  "/api/admin/setup",
+  "/api/stats",
+  "/api/items",
+  "/api/search",
+  "/api/r2/",
+  "/api/local-media/",
+];
+
+// POST routes accessible without authentication
+const PUBLIC_POST_PATHS = [
+  "/api/waitlist",
+];
+
+// GET routes that trigger mutations or expensive operations — admin only
+// These are checked BEFORE public API paths for non-admin users
+const ADMIN_ONLY_GET_PATHS = [
+  "/api/backfill/",
+  "/api/media/backfill",
+  "/api/media/local-backfill",
+  "/api/embeddings/",
+  "/api/search/reindex",
+  "/api/data/",
+  "/api/export",
 ];
 
 // Static/framework paths — skip entirely
 const SKIP_PATHS = ["/_next", "/favicon.ico"];
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+/**
+ * Check if a pathname matches a path pattern.
+ * Pattern ending with / is a prefix match.
+ * Pattern without trailing / matches exactly or as a prefix with / or ?.
+ */
+function matchPath(pathname: string, pattern: string): boolean {
+  if (pattern.endsWith("/")) {
+    return pathname.startsWith(pattern);
+  }
+  return pathname === pattern ||
+    pathname.startsWith(pattern + "/") ||
+    pathname.startsWith(pattern + "?");
+}
+
+function matchAny(pathname: string, patterns: string[]): boolean {
+  return patterns.some((p) => matchPath(pathname, p));
+}
+
+export default auth((req) => {
+  const { pathname } = req.nextUrl;
+  const method = req.method;
 
   // Skip framework paths
   if (SKIP_PATHS.some((p) => pathname.startsWith(p))) {
@@ -38,53 +80,86 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith("/api/")
   ) {
     const hasEnv = Boolean(process.env.DATABASE_URL && process.env.DATABASE_TYPE);
-    const configured = request.cookies.get("feedsilo-configured");
+    const configured = req.cookies.get("feedsilo-configured");
     if (!hasEnv && configured?.value !== "true") {
-      return NextResponse.redirect(new URL("/onboarding", request.url));
+      return NextResponse.redirect(new URL("/onboarding", req.url));
     }
   }
 
+  // Public POST paths — allow without auth (e.g., waitlist form)
+  if (matchAny(pathname, PUBLIC_POST_PATHS) && method === "POST") {
+    return NextResponse.next();
+  }
+
   // Extension API routes — handled by their own Bearer token auth
-  if (EXTENSION_API_PATHS.some((p) => pathname.startsWith(p))) {
+  if (matchAny(pathname, EXTENSION_API_PATHS)) {
     return NextResponse.next();
   }
 
   // Public API routes — allow all methods
-  if (PUBLIC_API_PATHS.some((p) => pathname.startsWith(p))) {
+  // But check admin-only GET paths first (more specific takes priority)
+  if (matchAny(pathname, PUBLIC_API_PATHS) && !matchAny(pathname, ADMIN_ONLY_GET_PATHS)) {
     return NextResponse.next();
   }
 
   const protectedApi =
     pathname.startsWith("/api/") &&
-    !EXTENSION_API_PATHS.some((p) => pathname.startsWith(p)) &&
-    !PUBLIC_API_PATHS.some((p) => pathname.startsWith(p));
+    !matchAny(pathname, EXTENSION_API_PATHS) &&
+    !matchAny(pathname, PUBLIC_API_PATHS);
+
+  // Admin-only GET paths that happen to be under public prefixes (e.g., /api/search/reindex)
+  const isAdminOnlyGet = matchAny(pathname, ADMIN_ONLY_GET_PATHS);
 
   // Check if this request needs auth
   const needsAuth =
     PROTECTED_PAGES.some((p) => pathname.startsWith(p)) ||
-    protectedApi;
+    protectedApi ||
+    isAdminOnlyGet;
 
   if (!needsAuth) {
     return NextResponse.next();
   }
 
-  // Check for NextAuth session token
-  const sessionToken =
-    request.cookies.get("__Secure-authjs.session-token") ||
-    request.cookies.get("authjs.session-token");
-
-  if (!sessionToken) {
-    // API routes return 401, pages redirect to login
+  // Check for session
+  if (!req.auth?.user) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
+  // --- Role enforcement for authenticated users ---
+  const role = req.auth.user.role ?? "admin";
+
+  if (role === "admin") {
+    return NextResponse.next();
+  }
+
+  // Non-admin: block admin-only pages
+  if (ADMIN_ONLY_PAGES.some((p) => pathname.startsWith(p))) {
+    return NextResponse.redirect(new URL("/?denied=1", req.url));
+  }
+
+  // Non-admin: block admin-only GET paths (mutations disguised as GETs)
+  if (isAdminOnlyGet) {
+    return NextResponse.json(
+      { error: "Demo account is view-only" },
+      { status: 403 }
+    );
+  }
+
+  // Non-admin: block all non-GET/HEAD API requests (default-deny)
+  if (pathname.startsWith("/api/") && method !== "GET" && method !== "HEAD") {
+    return NextResponse.json(
+      { error: "Demo account is view-only" },
+      { status: 403 }
+    );
+  }
+
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],

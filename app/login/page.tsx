@@ -19,6 +19,10 @@ export default async function LoginPage() {
     }
   }
 
+  const demoEmail = process.env.DEMO_EMAIL || undefined;
+  const demoPassword = process.env.DEMO_PASSWORD || undefined;
+  const showDemo = !!(demoEmail && demoPassword);
+
   return (
     <main className="min-h-screen bg-[#090c11] px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1120px]">
@@ -83,7 +87,11 @@ export default async function LoginPage() {
 
             <div className="p-6 sm:p-8">
               <Suspense>
-                <LoginForm bootstrapMode={bootstrapMode} />
+                <LoginForm
+                  bootstrapMode={bootstrapMode}
+                  demoEmail={showDemo ? demoEmail : undefined}
+                  demoPassword={showDemo ? demoPassword : undefined}
+                />
               </Suspense>
             </div>
           </div>

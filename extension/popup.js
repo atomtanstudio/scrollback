@@ -35,12 +35,25 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Save connection settings
-  saveBtn.addEventListener('click', () => {
+  saveBtn.addEventListener('click', async () => {
     const url = serverUrlInput.value.trim().replace(/\/+$/, '');
     const secret = captureSecretInput.value.trim();
 
     if (!url) {
       showStatus(statusMsg, 'Enter a server URL', 'error');
+      return;
+    }
+
+    // Request host permission for the user's server URL
+    try {
+      const origin = new URL(url).origin + '/*';
+      const granted = await chrome.permissions.request({ origins: [origin] });
+      if (!granted) {
+        showStatus(statusMsg, 'Permission denied — extension needs access to your server', 'error');
+        return;
+      }
+    } catch {
+      showStatus(statusMsg, 'Invalid server URL', 'error');
       return;
     }
 
