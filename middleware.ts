@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/lib/auth/auth.config";
+
+const { auth } = NextAuth(authConfig);
 
 // Pages that require authentication
 const PROTECTED_PAGES = ["/settings", "/admin"];
