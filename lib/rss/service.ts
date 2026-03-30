@@ -341,17 +341,21 @@ async function mapFeedItemToPayload(
   let bodyHtml = getItemHtml(item);
   let mediaUrls = extractMediaUrls(item);
 
-  if (isThinFeedBody(initialBodyText, initialTitle)) {
+  const isThin = isThinFeedBody(initialBodyText, initialTitle);
+
+  if (isThin || mediaUrls.length === 0) {
     try {
       const article = await fetchReadableArticle(originalUrl);
-      if (article.title) {
-        title = article.title.trim();
-      }
-      if (article.textContent && article.textContent.trim().length > bodyText.length) {
-        bodyText = article.textContent.trim();
-      }
-      if (article.htmlContent && article.htmlContent.trim().length > (bodyHtml || "").length) {
-        bodyHtml = article.htmlContent.trim();
+      if (isThin) {
+        if (article.title) {
+          title = article.title.trim();
+        }
+        if (article.textContent && article.textContent.trim().length > bodyText.length) {
+          bodyText = article.textContent.trim();
+        }
+        if (article.htmlContent && article.htmlContent.trim().length > (bodyHtml || "").length) {
+          bodyHtml = article.htmlContent.trim();
+        }
       }
       if (article.imageUrl && mediaUrls.length === 0) {
         mediaUrls = [article.imageUrl];
