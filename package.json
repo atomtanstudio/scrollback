@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "npm run db:push && next start",
+    "start": "npx tsx scripts/migrate.ts && npm run db:push && next start",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",

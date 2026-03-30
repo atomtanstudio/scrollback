@@ -1,7 +1,6 @@
 import { getConfigAsync, getConfig, type DatabaseType } from "@/lib/config";
 import pg from "pg";
 import path from "path";
-import { migrateMultiUser } from "@/lib/db/migrate-multi-user";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PrismaClientAny = any; // Both PG and SQLite clients satisfy this
@@ -10,7 +9,6 @@ const globalForClient = globalThis as unknown as {
   feedsiloClient: PrismaClientAny | undefined;
   feedsiloDbType: DatabaseType | undefined;
   feedsiloPool: pg.Pool | undefined;
-  feedsiloMigrated: boolean | undefined;
 };
 
 /**
@@ -56,17 +54,6 @@ export async function getClient(): Promise<PrismaClientAny> {
     });
   } else {
     // postgresql or supabase — both use PG client with explicit pool config
-    // Auto-migrate multi-user schema on first connection
-    if (!globalForClient.feedsiloMigrated) {
-      try {
-        await migrateMultiUser(config.database.url);
-        globalForClient.feedsiloMigrated = true;
-      } catch (err) {
-        console.error("[db] Auto-migration failed:", err instanceof Error ? err.message : err);
-        globalForClient.feedsiloMigrated = true; // Don't retry every request
-      }
-    }
-
     const { PrismaClient } = await import("@/lib/generated/prisma/client");
     const { PrismaPg } = await import("@prisma/adapter-pg");
 
