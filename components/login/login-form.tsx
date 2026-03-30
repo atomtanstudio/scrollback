@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { bootstrapAdminAction, loginAction } from "@/lib/auth/actions";
@@ -39,18 +39,6 @@ export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword }: Lo
   const showDemo = !!(demoEmail && demoPassword && !bootstrapMode);
   const [tab, setTab] = useState<"signin" | "demo">(showDemo ? "demo" : "signin");
 
-  const formRef = useRef<HTMLFormElement>(null);
-  const emailRef = useRef<HTMLInputElement>(null);
-  const passwordRef = useRef<HTMLInputElement>(null);
-
-  const handleDemoLogin = () => {
-    if (emailRef.current && passwordRef.current && formRef.current) {
-      emailRef.current.value = demoEmail || "";
-      passwordRef.current.value = demoPassword || "";
-      formRef.current.requestSubmit();
-    }
-  };
-
   return (
     <div className="rounded-[20px] border border-[#d6c9b214] bg-[linear-gradient(180deg,rgba(24,29,37,0.96),rgba(14,18,24,0.98))] p-6 shadow-[0_24px_64px_rgba(2,6,12,0.4)]">
       {bootstrapMode ? (
@@ -63,32 +51,30 @@ export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword }: Lo
           </p>
         </>
       ) : showDemo ? (
-        <>
-          <div className="flex gap-1 rounded-[10px] bg-[#ffffff08] p-1">
-            <button
-              type="button"
-              onClick={() => setTab("demo")}
-              className={`flex-1 rounded-[8px] px-3 py-1.5 text-[13px] font-medium transition-colors ${
-                tab === "demo"
-                  ? "bg-[#ffffff12] text-[#f2ede5]"
-                  : "text-[#7d7569] hover:text-[#a49b8b]"
-              }`}
-            >
-              Try the demo
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("signin")}
-              className={`flex-1 rounded-[8px] px-3 py-1.5 text-[13px] font-medium transition-colors ${
-                tab === "signin"
-                  ? "bg-[#ffffff12] text-[#f2ede5]"
-                  : "text-[#7d7569] hover:text-[#a49b8b]"
-              }`}
-            >
-              Sign in
-            </button>
-          </div>
-        </>
+        <div className="flex gap-1 rounded-[10px] bg-[#ffffff08] p-1">
+          <button
+            type="button"
+            onClick={() => setTab("demo")}
+            className={`flex-1 rounded-[8px] px-3 py-1.5 text-[13px] font-medium transition-colors ${
+              tab === "demo"
+                ? "bg-[#ffffff12] text-[#f2ede5]"
+                : "text-[#7d7569] hover:text-[#a49b8b]"
+            }`}
+          >
+            Try the demo
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("signin")}
+            className={`flex-1 rounded-[8px] px-3 py-1.5 text-[13px] font-medium transition-colors ${
+              tab === "signin"
+                ? "bg-[#ffffff12] text-[#f2ede5]"
+                : "text-[#7d7569] hover:text-[#a49b8b]"
+            }`}
+          >
+            Sign in
+          </button>
+        </div>
       ) : (
         <h1 className="text-lg font-semibold tracking-[-0.02em] text-[#f2ede5]">
           Sign in
@@ -98,7 +84,7 @@ export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword }: Lo
       {tab === "demo" && showDemo ? (
         <div className="mt-5">
           <p className="text-[13px] leading-6 text-[#8a8279]">
-            Browse a pre-loaded library with 300+ captured tweets, articles, and RSS items. Read-only access.
+            Browse a pre-loaded library with captured tweets, articles, and RSS items. Read-only access.
           </p>
 
           <div className="mt-4 space-y-2">
@@ -112,36 +98,27 @@ export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword }: Lo
             </div>
           </div>
 
-          {/* Hidden form for demo submission */}
-          <form ref={formRef} action={loginAction} className="hidden">
-            <input type="hidden" name="callbackUrl" value={callbackUrl} />
-            <input ref={emailRef} name="email" type="email" />
-            <input ref={passwordRef} name="password" type="password" />
-          </form>
-
           {error && (
             <p className="mt-3 rounded-[10px] border border-red-500/20 bg-red-500/10 px-3 py-2 text-center text-[13px] text-red-300">
               {error}
             </p>
           )}
 
-          <button
-            type="button"
-            onClick={handleDemoLogin}
-            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-[14px] border border-[#cfb28a55] bg-[#b89462] px-6 text-[14px] font-semibold text-[#10141a] shadow-[0_12px_32px_rgba(184,148,98,0.2)] transition-all duration-200 hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d8c0a0]"
-          >
-            Log in as demo
-          </button>
+          <form action={loginAction}>
+            <input type="hidden" name="callbackUrl" value={callbackUrl} />
+            <input type="hidden" name="email" value={demoEmail} />
+            <input type="hidden" name="password" value={demoPassword} />
+            <SubmitButton label="Log in as demo" pendingLabel="Logging in..." />
+          </form>
         </div>
       ) : (
-        <form ref={formRef} action={bootstrapMode ? bootstrapAdminAction : loginAction} className="mt-5 flex flex-col gap-3">
+        <form action={bootstrapMode ? bootstrapAdminAction : loginAction} className="mt-5 flex flex-col gap-3">
           <input type="hidden" name="callbackUrl" value={callbackUrl} />
           <div>
             <label className="mb-1.5 block text-[13px] font-medium text-[#e7e0d5]">
               Email
             </label>
             <input
-              ref={emailRef}
               name="email"
               type="email"
               placeholder="you@example.com"
@@ -155,7 +132,6 @@ export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword }: Lo
               Password
             </label>
             <input
-              ref={passwordRef}
               name="password"
               type="password"
               placeholder="Enter your password"
