@@ -30,17 +30,6 @@ async function main() {
   await client.connect();
 
   try {
-    // Check if multi-user migration is needed
-    const { rows } = await client.query(`
-      SELECT column_name FROM information_schema.columns
-      WHERE table_name = 'content_items' AND column_name = 'user_id'
-    `);
-
-    if (rows.length > 0) {
-      console.log("[migrate] Multi-user migration already applied.");
-      return;
-    }
-
     // Check if users table exists (might be a fresh install)
     const { rows: userTable } = await client.query(`
       SELECT table_name FROM information_schema.tables
@@ -49,6 +38,25 @@ async function main() {
 
     if (userTable.length === 0) {
       console.log("[migrate] No users table yet (fresh install), skipping.");
+      return;
+    }
+
+    // Check which parts of the migration are needed
+    const { rows: ciCol } = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'content_items' AND column_name = 'user_id'
+    `);
+    const { rows: rssCol } = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'rss_feeds' AND column_name = 'user_id'
+    `);
+    const { rows: tokenCol } = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'users' AND column_name = 'capture_token'
+    `);
+
+    if (ciCol.length > 0 && rssCol.length > 0 && tokenCol.length > 0) {
+      console.log("[migrate] Multi-user migration already applied.");
       return;
     }
 
