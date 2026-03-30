@@ -140,10 +140,14 @@ async function fetchReadableArticle(url: string): Promise<{
   htmlContent: string | null;
   imageUrl: string | null;
 }> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
   const response = await fetch(url, {
     headers: { "User-Agent": "FeedSilo RSS Fetcher/1.0" },
     redirect: "follow",
+    signal: controller.signal,
   });
+  clearTimeout(timeout);
 
   if (!response.ok) {
     throw new Error(`Article request failed with ${response.status}`);
@@ -379,7 +383,7 @@ async function mapFeedItemToPayload(
       mediaUrls = [article.imageUrl];
     }
   } catch (error) {
-    console.warn("RSS article fetch failed:", error instanceof Error ? error.message : error);
+    console.warn(`RSS article fetch failed for ${originalUrl}:`, error instanceof Error ? error.message : error);
   }
 
   return {
@@ -437,7 +441,11 @@ export async function syncRssFeed(feedId: string) {
   let skipped = 0;
   let errors = 0;
 
-  for (const entry of entriesToProcess) {
+  for (let i = 0; i < entriesToProcess.length; i++) {
+    const entry = entriesToProcess[i];
+    // Small delay between article fetches to avoid rate limiting
+    if (i > 0) await new Promise((r) => setTimeout(r, 500));
+
     const payload = await mapFeedItemToPayload(feed, entry);
     if (!payload) {
       skipped++;
