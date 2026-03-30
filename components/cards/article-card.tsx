@@ -38,40 +38,36 @@ export function ArticleCard({ item, href }: ArticleCardProps) {
 
   return (
     <CardWrapper type="article" noPadding href={href}>
-      <div className="relative flex h-[140px] w-full items-center justify-center overflow-hidden rounded-t-[23px] bg-[#171d26]">
-        {resolvedThumbnailUrl ? (
-          <>
-            {thumbnail?.media_type === "video" && !preferredImageUrl ? (
-              <VideoPoster
-                src={resolvedThumbnailUrl}
-                alt={thumbnail?.alt_text || displayTitle}
-                className="h-full w-full object-cover object-top"
-                fallbackClassName="h-full w-full bg-[#171d26]"
-              />
-            ) : (
-              <img
-                src={resolvedThumbnailUrl}
-                alt={thumbnail?.alt_text || displayTitle}
-                loading="lazy"
-                decoding="async"
-                className="h-full w-full object-cover object-top"
-              />
-            )}
-            {thumbnail?.media_type === "video" && !preferredImageUrl && (
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/45">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                    <polygon points="5 3 19 12 5 21 5 3" />
-                  </svg>
-                </div>
+      {resolvedThumbnailUrl && (
+        <div className="relative flex h-[140px] w-full items-center justify-center overflow-hidden rounded-t-[23px] bg-[#171d26]">
+          {thumbnail?.media_type === "video" && !preferredImageUrl ? (
+            <VideoPoster
+              src={resolvedThumbnailUrl}
+              alt={thumbnail?.alt_text || displayTitle}
+              className="h-full w-full object-cover object-top"
+              fallbackClassName="h-full w-full bg-[#171d26]"
+            />
+          ) : (
+            <img
+              src={resolvedThumbnailUrl}
+              alt={thumbnail?.alt_text || displayTitle}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-top"
+            />
+          )}
+          {thumbnail?.media_type === "video" && !preferredImageUrl && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/45">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
               </div>
-            )}
-          </>
-        ) : (
-          <span className="text-xs text-[#7d7569]">No thumbnail</span>
-        )}
-      </div>
-      <div className="p-4 pt-4">
+            </div>
+          )}
+        </div>
+      )}
+      <div className={`p-4 ${resolvedThumbnailUrl ? "pt-4" : "pt-5"}`}>
         {isRss ? (
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2.5">
