@@ -17,6 +17,12 @@ interface RssFeedRecord {
   };
 }
 
+interface UserOption {
+  id: string;
+  email: string;
+  role: string;
+}
+
 interface RssPreviewItem {
   title: string;
   source_url: string;
@@ -67,10 +73,13 @@ export function RssSection({ onRefresh, isAdmin = true }: RssSectionProps) {
   const [previewing, setPreviewing] = useState(false);
   const [preview, setPreview] = useState<RssPreview | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
 
-  const loadFeeds = async () => {
+  const loadFeeds = async (userId?: string) => {
     try {
-      const response = await fetch("/api/rss/feeds");
+      const qs = userId ? `?userId=${userId}` : "";
+      const response = await fetch(`/api/rss/feeds${qs}`);
       const data = await response.json();
       setFeeds(data.feeds || []);
     } catch (error) {
@@ -81,8 +90,29 @@ export function RssSection({ onRefresh, isAdmin = true }: RssSectionProps) {
   };
 
   useEffect(() => {
+    if (isAdmin) {
+      fetch("/api/admin/users")
+        .then((res) => (res.ok ? res.json() : { users: [] }))
+        .then((data) => {
+          const userList: UserOption[] = data.users || [];
+          setUsers(userList);
+          // Default to current user (first admin)
+          const admin = userList.find((u: UserOption) => u.role === "admin");
+          if (admin) setSelectedUserId(admin.id);
+        })
+        .catch(() => {});
+    }
     loadFeeds();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (selectedUserId) {
+      setLoading(true);
+      loadFeeds(selectedUserId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUserId]);
 
   const handleAddFeed = async () => {
     if (!feedUrl.trim()) return;
@@ -92,7 +122,7 @@ export function RssSection({ onRefresh, isAdmin = true }: RssSectionProps) {
       const response = await fetch("/api/rss/feeds", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ feedUrl }),
+        body: JSON.stringify({ feedUrl, userId: selectedUserId || undefined }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -101,7 +131,7 @@ export function RssSection({ onRefresh, isAdmin = true }: RssSectionProps) {
       setFeedUrl("");
       setPreview(null);
       setMessage(`Added ${data.feed.title}`);
-      await loadFeeds();
+      await loadFeeds(selectedUserId || undefined);
       onRefresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to add feed");
@@ -147,7 +177,7 @@ export function RssSection({ onRefresh, isAdmin = true }: RssSectionProps) {
           ? "Feed is already up to date"
           : `Synced ${data.synced} new items, skipped ${data.skipped}${data.errors ? `, ${data.errors} errors` : ""}`
       );
-      await loadFeeds();
+      await loadFeeds(selectedUserId || undefined);
       onRefresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to sync feed");
@@ -170,7 +200,7 @@ export function RssSection({ onRefresh, isAdmin = true }: RssSectionProps) {
         throw new Error(data.error || "Failed to sync feeds");
       }
       setMessage(`Synced ${data.synced} new items across ${data.feedsProcessed} feeds`);
-      await loadFeeds();
+      await loadFeeds(selectedUserId || undefined);
       onRefresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to sync feeds");
@@ -209,7 +239,7 @@ export function RssSection({ onRefresh, isAdmin = true }: RssSectionProps) {
       if (!response.ok) {
         throw new Error(data.error || "Failed to delete feed");
       }
-      await loadFeeds();
+      await loadFeeds(selectedUserId || undefined);
       onRefresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to delete feed");
@@ -244,6 +274,23 @@ export function RssSection({ onRefresh, isAdmin = true }: RssSectionProps) {
           </button>
         )}
       </div>
+
+      {isAdmin && users.length > 1 && (
+        <div className="mb-4 flex items-center gap-3">
+          <label className="text-xs font-medium text-[#a49b8b]">Managing feeds for</label>
+          <select
+            value={selectedUserId}
+            onChange={(e) => setSelectedUserId(e.target.value)}
+            className="h-9 rounded-[10px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] focus:border-[#d6c9b24d] focus:outline-none"
+          >
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.email} ({u.role})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {isAdmin && (
         <>

@@ -3,12 +3,22 @@ import { createRssFeed, listRssFeeds, previewRssFeed, syncAllRssFeeds } from "@/
 import { sanitizeErrorMessage } from "@/lib/security/redact";
 import { requireAuth } from "@/lib/auth/session";
 
-export async function GET() {
+/** Resolve which userId to operate on. Admins can pass ?userId= to manage other users' feeds. */
+function resolveUserId(session: { user: { id: string; role: string } }, requestedUserId?: string | null): string {
+  if (requestedUserId && session.user.role === "admin") {
+    return requestedUserId;
+  }
+  return session.user.id;
+}
+
+export async function GET(request: NextRequest) {
   const session = await requireAuth();
   if (session instanceof NextResponse) return session;
 
+  const userId = resolveUserId(session, request.nextUrl.searchParams.get("userId"));
+
   try {
-    const feeds = await listRssFeeds(session.user.id);
+    const feeds = await listRssFeeds(userId);
     return NextResponse.json({ feeds });
   } catch (error) {
     return NextResponse.json(
@@ -25,6 +35,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const action = body?.action;
+    const userId = resolveUserId(session, body?.userId);
 
     if (action === "sync-all") {
       const result = await syncAllRssFeeds();
@@ -38,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const feedUrl = typeof body?.feedUrl === "string" ? body.feedUrl : "";
-    const feed = await createRssFeed(feedUrl, session.user.id);
+    const feed = await createRssFeed(feedUrl, userId);
     return NextResponse.json({ success: true, feed });
   } catch (error) {
     return NextResponse.json(
