@@ -359,26 +359,27 @@ async function mapFeedItemToPayload(
 
   const isThin = isThinFeedBody(initialBodyText, initialTitle);
 
-  if (isThin || mediaUrls.length === 0) {
-    try {
-      const article = await fetchReadableArticle(originalUrl);
-      if (isThin) {
-        if (article.title) {
-          title = article.title.trim();
-        }
-        if (article.textContent && article.textContent.trim().length > bodyText.length) {
-          bodyText = article.textContent.trim();
-        }
-        if (article.htmlContent && article.htmlContent.trim().length > (bodyHtml || "").length) {
-          bodyHtml = article.htmlContent.trim();
-        }
+  // Always fetch the article page to get the best image (og:image).
+  // Also enriches thin feeds with full article text.
+  try {
+    const article = await fetchReadableArticle(originalUrl);
+    if (isThin) {
+      if (article.title) {
+        title = article.title.trim();
       }
-      if (article.imageUrl && mediaUrls.length === 0) {
-        mediaUrls = [article.imageUrl];
+      if (article.textContent && article.textContent.trim().length > bodyText.length) {
+        bodyText = article.textContent.trim();
       }
-    } catch (error) {
-      console.warn("RSS article fetch fallback failed:", error instanceof Error ? error.message : error);
+      if (article.htmlContent && article.htmlContent.trim().length > (bodyHtml || "").length) {
+        bodyHtml = article.htmlContent.trim();
+      }
     }
+    // Prefer the article's og:image over whatever the feed HTML had
+    if (article.imageUrl) {
+      mediaUrls = [article.imageUrl];
+    }
+  } catch (error) {
+    console.warn("RSS article fetch failed:", error instanceof Error ? error.message : error);
   }
 
   return {
