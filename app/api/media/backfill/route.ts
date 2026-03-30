@@ -33,11 +33,14 @@ export async function GET(request: Request) {
 
         const prisma = await getClient();
 
+        const url = new URL(request.url);
+        const forceAll = url.searchParams.get("force") === "true";
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mediaItems = await (prisma as any).media.findMany({
-          where: { stored_path: null },
+          where: forceAll ? {} : { stored_path: null },
           select: { id: true, content_item_id: true, original_url: true },
-          take: 200,
+          take: 500,
         });
 
         const total = mediaItems.length;
