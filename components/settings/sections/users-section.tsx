@@ -16,14 +16,37 @@ export function UsersSection() {
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedToken, setExpandedToken] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadUsers = () => {
     fetch("/api/admin/users")
       .then((res) => (res.ok ? res.json() : { users: [] }))
       .then((data) => setUsers(data.users || []))
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadUsers();
   }, []);
+
+  const handleDeleteItems = async (user: UserInfo) => {
+    if (!confirm(`Delete all ${user._count.content_items} items for ${user.email}? This cannot be undone.`)) {
+      return;
+    }
+    setDeleting(user.id);
+    try {
+      const res = await fetch("/api/data", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation: "DELETE", userId: user.id }),
+      });
+      if (res.ok) {
+        loadUsers();
+      }
+    } catch {}
+    setDeleting(null);
+  };
 
   if (loading) {
     return (
@@ -68,12 +91,23 @@ export function UsersSection() {
                 </p>
               </div>
 
-              <button
-                onClick={() => setExpandedToken(expandedToken === user.id ? null : user.id)}
-                className="shrink-0 h-8 rounded-[8px] border border-[#d6c9b214] bg-[#ffffff05] px-3 text-[12px] font-medium text-[#a49b8b] transition-colors hover:text-[#f2ede5] hover:border-[#d6c9b233] cursor-pointer"
-              >
-                {expandedToken === user.id ? "Hide token" : "Show token"}
-              </button>
+              <div className="flex items-center gap-2">
+                {user._count.content_items > 0 && (
+                  <button
+                    onClick={() => handleDeleteItems(user)}
+                    disabled={deleting === user.id}
+                    className="shrink-0 h-8 rounded-[8px] border border-[#8d5f5d44] bg-[#8d5f5d14] px-3 text-[12px] font-medium text-[#ffb8a8] transition-colors hover:border-[#8d5f5d66] cursor-pointer disabled:opacity-50"
+                  >
+                    {deleting === user.id ? "Deleting..." : "Delete items"}
+                  </button>
+                )}
+                <button
+                  onClick={() => setExpandedToken(expandedToken === user.id ? null : user.id)}
+                  className="shrink-0 h-8 rounded-[8px] border border-[#d6c9b214] bg-[#ffffff05] px-3 text-[12px] font-medium text-[#a49b8b] transition-colors hover:text-[#f2ede5] hover:border-[#d6c9b233] cursor-pointer"
+                >
+                  {expandedToken === user.id ? "Hide token" : "Show token"}
+                </button>
+              </div>
             </div>
 
             {expandedToken === user.id && user.capture_token && (

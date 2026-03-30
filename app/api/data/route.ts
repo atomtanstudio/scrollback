@@ -18,9 +18,13 @@ export async function DELETE(request: Request) {
     const prisma = await getClient();
     const dbType = getDatabaseType();
 
-    // Delete only this user's content items (cascades to media, categories, tags relations)
+    // Admin can target another user's items via userId param
+    const targetUserId =
+      body.userId && session.user.role === "admin" ? body.userId : session.user.id;
+
+    // Delete content items (cascades to media, categories, tags relations)
     const result = await prisma.contentItem.deleteMany({
-      where: { user_id: session.user.id },
+      where: { user_id: targetUserId },
     });
 
     // Clear FTS5 table for SQLite
