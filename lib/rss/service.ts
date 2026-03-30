@@ -163,6 +163,10 @@ async function fetchReadableArticle(url: string): Promise<{
     }
   };
 
+  // Prefer og:image / twitter:image — these are curated hero images.
+  // Fall back to the first img in the article body only if meta tags are missing.
+  const ogImage = resolveUrl(dom.window.document.querySelector('meta[property="og:image"]')?.getAttribute("content"));
+  const twitterImage = resolveUrl(dom.window.document.querySelector('meta[name="twitter:image"]')?.getAttribute("content"));
   const articleImage =
     article?.content
       ? resolveUrl(new JSDOM(article.content, { url }).window.document.querySelector("img")?.getAttribute("src"))
@@ -170,10 +174,10 @@ async function fetchReadableArticle(url: string): Promise<{
   const firstDocumentImage =
     resolveUrl(dom.window.document.querySelector("main img, article img, [data-testid='article-body'] img, img")?.getAttribute("src"));
   const imageUrl =
+    ogImage ||
+    twitterImage ||
     articleImage ||
     firstDocumentImage ||
-    resolveUrl(dom.window.document.querySelector('meta[property="og:image"]')?.getAttribute("content")) ||
-    resolveUrl(dom.window.document.querySelector('meta[name="twitter:image"]')?.getAttribute("content")) ||
     null;
 
   return {
