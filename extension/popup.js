@@ -73,9 +73,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     chrome.runtime.sendMessage({ type: 'CHECK_CONNECTION' }, (response) => {
       if (response && response.success) {
+        const user = response.user;
+        const label = user ? `${user.email} (${user.role})` : 'Connected';
         updateConnectionState('online', 'Connected');
-        connectionStatus.title = 'Connected';
-        showStatus(statusMsg, 'Connected', 'success');
+        connectionStatus.title = label;
+        showStatus(statusMsg, label, 'success');
       } else {
         updateConnectionState('error', 'Failed');
         connectionStatus.title = 'Connection failed';
