@@ -187,7 +187,6 @@ export function AdminPage({ isAuthed, isAdmin = true, captureCount }: AdminPageP
   };
 
   const selectedCount = selectedIds.size;
-  const selectedUser = users.find((u) => u.id === selectedUserId);
 
   return (
     <div className="min-h-screen px-4 sm:px-6 lg:px-8">
