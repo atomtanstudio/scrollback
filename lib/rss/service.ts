@@ -238,7 +238,7 @@ export async function createRssFeed(feedUrl: string, userId: string) {
   }
 
   return prisma.rssFeed.upsert({
-    where: { uq_rss_feeds_user_url: { user_id: userId, feed_url: normalizedUrl } },
+    where: { user_id_feed_url: { user_id: userId, feed_url: normalizedUrl } },
     update: {
       title: parsed.title,
       description: parsed.description || null,
