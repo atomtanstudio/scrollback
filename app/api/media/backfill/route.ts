@@ -36,24 +36,12 @@ export async function GET(request: Request) {
         const url = new URL(request.url);
         const forceAll = url.searchParams.get("force") === "true";
 
-        // Skip videos — they're too large to buffer in memory
-        const VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov", ".avi", ".mkv"];
-        const isVideoUrl = (u: string) => {
-          const path = u.split("?")[0].toLowerCase();
-          return VIDEO_EXTENSIONS.some((ext) => path.endsWith(ext)) || path.includes("/vid/");
-        };
-
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const allMedia = await (prisma as any).media.findMany({
+        const mediaItems = await (prisma as any).media.findMany({
           where: forceAll ? {} : { stored_path: null },
-          select: { id: true, content_item_id: true, original_url: true, media_type: true },
+          select: { id: true, content_item_id: true, original_url: true },
           take: 1000,
         });
-
-        const mediaItems = allMedia.filter(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (m: any) => m.media_type !== "video" && !isVideoUrl(m.original_url)
-        );
 
         const total = mediaItems.length;
         if (total === 0) {

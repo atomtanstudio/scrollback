@@ -107,14 +107,16 @@ function isThinFeedBody(text: string, title: string | undefined): boolean {
 function extractMediaUrls(item: ParsedFeedItem): string[] {
   const urls = new Set<string>();
   const enclosureUrl = item.enclosure?.url?.trim();
-  if (enclosureUrl) {
+  if (enclosureUrl && /^https?:\/\//i.test(enclosureUrl)) {
     urls.add(enclosureUrl);
   }
 
   const html = getItemHtml(item);
   if (html) {
     for (const match of Array.from(html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi))) {
-      if (match[1]) urls.add(match[1]);
+      const src = match[1]?.trim();
+      // Only keep absolute HTTP URLs — relative paths can't be resolved without the source domain
+      if (src && /^https?:\/\//i.test(src)) urls.add(src);
     }
   }
 
@@ -150,18 +152,28 @@ async function fetchReadableArticle(url: string): Promise<{
   const html = await response.text();
   const dom = new JSDOM(html, { url });
   const article = new Readability(dom.window.document).parse();
+
+  // Resolve a potentially relative image URL to absolute using the article's base URL
+  const resolveUrl = (raw: string | null | undefined): string | null => {
+    if (!raw) return null;
+    try {
+      return new URL(raw, url).href;
+    } catch {
+      return null;
+    }
+  };
+
   const articleImage =
     article?.content
-      ? new JSDOM(article.content, { url }).window.document.querySelector("img")?.getAttribute("src")
+      ? resolveUrl(new JSDOM(article.content, { url }).window.document.querySelector("img")?.getAttribute("src"))
       : null;
   const firstDocumentImage =
-    dom.window.document.querySelector("main img, article img, [data-testid='article-body'] img, img")?.getAttribute("src") ||
-    null;
+    resolveUrl(dom.window.document.querySelector("main img, article img, [data-testid='article-body'] img, img")?.getAttribute("src"));
   const imageUrl =
     articleImage ||
     firstDocumentImage ||
-    dom.window.document.querySelector('meta[property="og:image"]')?.getAttribute("content") ||
-    dom.window.document.querySelector('meta[name="twitter:image"]')?.getAttribute("content") ||
+    resolveUrl(dom.window.document.querySelector('meta[property="og:image"]')?.getAttribute("content")) ||
+    resolveUrl(dom.window.document.querySelector('meta[name="twitter:image"]')?.getAttribute("content")) ||
     null;
 
   return {
