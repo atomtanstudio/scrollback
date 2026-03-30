@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { getClient } from "@/lib/db/client";
-import { getConfig } from "@/lib/config";
 
 export interface CaptureAuth {
   valid: boolean;
@@ -18,41 +17,37 @@ export async function validateCaptureSecret(
 
   const token = auth.slice(7);
 
-  // First, try to resolve a per-user capture token from the database
   try {
     const prisma = await getClient();
+
+    // Look up the user by their per-user capture token
     const user = await prisma.user.findUnique({
       where: { capture_token: token },
-      select: { id: true },
+      select: { id: true, email: true },
     });
+
     if (user) {
       return { valid: true, userId: user.id };
     }
-  } catch {
-    // DB lookup failed — fall through to legacy check
-  }
 
-  // Legacy fallback: match against CAPTURE_SECRET env var or config pairingToken
-  // and assign to the first admin user
-  const captureSecret =
-    process.env.CAPTURE_SECRET || getConfig()?.extension?.pairingToken;
-
-  if (captureSecret && token === captureSecret) {
-    try {
-      const prisma = await getClient();
+    // Fallback: if CAPTURE_SECRET env var matches, route to the first admin user.
+    // This handles existing extensions that haven't switched to per-user tokens yet.
+    const captureSecret = process.env.CAPTURE_SECRET;
+    if (captureSecret && token === captureSecret) {
       const admin = await prisma.user.findFirst({
         where: { role: "admin" },
         orderBy: { created_at: "asc" },
         select: { id: true },
       });
       if (admin) {
+        console.log("[capture-auth] Matched legacy CAPTURE_SECRET → admin user");
         return { valid: true, userId: admin.id };
       }
-    } catch {
-      // Fall through
     }
-    return { valid: false, error: "No admin user found for legacy token" };
-  }
 
-  return { valid: false, error: "Invalid capture token" };
+    return { valid: false, error: "Invalid capture token" };
+  } catch (err) {
+    console.error("[capture-auth] Token lookup failed:", err instanceof Error ? err.message : err);
+    return { valid: false, error: "Token validation failed" };
+  }
 }
