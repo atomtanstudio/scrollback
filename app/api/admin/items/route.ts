@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const skip = (page - 1) * limit;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = {};
+  const where: any = { user_id: session.user.id };
   if (type) where.source_type = type;
   if (search) {
     where.OR = [
@@ -80,7 +80,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   const result = await db.contentItem.deleteMany({
-    where: { id: { in: ids } },
+    where: { id: { in: ids }, user_id: session.user.id },
   });
 
   return NextResponse.json({ success: true, deleted: result.count });

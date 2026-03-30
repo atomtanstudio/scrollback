@@ -12,8 +12,8 @@ export async function POST(
   const { id } = await params;
   const db = await getClient();
 
-  const item = await db.contentItem.findUnique({
-    where: { id },
+  const item = await db.contentItem.findFirst({
+    where: { id, user_id: session.user.id },
     select: {
       id: true, body_text: true, title: true, author_handle: true,
       conversation_id: true,

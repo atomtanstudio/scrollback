@@ -1,9 +1,14 @@
 import { getClient } from "@/lib/db/client";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth/session";
 
 const MAX_EXPORT = 5000;
 
 export async function GET(request: NextRequest) {
+  const session = await requireAuth();
+  if (session instanceof NextResponse) return session;
+  const userId = session.user.id;
+
   const format = request.nextUrl.searchParams.get("format") || "json";
   const limit = Math.min(
     parseInt(request.nextUrl.searchParams.get("limit") || String(MAX_EXPORT), 10),
@@ -29,6 +34,7 @@ export async function GET(request: NextRequest) {
 
   if (format === "csv") {
     const items = await prisma.contentItem.findMany({
+      where: { user_id: userId },
       orderBy: { created_at: "desc" },
       select: selectFields,
       take: limit,
@@ -65,6 +71,7 @@ export async function GET(request: NextRequest) {
 
   // JSON (NDJSON) — stream to avoid buffering everything
   const items = await prisma.contentItem.findMany({
+    where: { user_id: userId },
     orderBy: { created_at: "desc" },
     select: selectFields,
     take: limit,

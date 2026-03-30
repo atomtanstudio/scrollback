@@ -8,12 +8,13 @@ export interface FetchItemsOptions {
   excludeIds?: string[];
   search?: string;
   sort?: SortMode;
+  userId: string;
 }
 
-export async function fetchItems(options: FetchItemsOptions = {}) {
+export async function fetchItems(options: FetchItemsOptions) {
   const prisma = await getClient();
   const dbType = getDatabaseType();
-  const { limit = 50, type, excludeIds = [], sort = "recent" } = options;
+  const { limit = 50, type, excludeIds = [], sort = "recent", userId } = options;
   const batchSize = limit + 1;
   const preferPublishedAt = type === "rss";
 
@@ -27,7 +28,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
           : [{ created_at: "desc" as const }];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const baseWhere: any = {};
+  const baseWhere: any = { user_id: userId };
 
   if (type) {
     if (type === "art") {
@@ -87,6 +88,7 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
             where: {
               source_type: "thread",
               conversation_id: { not: null },
+              user_id: userId,
               ...excludeFilter,
             },
             include,
@@ -130,11 +132,13 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
                FROM content_items
                WHERE source_type = 'thread'
                  AND conversation_id IS NOT NULL
-                 ${excludeIds.length > 0 ? `AND id NOT IN (${excludeIds.map((_, i) => `$${i + 1}`).join(",")})` : ""}
+                 AND user_id = $1::uuid
+                 ${excludeIds.length > 0 ? `AND id NOT IN (${excludeIds.map((_, i) => `$${i + 2}`).join(",")})` : ""}
                ORDER BY conversation_id, COALESCE(posted_at, created_at) ASC
              ) roots
              ORDER BY author_handle, created_at DESC
-             LIMIT $${excludeIds.length + 1}`,
+             LIMIT $${excludeIds.length + 2}`,
+            userId,
             ...excludeIds,
             batchSize,
           ) as Promise<Array<{ id: string }>>).then(async (rows) => {
@@ -159,17 +163,17 @@ export async function fetchItems(options: FetchItemsOptions = {}) {
   return { items: merged, hasMore, totalCount };
 }
 
-export async function fetchStats() {
+export async function fetchStats(userId: string) {
   const prisma = await getClient();
   const dbType = getDatabaseType();
 
   const [total, tweets, rawThreads, articles, rss, art] = await Promise.all([
-    prisma.contentItem.count(),
-    prisma.contentItem.count({ where: { source_type: "tweet" } }),
+    prisma.contentItem.count({ where: { user_id: userId } }),
+    prisma.contentItem.count({ where: { source_type: "tweet", user_id: userId } }),
     // Deduplicated thread count: one per conversation, then one per author
     dbType === "sqlite"
       ? prisma.contentItem.findMany({
-          where: { source_type: "thread", conversation_id: { not: null } },
+          where: { source_type: "thread", conversation_id: { not: null }, user_id: userId },
           select: { conversation_id: true, author_handle: true, posted_at: true, created_at: true },
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         }).then((rows: any[]) => {
@@ -193,16 +197,17 @@ export async function fetchStats() {
              SELECT DISTINCT ON (author_handle) author_handle FROM (
                SELECT DISTINCT ON (conversation_id) author_handle
                FROM content_items
-               WHERE source_type = 'thread' AND conversation_id IS NOT NULL
+               WHERE source_type = 'thread' AND conversation_id IS NOT NULL AND user_id = $1::uuid
                ORDER BY conversation_id, COALESCE(posted_at, created_at) ASC
              ) roots
              ORDER BY author_handle
-           ) deduped`
+           ) deduped`,
+          userId
         ) as Promise<Array<{ count: bigint }>>).then((rows) => Number(rows[0]?.count ?? 0)),
-    prisma.contentItem.count({ where: { source_type: "article", source_platform: { not: "rss" } } }),
-    prisma.contentItem.count({ where: { source_platform: "rss" } }),
+    prisma.contentItem.count({ where: { source_type: "article", source_platform: { not: "rss" }, user_id: userId } }),
+    prisma.contentItem.count({ where: { source_platform: "rss", user_id: userId } }),
     prisma.contentItem.count({
-      where: { source_type: { in: ["image_prompt", "video_prompt"] } },
+      where: { source_type: { in: ["image_prompt", "video_prompt"] }, user_id: userId },
     }),
   ]);
 
@@ -211,10 +216,10 @@ export async function fetchStats() {
   return { total, tweets, threads, articles, rss, art };
 }
 
-export async function fetchItemById(id: string) {
+export async function fetchItemById(id: string, userId: string) {
   const prisma = await getClient();
-  return prisma.contentItem.findUnique({
-    where: { id },
+  return prisma.contentItem.findFirst({
+    where: { id, user_id: userId },
     include: {
       media_items: true,
       categories: { include: { category: true } },
@@ -227,6 +232,7 @@ export async function fetchThreadChain(item: {
   source_type: string;
   author_handle: string | null;
   conversation_id?: string | null;
+  user_id: string;
   id: string;
 }) {
   if (item.source_type !== "thread" || !item.author_handle || !item.conversation_id) {
@@ -240,6 +246,7 @@ export async function fetchThreadChain(item: {
       source_type: "thread",
       author_handle: item.author_handle,
       conversation_id: item.conversation_id,
+      user_id: item.user_id,
       id: { not: item.id },
     },
     include: {
@@ -252,10 +259,9 @@ export async function fetchThreadChain(item: {
   return siblings;
 }
 
-export async function fetchRelatedItems(itemId: string, limit: number = 6) {
+export async function fetchRelatedItems(itemId: string, userId: string, limit: number = 6) {
   const dbType = getDatabaseType();
   if (dbType === "sqlite") {
-    // pgvector not available on SQLite — return empty
     return [];
   }
 
@@ -268,11 +274,12 @@ export async function fetchRelatedItems(itemId: string, limit: number = 6) {
            1 - (ci.embedding <=> (SELECT embedding FROM content_items WHERE id = $1)) as similarity
     FROM content_items ci
     WHERE ci.id != $1
+      AND ci.user_id = $2::uuid
       AND ci.embedding IS NOT NULL
       AND ci.processing_status != 'error'
     ORDER BY ci.embedding <=> (SELECT embedding FROM content_items WHERE id = $1)
-    LIMIT $2
-  `, itemId, limit);
+    LIMIT $3
+  `, itemId, userId, limit);
 
   return results as Array<{
     id: string;

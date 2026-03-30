@@ -7,9 +7,11 @@ export const metadata: Metadata = { title: "Admin — FeedSilo" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminRoute() {
-  const [session, stats] = await Promise.all([auth(), fetchStats()]);
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  const stats = await fetchStats(session.user.id);
 
   return (
-    <AdminPage isAuthed={!!session?.user} captureCount={stats.total} />
+    <AdminPage isAuthed={true} captureCount={stats.total} />
   );
 }

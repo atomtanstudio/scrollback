@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { fetchItemById, fetchThreadChain } from "@/lib/db/queries";
 import { auth } from "@/lib/auth/auth";
 import { getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
@@ -11,7 +11,9 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const item = await fetchItemById(id);
+  const session = await auth();
+  if (!session?.user?.id) return { title: "Login Required" };
+  const item = await fetchItemById(id, session.user.id);
   if (!item) return { title: "Not Found" };
   const displayTitle = getDisplayTitle(item);
   const displayBodyText = getDisplayBodyText(item);
@@ -24,7 +26,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function ItemDetailPageRoute({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [item, session] = await Promise.all([fetchItemById(id), auth()]);
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const userId = session.user.id;
+  const item = await fetchItemById(id, userId);
   if (!item) notFound();
   const serializedItem = JSON.parse(JSON.stringify(item)) as DetailItem;
 
@@ -33,8 +39,8 @@ export default async function ItemDetailPageRoute({ params }: { params: Promise<
 
   return (
     <main className="min-h-screen">
-      <DemoBanner role={session?.user?.role} />
-      <ItemDetailPage item={serializedItem} threadSiblings={threadSiblings} isAuthed={!!session?.user} />
+      <DemoBanner role={session.user.role} />
+      <ItemDetailPage item={serializedItem} threadSiblings={threadSiblings} isAuthed={true} />
     </main>
   );
 }

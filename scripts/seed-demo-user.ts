@@ -13,6 +13,7 @@ config();
 
 import bcrypt from "bcryptjs";
 import pg from "pg";
+import { randomUUID } from "crypto";
 
 const DATABASE_URL = process.env.DATABASE_URL!;
 const DEMO_EMAIL = process.env.DEMO_EMAIL;
@@ -33,19 +34,23 @@ async function main() {
   await client.connect();
 
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD!, 12);
+  const captureToken = randomUUID();
 
   // Upsert: create if not exists, update password and role if exists
+  // Only set capture_token if not already set
   const result = await client.query(
-    `INSERT INTO users (id, email, password_hash, role, created_at)
-     VALUES (gen_random_uuid(), $1, $2, 'demo', NOW())
+    `INSERT INTO users (id, email, password_hash, role, capture_token, created_at)
+     VALUES (gen_random_uuid(), $1, $2, 'demo', $3, NOW())
      ON CONFLICT (email)
-     DO UPDATE SET password_hash = $2, role = 'demo'
-     RETURNING id, email, role`,
-    [DEMO_EMAIL, passwordHash]
+     DO UPDATE SET password_hash = $2, role = 'demo',
+       capture_token = COALESCE(users.capture_token, $3)
+     RETURNING id, email, role, capture_token`,
+    [DEMO_EMAIL, passwordHash, captureToken]
   );
 
   const user = result.rows[0];
   console.log(`Demo user ready: ${user.email} (id: ${user.id}, role: ${user.role})`);
+  console.log(`Capture token: ${user.capture_token}`);
 
   await client.end();
 }

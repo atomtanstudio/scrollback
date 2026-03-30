@@ -55,6 +55,19 @@ export async function GET() {
 
   const hasPairingToken = !!(process.env.CAPTURE_SECRET || config.extension?.pairingToken);
 
+  // Fetch the current user's capture token
+  let captureToken: string | null = null;
+  if (session?.user?.id) {
+    try {
+      const prisma = await getClient();
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { capture_token: true },
+      });
+      captureToken = user?.capture_token ?? null;
+    } catch {}
+  }
+
   return NextResponse.json({
     configured: true,
     database: {
@@ -69,6 +82,7 @@ export async function GET() {
     extension: {
       hasPairingToken,
       managedByEnv: !!process.env.CAPTURE_SECRET,
+      captureToken: isAdmin ? captureToken : null,
     },
     xapi: {
       hasBearerToken: !!config.xapi?.bearerToken,

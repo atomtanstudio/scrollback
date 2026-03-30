@@ -5,8 +5,8 @@ import type { CapturePayload } from "@/lib/db/types";
 import { sanitizeErrorMessage } from "@/lib/security/redact";
 
 export async function POST(request: NextRequest) {
-  const auth = validateCaptureSecret(request);
-  if (!auth.valid) {
+  const auth = await validateCaptureSecret(request);
+  if (!auth.valid || !auth.userId) {
     const status = auth.error === "CAPTURE_SECRET not configured on server" ? 500 : 401;
     return NextResponse.json({ success: false, error: auth.error }, { status });
   }
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const result = await ingestItem(payload);
+    const result = await ingestItem(payload, auth.userId);
     return NextResponse.json(result);
   } catch (error) {
     console.error("Ingest error:", sanitizeErrorMessage(error, "Unknown error"));

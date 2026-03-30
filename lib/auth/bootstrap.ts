@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 import { getClient } from "@/lib/db/client";
 
 export async function hasAdminUsers(): Promise<boolean> {
@@ -18,6 +19,6 @@ export async function createInitialAdmin(email: string, password: string) {
   const password_hash = await bcrypt.hash(password, 12);
 
   return db.user.create({
-    data: { email, password_hash, role: "admin" },
+    data: { email, password_hash, role: "admin", capture_token: randomUUID() },
   });
 }

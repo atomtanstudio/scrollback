@@ -60,6 +60,12 @@ export async function PUT(
     data.posted_at = parsed;
   }
 
+  // Verify ownership
+  const existing = await db.contentItem.findFirst({ where: { id, user_id: session.user.id } });
+  if (!existing) {
+    return NextResponse.json({ error: "Item not found" }, { status: 404 });
+  }
+
   const item = await db.contentItem.update({
     where: { id },
     data,
@@ -85,6 +91,10 @@ export async function DELETE(
 
   const { id } = await params;
   const db = await getClient();
+  const existing = await db.contentItem.findFirst({ where: { id, user_id: session.user.id } });
+  if (!existing) {
+    return NextResponse.json({ error: "Item not found" }, { status: 404 });
+  }
   await db.contentItem.delete({ where: { id } });
 
   return NextResponse.json({ success: true });

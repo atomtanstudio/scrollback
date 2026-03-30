@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRssFeed, listRssFeeds, previewRssFeed, syncAllRssFeeds } from "@/lib/rss/service";
 import { sanitizeErrorMessage } from "@/lib/security/redact";
+import { requireAuth } from "@/lib/auth/session";
 
 export async function GET() {
+  const session = await requireAuth();
+  if (session instanceof NextResponse) return session;
+
   try {
-    const feeds = await listRssFeeds();
+    const feeds = await listRssFeeds(session.user.id);
     return NextResponse.json({ feeds });
   } catch (error) {
     return NextResponse.json(
@@ -15,6 +19,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await requireAuth();
+  if (session instanceof NextResponse) return session;
+
   try {
     const body = await request.json();
     const action = body?.action;
@@ -31,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     const feedUrl = typeof body?.feedUrl === "string" ? body.feedUrl : "";
-    const feed = await createRssFeed(feedUrl);
+    const feed = await createRssFeed(feedUrl, session.user.id);
     return NextResponse.json({ success: true, feed });
   } catch (error) {
     return NextResponse.json(

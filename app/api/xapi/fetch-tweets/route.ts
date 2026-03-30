@@ -6,11 +6,12 @@ import { ingestItem } from "@/lib/ingest";
 import type { CapturePayload } from "@/lib/db/types";
 
 export async function POST(request: NextRequest) {
-  const auth = validateCaptureSecret(request);
-  if (!auth.valid) {
+  const auth = await validateCaptureSecret(request);
+  if (!auth.valid || !auth.userId) {
     const status = auth.error === "CAPTURE_SECRET not configured on server" ? 500 : 401;
     return NextResponse.json({ success: false, error: auth.error }, { status });
   }
+  const userId = auth.userId;
 
   try {
     const { tweetIds } = await request.json();
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
 
         for (const payload of payloads) {
           try {
-            const result = await ingestItem(payload);
+            const result = await ingestItem(payload, userId);
             if (result.already_exists) skipped++;
             else synced++;
           } catch (err) {

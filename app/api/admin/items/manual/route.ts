@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     author_handle: author_handle || null,
     posted_at: posted_at || null,
     media_urls: media_urls || [],
-  });
+  }, session.user.id);
 
   return NextResponse.json(result);
 }

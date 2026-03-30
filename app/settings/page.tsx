@@ -17,7 +17,7 @@ export default async function Page() {
   const role = session?.user?.role ?? "admin";
 
   try {
-    stats = await fetchStats();
+    if (session?.user?.id) stats = await fetchStats(session.user.id);
   } catch {
     // Config may not be set up yet
   }

@@ -18,9 +18,6 @@ const PUBLIC_API_PATHS = [
   "/api/auth/",
   "/api/setup/",
   "/api/admin/setup",
-  "/api/stats",
-  "/api/items",
-  "/api/search",
   "/api/r2/",
   "/api/local-media/",
 ];
@@ -130,8 +127,12 @@ export async function middleware(request: NextRequest) {
 
   const isAdminOnlyGet = matchAny(pathname, ADMIN_ONLY_GET_PATHS);
 
-  // Check if this request needs auth
+  // All pages require auth except /login and /onboarding
+  const isPublicPage = pathname === "/login" || pathname.startsWith("/onboarding");
+  const isPage = !pathname.startsWith("/api/");
+
   const needsAuth =
+    (isPage && !isPublicPage) ||
     PROTECTED_PAGES.some((p) => pathname.startsWith(p)) ||
     protectedApi ||
     isAdminOnlyGet;

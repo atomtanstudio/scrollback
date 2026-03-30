@@ -3,8 +3,12 @@ import { fetchLikedTweets } from "@/lib/xapi/client";
 import { detectSelfThreadsInBatch, mapTweetToPayload } from "@/lib/xapi/mapper";
 import { ingestItem } from "@/lib/ingest";
 import type { CapturePayload } from "@/lib/db/types";
+import { requireAuth } from "@/lib/auth/session";
 
 export async function POST() {
+  const session = await requireAuth();
+  if (session instanceof NextResponse) return session;
+  const userId = session.user.id;
   let synced = 0;
   let skipped = 0;
   let errors = 0;
@@ -25,7 +29,7 @@ export async function POST() {
 
       for (const payload of payloads) {
         try {
-          const result = await ingestItem(payload);
+          const result = await ingestItem(payload, userId);
           if (result.already_exists) skipped++;
           else synced++;
         } catch (err) {

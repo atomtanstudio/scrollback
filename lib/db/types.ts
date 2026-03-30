@@ -21,6 +21,7 @@ export interface SearchFilters {
   author?: string; // author_handle or author_display_name
   dateFrom?: string; // ISO date
   dateTo?: string; // ISO date
+  userId?: string; // scope to a specific user
 }
 
 export interface SearchOptions {

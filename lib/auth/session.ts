@@ -12,3 +12,11 @@ export async function requireAuth() {
   }
   return session;
 }
+
+/**
+ * Get the current user's ID from the session. Returns null if not authenticated.
+ */
+export async function getSessionUserId(): Promise<string | null> {
+  const session = await auth();
+  return session?.user?.id ?? null;
+}

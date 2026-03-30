@@ -65,6 +65,10 @@ export class SqliteSearchProvider implements SearchProvider {
       filterSql += ` AND (ci.author_handle LIKE ? OR ci.author_display_name LIKE ?)`;
       params.push(`%${filters.author}%`, `%${filters.author}%`);
     }
+    if (filters.userId) {
+      filterSql += ` AND ci.user_id = ?`;
+      params.push(filters.userId);
+    }
 
     // FTS5 query with bm25 ranking
     const ftsQuery = query.replace(/['"]/g, ""); // sanitize for FTS5
@@ -114,10 +118,11 @@ export class SqliteSearchProvider implements SearchProvider {
              1.0 as relevance_score
       FROM content_items ci
       LEFT JOIN media m ON m.content_item_id = ci.id
-      WHERE ci.author_handle LIKE ? OR ci.author_display_name LIKE ?
+      WHERE (ci.author_handle LIKE ? OR ci.author_display_name LIKE ?)
+        ${filters.userId ? ` AND ci.user_id = ?` : ""}
       ORDER BY ci.posted_at DESC
       LIMIT ? OFFSET ?
-    `, `%${searchTerm}%`, `%${searchTerm}%`, opts.perPage, offset) as any[];
+    `, `%${searchTerm}%`, `%${searchTerm}%`, ...(filters.userId ? [filters.userId] : []), opts.perPage, offset) as any[];
 
     return results.map(this.mapRow);
   }
@@ -132,6 +137,10 @@ export class SqliteSearchProvider implements SearchProvider {
     if (filters.type) {
       filterSql += ` AND ci.source_type = ?`;
       params.push(filters.type);
+    }
+    if (filters.userId) {
+      filterSql += ` AND ci.user_id = ?`;
+      params.push(filters.userId);
     }
 
     const result = await prisma.$queryRawUnsafe(`

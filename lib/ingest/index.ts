@@ -23,12 +23,12 @@ function detectMediaType(url: string): "image" | "video" | "gif" {
   return "image";
 }
 
-export async function ingestItem(payload: CapturePayload): Promise<CaptureResult> {
+export async function ingestItem(payload: CapturePayload, userId: string): Promise<CaptureResult> {
   const prisma = await getClient();
 
-  // Check for duplicate
+  // Check for duplicate scoped to this user
   const existing = await prisma.contentItem.findFirst({
-    where: { external_id: payload.external_id },
+    where: { external_id: payload.external_id, user_id: userId },
   });
 
   if (existing) {
@@ -70,6 +70,7 @@ export async function ingestItem(payload: CapturePayload): Promise<CaptureResult
       source_label: sanitizeText(payload.source_label),
       source_domain: sanitizeText(payload.source_domain),
       rss_feed_id: payload.rss_feed_id || null,
+      user_id: userId,
       posted_at: payload.posted_at ? new Date(payload.posted_at) : null,
       likes: payload.likes,
       retweets: payload.retweets,

@@ -214,9 +214,10 @@ async function fetchParsedFeed(
   };
 }
 
-export async function listRssFeeds() {
+export async function listRssFeeds(userId: string) {
   const prisma = await getClient();
   return prisma.rssFeed.findMany({
+    where: { user_id: userId },
     orderBy: [{ updated_at: "desc" }],
     include: {
       _count: {
@@ -226,7 +227,7 @@ export async function listRssFeeds() {
   });
 }
 
-export async function createRssFeed(feedUrl: string) {
+export async function createRssFeed(feedUrl: string, userId: string) {
   const prisma = await getClient();
   const normalizedUrl = normalizeFeedUrl(feedUrl);
   const fetched = await fetchParsedFeed(normalizedUrl);
@@ -237,7 +238,7 @@ export async function createRssFeed(feedUrl: string) {
   }
 
   return prisma.rssFeed.upsert({
-    where: { feed_url: normalizedUrl },
+    where: { uq_rss_feeds_user_url: { user_id: userId, feed_url: normalizedUrl } },
     update: {
       title: parsed.title,
       description: parsed.description || null,
@@ -250,6 +251,7 @@ export async function createRssFeed(feedUrl: string) {
     },
     create: {
       feed_url: normalizedUrl,
+      user_id: userId,
       title: parsed.title,
       description: parsed.description || null,
       language: parsed.language || null,
@@ -300,16 +302,20 @@ export async function previewRssFeed(feedUrl: string) {
   };
 }
 
-export async function updateRssFeed(feedId: string, data: { active?: boolean }) {
+export async function updateRssFeed(feedId: string, userId: string, data: { active?: boolean }) {
   const prisma = await getClient();
+  const feed = await prisma.rssFeed.findFirst({ where: { id: feedId, user_id: userId } });
+  if (!feed) throw new Error("Feed not found");
   return prisma.rssFeed.update({
     where: { id: feedId },
     data,
   });
 }
 
-export async function deleteRssFeed(feedId: string) {
+export async function deleteRssFeed(feedId: string, userId: string) {
   const prisma = await getClient();
+  const feed = await prisma.rssFeed.findFirst({ where: { id: feedId, user_id: userId } });
+  if (!feed) throw new Error("Feed not found");
   await prisma.rssFeed.delete({ where: { id: feedId } });
 }
 
@@ -418,7 +424,7 @@ export async function syncRssFeed(feedId: string) {
     }
 
     try {
-      const result = await ingestItem(payload);
+      const result = await ingestItem(payload, feed.user_id);
       if (result.already_exists) skipped++;
       else synced++;
     } catch (error) {
@@ -445,8 +451,12 @@ export async function syncRssFeed(feedId: string) {
 }
 
 export async function syncAllRssFeeds() {
-  const feeds = await listRssFeeds();
-  const activeFeeds = feeds.filter((feed: Awaited<ReturnType<typeof listRssFeeds>>[number]) => feed.active);
+  const prisma = await getClient();
+  const feeds = await prisma.rssFeed.findMany({
+    where: { active: true },
+    include: { _count: { select: { items: true } } },
+  });
+  const activeFeeds = feeds;
 
   let synced = 0;
   let skipped = 0;

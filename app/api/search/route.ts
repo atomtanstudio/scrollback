@@ -4,8 +4,13 @@ import { mergeAndRankResults } from "@/lib/search/hybrid";
 import { generateEmbedding } from "@/lib/embeddings/gemini";
 import { getClient } from "@/lib/db/client";
 import type { SearchFilters, SearchOptions } from "@/lib/db/types";
+import { requireAuth } from "@/lib/auth/session";
 
 export async function GET(request: NextRequest) {
+  const session = await requireAuth();
+  if (session instanceof NextResponse) return session;
+  const userId = session.user.id;
+
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get("q");
 
@@ -31,7 +36,7 @@ export async function GET(request: NextRequest) {
     Math.max(1, parseInt(searchParams.get("per_page") || "50", 10))
   );
 
-  const filters: SearchFilters = { type, author, dateFrom, dateTo };
+  const filters: SearchFilters = { type, author, dateFrom, dateTo, userId };
   const opts: SearchOptions = { page, perPage };
 
   try {
@@ -90,7 +95,7 @@ export async function GET(request: NextRequest) {
       const prisma = await getClient();
       const ids = trimmed.map((r) => r.id);
       const fullItems = await prisma.contentItem.findMany({
-        where: { id: { in: ids } },
+        where: { id: { in: ids }, user_id: userId },
         include: { media_items: true },
       });
 

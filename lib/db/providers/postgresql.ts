@@ -62,6 +62,12 @@ function buildFilterClauses(
     idx++;
   }
 
+  if (filters.userId) {
+    clauses.push(`ci.user_id = $${idx}::uuid`);
+    params.push(filters.userId);
+    idx++;
+  }
+
   return { clauses, params, nextIndex: idx };
 }
 

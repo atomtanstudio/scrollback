@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { getClient } from "@/lib/db/client";
 import { fetchItems, type SortMode } from "@/lib/db/queries";
 import { getMediaDisplayUrl } from "@/lib/media-url";
+import { requireAuth } from "@/lib/auth/session";
 
 const VALID_SORTS = new Set<SortMode>(["recent", "most_liked", "most_viewed"]);
 
 export async function GET(request: NextRequest) {
+  const session = await requireAuth();
+  if (session instanceof NextResponse) return session;
+  const userId = session.user.id;
+
   const searchParams = request.nextUrl.searchParams;
   const type = searchParams.get("type") || undefined;
   const preferPublishedAt = type === "rss";
@@ -18,7 +23,7 @@ export async function GET(request: NextRequest) {
   if (excludeIdsParam !== null) {
     const excludeIds = excludeIdsParam ? excludeIdsParam.split(",") : [];
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)));
-    const result = await fetchItems({ limit, type, excludeIds, sort });
+    const result = await fetchItems({ limit, type, excludeIds, sort, userId });
     return NextResponse.json(result);
   }
 
@@ -28,6 +33,7 @@ export async function GET(request: NextRequest) {
 
   const where: Record<string, unknown> = {
     processing_status: { not: "error" },
+    user_id: userId,
   };
   if (type === "art") {
     where.source_type = { in: ["image_prompt", "video_prompt"] };

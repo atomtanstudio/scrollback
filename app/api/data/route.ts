@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { getClient, getDatabaseType } from "@/lib/db/client";
+import { requireAuth } from "@/lib/auth/session";
 
 export async function DELETE(request: Request) {
+  const session = await requireAuth();
+  if (session instanceof NextResponse) return session;
+
   try {
     const body = await request.json();
     if (body.confirmation !== "DELETE") {
@@ -14,8 +18,10 @@ export async function DELETE(request: Request) {
     const prisma = await getClient();
     const dbType = getDatabaseType();
 
-    // Delete all content items (cascades to media, categories, tags relations)
-    const result = await prisma.contentItem.deleteMany({});
+    // Delete only this user's content items (cascades to media, categories, tags relations)
+    const result = await prisma.contentItem.deleteMany({
+      where: { user_id: session.user.id },
+    });
 
     // Clear FTS5 table for SQLite
     if (dbType === "sqlite") {
