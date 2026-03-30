@@ -14,15 +14,47 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") || "";
   const skip = (page - 1) * limit;
 
+  // Admin can view any user's items via ?userId= param
+  const requestedUserId = searchParams.get("userId");
+  const targetUserId =
+    requestedUserId && session.user.role === "admin" ? requestedUserId : session.user.id;
+
+  const platform = searchParams.get("platform") || "";
+  const hasMedia = searchParams.get("hasMedia") || "";
+  const author = searchParams.get("author") || "";
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = { user_id: session.user.id };
+  const where: any = { user_id: targetUserId };
   if (type) where.source_type = type;
-  if (search) {
+  if (platform) where.source_platform = platform;
+  if (author) {
     where.OR = [
-      { body_text: { contains: search, mode: "insensitive" } },
-      { title: { contains: search, mode: "insensitive" } },
-      { author_handle: { contains: search, mode: "insensitive" } },
+      { author_handle: { contains: author, mode: "insensitive" } },
+      { author_display_name: { contains: author, mode: "insensitive" } },
     ];
+  }
+  if (hasMedia === "yes") {
+    where.media_items = { some: {} };
+  } else if (hasMedia === "no") {
+    where.media_items = { none: {} };
+  }
+  if (search) {
+    // If author filter is already using OR, nest search inside AND
+    const searchCondition = {
+      OR: [
+        { body_text: { contains: search, mode: "insensitive" } },
+        { title: { contains: search, mode: "insensitive" } },
+        { author_handle: { contains: search, mode: "insensitive" } },
+      ],
+    };
+    if (where.OR) {
+      // Combine author OR with search OR using AND
+      const authorCondition = { OR: where.OR };
+      delete where.OR;
+      where.AND = [authorCondition, searchCondition];
+    } else {
+      where.OR = searchCondition.OR;
+    }
   }
 
   const [items, total] = await Promise.all([
@@ -79,9 +111,11 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "ids array required" }, { status: 400 });
   }
 
-  const result = await db.contentItem.deleteMany({
-    where: { id: { in: ids }, user_id: session.user.id },
-  });
+  // Admin can delete any user's items
+  const deleteWhere = session.user.role === "admin"
+    ? { id: { in: ids } }
+    : { id: { in: ids }, user_id: session.user.id };
+  const result = await db.contentItem.deleteMany({ where: deleteWhere });
 
   return NextResponse.json({ success: true, deleted: result.count });
 }

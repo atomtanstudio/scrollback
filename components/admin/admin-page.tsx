@@ -19,6 +19,12 @@ import { ItemEditDialog } from "@/components/admin/item-edit-dialog";
 import { ManualCaptureDialog } from "@/components/admin/manual-capture-dialog";
 import { Header } from "@/components/header";
 
+interface UserOption {
+  id: string;
+  email: string;
+  role: string;
+}
+
 interface AdminPageProps {
   isAuthed: boolean;
   isAdmin?: boolean;
@@ -29,10 +35,17 @@ export function AdminPage({ isAuthed, isAdmin = true, captureCount }: AdminPageP
   const [items, setItems] = useState<AdminItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [platformFilter, setPlatformFilter] = useState("all");
+  const [mediaFilter, setMediaFilter] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // User picker
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
 
   // Dialog state
   const [editItem, setEditItem] = useState<AdminItem | null>(null);
@@ -44,6 +57,20 @@ export function AdminPage({ isAuthed, isAdmin = true, captureCount }: AdminPageP
 
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Load users list
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetch("/api/admin/users")
+      .then((res) => (res.ok ? res.json() : { users: [] }))
+      .then((data) => {
+        const userList: UserOption[] = data.users || [];
+        setUsers(userList);
+        const admin = userList.find((u) => u.role === "admin");
+        if (admin) setSelectedUserId(admin.id);
+      })
+      .catch(() => {});
+  }, [isAdmin]);
 
   // Debounce search input
   useEffect(() => {
@@ -66,25 +93,29 @@ export function AdminPage({ isAuthed, isAdmin = true, captureCount }: AdminPageP
       });
       if (debouncedSearch) params.set("search", debouncedSearch);
       if (typeFilter !== "all") params.set("type", typeFilter);
+      if (platformFilter !== "all") params.set("platform", platformFilter);
+      if (mediaFilter !== "all") params.set("hasMedia", mediaFilter);
+      if (selectedUserId) params.set("userId", selectedUserId);
 
       const res = await fetch(`/api/admin/items?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch items");
       const data = await res.json();
       setItems(data.items);
+      setTotal(data.total);
       setTotalPages(data.totalPages);
     } catch (err) {
       console.error("Failed to fetch admin items:", err);
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, typeFilter]);
+  }, [page, debouncedSearch, typeFilter, platformFilter, mediaFilter, selectedUserId]);
 
   useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+    if (selectedUserId) fetchItems();
+  }, [fetchItems, selectedUserId]);
 
-  const handleTypeChange = (value: string) => {
-    setTypeFilter(value);
+  const handleFilterChange = (setter: (v: string) => void) => (value: string) => {
+    setter(value);
     setPage(1);
   };
 
@@ -156,6 +187,7 @@ export function AdminPage({ isAuthed, isAdmin = true, captureCount }: AdminPageP
   };
 
   const selectedCount = selectedIds.size;
+  const selectedUser = users.find((u) => u.id === selectedUserId);
 
   return (
     <div className="min-h-screen px-4 sm:px-6 lg:px-8">
@@ -169,7 +201,7 @@ export function AdminPage({ isAuthed, isAdmin = true, captureCount }: AdminPageP
               Items
             </h1>
             <span className="text-sm text-[#8a8174]">
-              {captureCount.toLocaleString()} total
+              {total.toLocaleString()} {typeFilter !== "all" || platformFilter !== "all" || mediaFilter !== "all" || debouncedSearch ? "matching" : "total"}
             </span>
           </div>
           {isAdmin && (
@@ -184,27 +216,67 @@ export function AdminPage({ isAuthed, isAdmin = true, captureCount }: AdminPageP
           )}
         </div>
 
-        {/* Search & filter */}
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-          <Input
-            placeholder="Search items..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-10 flex-1 rounded-[12px] border-[#d6c9b214] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#6f695f] focus-visible:ring-[#b89462] sm:max-w-sm"
-          />
-          <Select value={typeFilter} onValueChange={handleTypeChange}>
-            <SelectTrigger className="h-10 w-full rounded-[12px] border-[#d6c9b214] bg-[#0f141b] text-sm text-[#f2ede5] sm:w-[180px]">
-              <SelectValue placeholder="All types" />
-            </SelectTrigger>
-            <SelectContent className="border-[#d6c9b214] bg-[#171b22] text-[#f2ede5]">
-              <SelectItem value="all">All types</SelectItem>
-              <SelectItem value="tweet">Tweet</SelectItem>
-              <SelectItem value="thread">Thread</SelectItem>
-              <SelectItem value="article">Article</SelectItem>
-              <SelectItem value="image_prompt">Image Prompt</SelectItem>
-              <SelectItem value="video_prompt">Video Prompt</SelectItem>
-            </SelectContent>
-          </Select>
+        {/* User picker + filters */}
+        <div className="mb-4 flex flex-col gap-3">
+          {isAdmin && users.length > 1 && (
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-medium text-[#a49b8b]">User</label>
+              <select
+                value={selectedUserId}
+                onChange={(e) => { setSelectedUserId(e.target.value); setPage(1); }}
+                className="h-9 rounded-[10px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] focus:border-[#d6c9b24d] focus:outline-none"
+              >
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.email} ({u.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Input
+              placeholder="Search items..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-10 flex-1 rounded-[12px] border-[#d6c9b214] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#6f695f] focus-visible:ring-[#b89462] sm:max-w-xs"
+            />
+            <Select value={typeFilter} onValueChange={handleFilterChange(setTypeFilter)}>
+              <SelectTrigger className="h-10 w-full rounded-[12px] border-[#d6c9b214] bg-[#0f141b] text-sm text-[#f2ede5] sm:w-[160px]">
+                <SelectValue placeholder="All types" />
+              </SelectTrigger>
+              <SelectContent className="border-[#d6c9b214] bg-[#171b22] text-[#f2ede5]">
+                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value="tweet">Tweet</SelectItem>
+                <SelectItem value="thread">Thread</SelectItem>
+                <SelectItem value="article">Article</SelectItem>
+                <SelectItem value="image_prompt">Image Prompt</SelectItem>
+                <SelectItem value="video_prompt">Video Prompt</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={platformFilter} onValueChange={handleFilterChange(setPlatformFilter)}>
+              <SelectTrigger className="h-10 w-full rounded-[12px] border-[#d6c9b214] bg-[#0f141b] text-sm text-[#f2ede5] sm:w-[160px]">
+                <SelectValue placeholder="All sources" />
+              </SelectTrigger>
+              <SelectContent className="border-[#d6c9b214] bg-[#171b22] text-[#f2ede5]">
+                <SelectItem value="all">All sources</SelectItem>
+                <SelectItem value="x">X / Twitter</SelectItem>
+                <SelectItem value="rss">RSS</SelectItem>
+                <SelectItem value="web">Web</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={mediaFilter} onValueChange={handleFilterChange(setMediaFilter)}>
+              <SelectTrigger className="h-10 w-full rounded-[12px] border-[#d6c9b214] bg-[#0f141b] text-sm text-[#f2ede5] sm:w-[160px]">
+                <SelectValue placeholder="Any media" />
+              </SelectTrigger>
+              <SelectContent className="border-[#d6c9b214] bg-[#171b22] text-[#f2ede5]">
+                <SelectItem value="all">Any media</SelectItem>
+                <SelectItem value="yes">Has media</SelectItem>
+                <SelectItem value="no">No media</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Table */}
