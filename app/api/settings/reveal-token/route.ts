@@ -1,27 +1,27 @@
 import { NextResponse } from "next/server";
-import { getConfig, readConfig } from "@/lib/config";
+import { requireAuth } from "@/lib/auth/session";
+import { getClient } from "@/lib/db/client";
 
 const NO_STORE_HEADERS = {
   "Cache-Control": "no-store, max-age=0",
 };
 
 export async function POST() {
-  if (process.env.CAPTURE_SECRET) {
-    return NextResponse.json(
-      { error: "Capture token is managed by CAPTURE_SECRET and cannot be revealed here." },
-      { status: 400, headers: NO_STORE_HEADERS }
-    );
-  }
+  const session = await requireAuth();
+  if (session instanceof NextResponse) return session;
 
-  const current = readConfig() || getConfig();
-  const token = current?.extension?.pairingToken;
+  const prisma = await getClient();
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { capture_token: true },
+  });
 
-  if (!token) {
+  if (!user?.capture_token) {
     return NextResponse.json(
-      { error: "No pairing token configured" },
+      { error: "No capture token configured" },
       { status: 404, headers: NO_STORE_HEADERS }
     );
   }
 
-  return NextResponse.json({ token }, { headers: NO_STORE_HEADERS });
+  return NextResponse.json({ token: user.capture_token }, { headers: NO_STORE_HEADERS });
 }

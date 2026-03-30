@@ -11,6 +11,7 @@ import { XApiSection } from "./sections/xapi-section";
 import { RssSection } from "./sections/rss-section";
 import { AccountSection } from "./sections/account-section";
 import { LocalMediaSection } from "./sections/local-media-section";
+import { UsersSection } from "./sections/users-section";
 
 interface SettingsData {
   configured: boolean;
@@ -88,7 +89,10 @@ export function SettingsPage({ stats, isAuthed, isAdmin = true, isReadOnly = fal
             )}
 
             {isAdmin && (
-              <ExtensionSection settings={settings} onRefresh={fetchSettings} />
+              <>
+                <UsersSection />
+                <ExtensionSection settings={settings} onRefresh={fetchSettings} />
+              </>
             )}
 
             <div className={isReadOnly ? "pointer-events-none opacity-60" : ""}>

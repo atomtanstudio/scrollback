@@ -10,8 +10,8 @@ export function ExtensionSection({ settings, onRefresh }: ExtensionSectionProps)
   const [regenerating, setRegenerating] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [revealing, setRevealing] = useState(false);
-  const hasPairingToken = settings?.extension?.hasPairingToken;
-  const managedByEnv = settings?.extension?.managedByEnv;
+  const hasPairingToken = settings?.extension?.hasPairingToken || settings?.extension?.captureToken;
+  const managedByEnv = false; // Tokens are now per-user in the database
 
   const handleRegenerate = async () => {
     if (hasPairingToken && !confirm("Any connected browser extension will need to be re-paired with the new token. Continue?")) {

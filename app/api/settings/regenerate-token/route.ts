@@ -1,39 +1,29 @@
 import { NextResponse } from "next/server";
-import { v4 as uuidv4 } from "uuid";
-import { readConfig, getConfig, writeConfig, invalidateConfigCache } from "@/lib/config";
-import { sanitizeErrorMessage } from "@/lib/security/redact";
+import { randomUUID } from "crypto";
+import { requireAuth } from "@/lib/auth/session";
+import { getClient } from "@/lib/db/client";
 
 const NO_STORE_HEADERS = {
   "Cache-Control": "no-store, max-age=0",
 };
 
 export async function POST() {
+  const session = await requireAuth();
+  if (session instanceof NextResponse) return session;
+
   try {
-    if (process.env.CAPTURE_SECRET) {
-      return NextResponse.json(
-        { error: "Capture token is managed by CAPTURE_SECRET and cannot be rotated here." },
-        { status: 400, headers: NO_STORE_HEADERS }
-      );
-    }
+    const newToken = randomUUID();
+    const prisma = await getClient();
 
-    const current = readConfig() || getConfig();
-    if (!current) {
-      return NextResponse.json({ error: "Not configured" }, { status: 400, headers: NO_STORE_HEADERS });
-    }
-
-    const newToken = uuidv4();
-    const updated = {
-      ...current,
-      extension: { ...current.extension, pairingToken: newToken },
-    };
-
-    writeConfig(updated);
-    invalidateConfigCache();
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { capture_token: newToken },
+    });
 
     return NextResponse.json({ token: newToken }, { headers: NO_STORE_HEADERS });
   } catch (err) {
     return NextResponse.json(
-      { error: sanitizeErrorMessage(err, "Failed to regenerate token") },
+      { error: err instanceof Error ? err.message : "Failed to regenerate token" },
       { status: 500, headers: NO_STORE_HEADERS }
     );
   }
