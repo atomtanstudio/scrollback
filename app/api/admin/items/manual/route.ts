@@ -17,6 +17,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Admin can create items in another user's library via userId in body
+  const targetUserId =
+    body.userId && session.user.role === "admin" ? body.userId : session.user.id;
+
   const result = await ingestItem({
     external_id: `manual-${uuidv4()}`,
     source_url: source_url || "",
@@ -26,7 +30,7 @@ export async function POST(request: NextRequest) {
     author_handle: author_handle || null,
     posted_at: posted_at || null,
     media_urls: media_urls || [],
-  }, session.user.id);
+  }, targetUserId);
 
   return NextResponse.json(result);
 }

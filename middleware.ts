@@ -127,8 +127,12 @@ export async function middleware(request: NextRequest) {
 
   const isAdminOnlyGet = matchAny(pathname, ADMIN_ONLY_GET_PATHS);
 
-  // All pages require auth except /login and /onboarding
-  const isPublicPage = pathname === "/login" || pathname.startsWith("/onboarding");
+  // All pages require auth except /login, /onboarding, and public marketing/legal pages
+  const isPublicPage =
+    pathname === "/login" ||
+    pathname.startsWith("/onboarding") ||
+    pathname === "/waitlist" ||
+    pathname === "/privacy-policy";
   const isPage = !pathname.startsWith("/api/");
 
   const needsAuth =

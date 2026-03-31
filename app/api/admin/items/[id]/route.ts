@@ -60,8 +60,11 @@ export async function PUT(
     data.posted_at = parsed;
   }
 
-  // Verify ownership
-  const existing = await db.contentItem.findFirst({ where: { id, user_id: session.user.id } });
+  // Verify ownership (admins can edit any user's items)
+  const targetUserId = request.nextUrl.searchParams.get("userId");
+  const ownerFilter =
+    session.user.role === "admin" && targetUserId ? targetUserId : session.user.id;
+  const existing = await db.contentItem.findFirst({ where: { id, user_id: ownerFilter } });
   if (!existing) {
     return NextResponse.json({ error: "Item not found" }, { status: 404 });
   }
@@ -91,7 +94,10 @@ export async function DELETE(
 
   const { id } = await params;
   const db = await getClient();
-  const existing = await db.contentItem.findFirst({ where: { id, user_id: session.user.id } });
+  const targetUserId = request.nextUrl.searchParams.get("userId");
+  const ownerFilter =
+    session.user.role === "admin" && targetUserId ? targetUserId : session.user.id;
+  const existing = await db.contentItem.findFirst({ where: { id, user_id: ownerFilter } });
   if (!existing) {
     return NextResponse.json({ error: "Item not found" }, { status: 404 });
   }

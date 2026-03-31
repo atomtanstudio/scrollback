@@ -24,12 +24,14 @@ interface ManualCaptureDialogProps {
   open: boolean;
   onClose: () => void;
   onCreated: () => void;
+  userId?: string;
 }
 
 export function ManualCaptureDialog({
   open,
   onClose,
   onCreated,
+  userId,
 }: ManualCaptureDialogProps) {
   const [sourceUrl, setSourceUrl] = useState("");
   const [bodyText, setBodyText] = useState("");
@@ -69,6 +71,7 @@ export function ManualCaptureDialog({
       if (authorHandle.trim()) payload.author_handle = authorHandle.trim();
       if (title.trim()) payload.title = title.trim();
       if (postedAt) payload.posted_at = new Date(postedAt).toISOString();
+      if (userId) payload.userId = userId;
 
       const res = await fetch("/api/admin/items/manual", {
         method: "POST",

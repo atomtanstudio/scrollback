@@ -27,11 +27,11 @@ export async function DELETE(request: Request) {
       where: { user_id: targetUserId },
     });
 
-    // Clear FTS5 table for SQLite
+    // Clear FTS5 entries for the target user's items only
     if (dbType === "sqlite") {
       try {
         await prisma.$executeRawUnsafe(
-          `DELETE FROM content_items_fts`
+          `DELETE FROM content_items_fts WHERE rowid NOT IN (SELECT rowid FROM content_items)`
         );
       } catch {
         // FTS table might not exist yet

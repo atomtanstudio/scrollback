@@ -131,7 +131,8 @@ export function AdminPage({ isAuthed, isAdmin = true, captureCount }: AdminPageP
 
   const handleReprocess = async (item: AdminItem) => {
     try {
-      await fetch(`/api/admin/items/${item.id}/reprocess`, { method: "POST" });
+      const params = selectedUserId ? `?userId=${selectedUserId}` : "";
+      await fetch(`/api/admin/items/${item.id}/reprocess${params}`, { method: "POST" });
       fetchItems();
     } catch (err) {
       console.error("Failed to reprocess:", err);
@@ -141,7 +142,8 @@ export function AdminPage({ isAuthed, isAdmin = true, captureCount }: AdminPageP
   const confirmDelete = async () => {
     if (deleteTarget) {
       try {
-        await fetch(`/api/admin/items/${deleteTarget.id}`, {
+        const params = selectedUserId ? `?userId=${selectedUserId}` : "";
+        await fetch(`/api/admin/items/${deleteTarget.id}${params}`, {
           method: "DELETE",
         });
         setDeleteOpen(false);
@@ -175,8 +177,10 @@ export function AdminPage({ isAuthed, isAdmin = true, captureCount }: AdminPageP
   const handleBulkReprocess = async () => {
     try {
       await Promise.all(
-        Array.from(selectedIds).map((id) =>
-          fetch(`/api/admin/items/${id}/reprocess`, { method: "POST" })
+        Array.from(selectedIds).map((id) => {
+          const params = selectedUserId ? `?userId=${selectedUserId}` : "";
+          return fetch(`/api/admin/items/${id}/reprocess${params}`, { method: "POST" });
+        }
         )
       );
       setSelectedIds(new Set());
@@ -357,11 +361,13 @@ export function AdminPage({ isAuthed, isAdmin = true, captureCount }: AdminPageP
               setEditItem(null);
             }}
             onSaved={fetchItems}
+            userId={selectedUserId}
           />
           <ManualCaptureDialog
             open={manualOpen}
             onClose={() => setManualOpen(false)}
             onCreated={fetchItems}
+            userId={selectedUserId}
           />
         </>
       )}

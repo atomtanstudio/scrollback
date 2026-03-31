@@ -12,8 +12,11 @@ export async function POST(
   const { id } = await params;
   const db = await getClient();
 
+  const targetUserId = request.nextUrl.searchParams.get("userId");
+  const ownerFilter =
+    session.user.role === "admin" && targetUserId ? targetUserId : session.user.id;
   const item = await db.contentItem.findFirst({
-    where: { id, user_id: session.user.id },
+    where: { id, user_id: ownerFilter },
     select: {
       id: true, body_text: true, title: true, author_handle: true,
       conversation_id: true,

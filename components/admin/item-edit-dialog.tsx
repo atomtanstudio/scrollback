@@ -26,6 +26,7 @@ interface ItemEditDialogProps {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
+  userId?: string;
 }
 
 function toDatetimeLocal(dateStr: string | null): string {
@@ -42,6 +43,7 @@ export function ItemEditDialog({
   open,
   onClose,
   onSaved,
+  userId,
 }: ItemEditDialogProps) {
   const [sourceType, setSourceType] = useState("");
   const [authorHandle, setAuthorHandle] = useState("");
@@ -72,7 +74,8 @@ export function ItemEditDialog({
     setError(null);
 
     try {
-      const res = await fetch(`/api/admin/items/${item.id}`, {
+      const params = userId ? `?userId=${userId}` : "";
+      const res = await fetch(`/api/admin/items/${item.id}${params}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
