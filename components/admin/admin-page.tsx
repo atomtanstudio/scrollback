@@ -195,7 +195,7 @@ export function AdminPage({ isAuthed, isAdmin = true, captureCount }: AdminPageP
   return (
     <div className="min-h-screen px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl pb-16">
-        <Header captureCount={captureCount} isAuthed={isAuthed} currentPath="/admin" />
+        <Header captureCount={captureCount} isAuthed={isAuthed} isAdmin={isAdmin} currentPath="/admin" />
 
         {/* Compact toolbar */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

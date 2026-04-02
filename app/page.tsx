@@ -28,6 +28,7 @@ export default async function Home() {
           initialHasMore={hasMore}
           stats={stats}
           isAuthed={true}
+          isAdmin={session.user.role === "admin"}
         />
       </Suspense>
     </main>

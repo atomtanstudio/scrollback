@@ -17,6 +17,7 @@ interface HomePageProps {
   initialHasMore: boolean;
   stats: { total: number; tweets: number; threads: number; articles: number; rss: number; art: number };
   isAuthed: boolean;
+  isAdmin?: boolean;
 }
 
 const VALID_TYPES = new Set(["tweet", "thread", "article", "rss", "art"]);
@@ -31,7 +32,7 @@ function buildUrl(params: Record<string, string>) {
   return qs ? `/?${qs}` : "/";
 }
 
-export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAuthed }: HomePageProps) {
+export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAuthed, isAdmin = false }: HomePageProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -241,7 +242,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
   return (
     <div className="min-h-screen px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1440px] pb-16">
-        <Header captureCount={stats.total} isAuthed={isAuthed} currentPath="/" />
+        <Header captureCount={stats.total} isAuthed={isAuthed} isAdmin={isAdmin} currentPath="/" />
 
         <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
           {/* Sidebar */}
@@ -306,7 +307,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
               </div>
               <div className="mt-3 pt-2">
                 <a
-                  href="mailto:hello@feedsilo.app?subject=FeedSilo%20Cloud%20Waitlist&body=I%27m%20interested%20in%20a%20hosted%20FeedSilo%20account."
+                  href="/waitlist"
                   className="flex items-center justify-center gap-1.5 rounded-[10px] border border-[#b8946222] bg-[#b894620a] px-3 py-2 text-[11px] font-medium text-[#b89462] transition-colors hover:bg-[#b8946218] hover:text-[#f0cf9f]"
                 >
                   Join the waitlist for FeedSilo Cloud

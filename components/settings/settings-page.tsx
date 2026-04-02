@@ -62,7 +62,7 @@ export function SettingsPage({ stats, isAuthed, isAdmin = true, isReadOnly = fal
   return (
     <div className="min-h-screen px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl pb-16">
-        <Header captureCount={stats.total} isAuthed={isAuthed} currentPath="/settings" />
+        <Header captureCount={stats.total} isAuthed={isAuthed} isAdmin={isAdmin} currentPath="/settings" />
 
         {/* Compact toolbar */}
         <div className="mb-6 flex items-baseline gap-3">

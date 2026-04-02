@@ -8,10 +8,11 @@ import { BrandWordmark } from "@/components/brand-wordmark";
 interface HeaderProps {
   captureCount?: number;
   isAuthed: boolean;
+  isAdmin?: boolean;
   currentPath?: string;
 }
 
-export function Header({ captureCount, isAuthed, currentPath = "/" }: HeaderProps) {
+export function Header({ captureCount, isAuthed, isAdmin = false, currentPath = "/" }: HeaderProps) {
   const loginHref =
     currentPath === "/"
       ? "/login"
@@ -39,13 +40,15 @@ export function Header({ captureCount, isAuthed, currentPath = "/" }: HeaderProp
           <>
             {/* Hard links for auth-sensitive pages — avoids Next.js router
                 cache serving stale auth state after login/logout */}
-            <a
-              href="/admin"
-              className="rounded-full border border-[#d6c9b21a] bg-[#ffffff08] px-3 py-2 text-[#a49b8b] transition-colors hover:text-[#f2ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
-              aria-label="Admin"
-            >
-              <Shield size={18} />
-            </a>
+            {isAdmin && (
+              <a
+                href="/admin"
+                className="rounded-full border border-[#d6c9b21a] bg-[#ffffff08] px-3 py-2 text-[#a49b8b] transition-colors hover:text-[#f2ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+                aria-label="Admin"
+              >
+                <Shield size={18} />
+              </a>
+            )}
             <form action={logoutAction}>
               <button
                 type="submit"
