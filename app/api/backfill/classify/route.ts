@@ -133,38 +133,40 @@ export async function GET(request: Request) {
                 data: updateData,
               });
 
-              // Assign tags
+              // Assign tags (batched)
               if (classification.tags.length > 0) {
-                for (const name of classification.tags) {
-                  try {
+                const tags = await Promise.all(
+                  classification.tags.map(async (name) => {
                     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-                    const tag = await prisma.tag.upsert({
-                      where: { slug },
-                      create: { name, slug },
-                      update: {},
-                    });
-                    await prisma.contentTag.create({
-                      data: { content_item_id: item.id, tag_id: tag.id },
-                    });
-                  } catch {
-                    // Skip duplicates
-                  }
+                    try {
+                      return await prisma.tag.upsert({
+                        where: { slug },
+                        create: { name, slug },
+                        update: {},
+                      });
+                    } catch { return null; }
+                  })
+                );
+                const validTags = tags.filter((t): t is NonNullable<typeof t> => t !== null);
+                if (validTags.length > 0) {
+                  await prisma.contentTag.createMany({
+                    data: validTags.map((tag) => ({ content_item_id: item.id, tag_id: tag.id })),
+                    skipDuplicates: true,
+                  }).catch(() => {});
                 }
               }
 
-              // Assign categories
+              // Assign categories (batched)
               if (classification.category_slugs.length > 0) {
-                for (const slug of classification.category_slugs) {
-                  try {
-                    const category = await prisma.category.findUnique({ where: { slug } });
-                    if (category) {
-                      await prisma.contentCategory.create({
-                        data: { content_item_id: item.id, category_id: category.id },
-                      });
-                    }
-                  } catch {
-                    // Skip duplicates
-                  }
+                const cats = await prisma.category.findMany({
+                  where: { slug: { in: classification.category_slugs } },
+                  select: { id: true },
+                });
+                if (cats.length > 0) {
+                  await prisma.contentCategory.createMany({
+                    data: cats.map((cat: { id: string }) => ({ content_item_id: item.id, category_id: cat.id })),
+                    skipDuplicates: true,
+                  }).catch(() => {});
                 }
               }
 

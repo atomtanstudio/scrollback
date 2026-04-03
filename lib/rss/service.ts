@@ -485,31 +485,37 @@ export async function syncAllRssFeeds() {
     where: { active: true },
     include: { _count: { select: { items: true } } },
   });
-  const activeFeeds = feeds;
 
   let synced = 0;
   let skipped = 0;
   let errors = 0;
   let feedsProcessed = 0;
 
-  for (const feed of activeFeeds) {
-    try {
-      const result = await syncRssFeed(feed.id);
-      synced += result.synced;
-      skipped += result.skipped;
-      errors += result.errors;
+  // Process feeds in parallel with concurrency limit to avoid overwhelming external servers
+  const CONCURRENCY = 3;
+  for (let i = 0; i < feeds.length; i += CONCURRENCY) {
+    const batch = feeds.slice(i, i + CONCURRENCY);
+    const results = await Promise.allSettled(
+      batch.map((feed: { id: string }) => syncRssFeed(feed.id))
+    );
+
+    for (let j = 0; j < results.length; j++) {
+      const result = results[j];
       feedsProcessed++;
-    } catch (error) {
-      errors++;
-      feedsProcessed++;
-      const prisma = await getClient();
-      await prisma.rssFeed.update({
-        where: { id: feed.id },
-        data: {
-          last_error: error instanceof Error ? error.message : "Feed sync failed",
-          last_synced_at: new Date(),
-        },
-      });
+      if (result.status === "fulfilled") {
+        synced += result.value.synced;
+        skipped += result.value.skipped;
+        errors += result.value.errors;
+      } else {
+        errors++;
+        await prisma.rssFeed.update({
+          where: { id: batch[j].id },
+          data: {
+            last_error: result.reason instanceof Error ? result.reason.message : "Feed sync failed",
+            last_synced_at: new Date(),
+          },
+        }).catch(() => {});
+      }
     }
   }
 

@@ -53,6 +53,10 @@ model ContentItem {
   @@index([content_hash])
   @@index([source_platform])
   @@index([rss_feed_id])
+  @@index([source_type])
+  @@index([processing_status])
+  @@index([posted_at])
+  @@index([created_at])
   @@map("content_items")
 }
 

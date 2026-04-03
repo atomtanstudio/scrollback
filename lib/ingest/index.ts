@@ -177,24 +177,36 @@ function slugify(name: string): string {
 async function assignTagsInBackground(itemId: string, tagNames: string[]): Promise<void> {
   const prisma = await getClient();
 
-  for (const name of tagNames) {
-    try {
+  // Upsert all tags in parallel
+  const tags = await Promise.all(
+    tagNames.map(async (name) => {
       const slug = slugify(name);
-      const tag = await prisma.tag.upsert({
-        where: { slug },
-        create: { name, slug },
-        update: {},
-      });
-      await prisma.contentTag.create({
-        data: {
+      try {
+        return await prisma.tag.upsert({
+          where: { slug },
+          create: { name, slug },
+          update: {},
+        });
+      } catch {
+        return null;
+      }
+    })
+  );
+
+  // Batch-create all content-tag links at once
+  const validTags = tags.filter((t): t is NonNullable<typeof t> => t !== null);
+  if (validTags.length > 0) {
+    try {
+      await prisma.contentTag.createMany({
+        data: validTags.map((tag) => ({
           content_item_id: itemId,
           tag_id: tag.id,
-        },
+        })),
+        skipDuplicates: true,
       });
     } catch (error) {
-      // Skip duplicate or constraint errors silently
       if (error instanceof Error && !error.message.includes("Unique constraint")) {
-        console.warn(`Failed to assign tag "${name}" to ${itemId}:`, error);
+        console.warn(`Failed to assign tags to ${itemId}:`, error);
       }
     }
   }
@@ -203,20 +215,24 @@ async function assignTagsInBackground(itemId: string, tagNames: string[]): Promi
 async function assignCategoriesInBackground(itemId: string, categorySlugs: string[]): Promise<void> {
   const prisma = await getClient();
 
-  for (const slug of categorySlugs) {
+  // Fetch all matching categories in a single query
+  const categories = await prisma.category.findMany({
+    where: { slug: { in: categorySlugs } },
+    select: { id: true },
+  });
+
+  if (categories.length > 0) {
     try {
-      const category = await prisma.category.findUnique({ where: { slug } });
-      if (category) {
-        await prisma.contentCategory.create({
-          data: {
-            content_item_id: itemId,
-            category_id: category.id,
-          },
-        });
-      }
+      await prisma.contentCategory.createMany({
+        data: categories.map((cat: { id: string }) => ({
+          content_item_id: itemId,
+          category_id: cat.id,
+        })),
+        skipDuplicates: true,
+      });
     } catch (error) {
       if (error instanceof Error && !error.message.includes("Unique constraint")) {
-        console.warn(`Failed to assign category "${slug}" to ${itemId}:`, error);
+        console.warn(`Failed to assign categories to ${itemId}:`, error);
       }
     }
   }

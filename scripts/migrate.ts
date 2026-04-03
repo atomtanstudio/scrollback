@@ -101,6 +101,18 @@ async function main() {
     await client.query("ROLLBACK").catch(() => {});
     console.error("[migrate] Migration failed:", error);
     process.exit(1);
+  }
+
+  // --- Performance indexes (idempotent, outside transaction for CONCURRENTLY support) ---
+  try {
+    console.log("[migrate] Ensuring performance indexes...");
+    await client.query(`CREATE INDEX IF NOT EXISTS ix_content_items_source_type ON content_items(source_type)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS ix_content_items_processing_status ON content_items(processing_status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS ix_content_items_posted_at ON content_items(posted_at)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS ix_content_items_created_at ON content_items(created_at)`);
+    console.log("[migrate] Performance indexes done.");
+  } catch (error) {
+    console.warn("[migrate] Index creation failed (non-fatal):", error);
   } finally {
     await client.end();
   }
