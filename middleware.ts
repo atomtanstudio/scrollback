@@ -76,7 +76,7 @@ async function getRoleFromToken(request: NextRequest): Promise<string | null> {
         ? "__Secure-authjs.session-token"
         : "authjs.session-token",
     });
-    return (token?.role as string) ?? "admin";
+    return (token?.role as string) ?? "viewer";
   } catch {
     return null;
   }
@@ -160,7 +160,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // --- Role enforcement for authenticated users ---
-  const role = await getRoleFromToken(request) ?? "admin";
+  const role = await getRoleFromToken(request) ?? "viewer";
 
   if (role === "admin") {
     return NextResponse.next();
