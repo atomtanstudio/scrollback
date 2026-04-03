@@ -121,7 +121,7 @@ export function ExtensionSection({ settings, onRefresh }: ExtensionSectionProps)
             <button
               onClick={handleReveal}
               disabled={revealing}
-              className="h-9 rounded-[10px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer disabled:opacity-50 hover:border-[#d6c9b233]"
+              className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer disabled:opacity-50 hover:border-[#d6c9b233]"
             >
               {revealing ? "Revealing..." : "Reveal Token"}
             </button>
@@ -131,7 +131,7 @@ export function ExtensionSection({ settings, onRefresh }: ExtensionSectionProps)
             <button
               onClick={handleRegenerate}
               disabled={regenerating}
-              className={`h-9 px-4 rounded-[10px] text-sm font-medium transition-all duration-200 cursor-pointer disabled:opacity-50 ${
+              className={`h-9 px-4 rounded-[12px] text-sm font-medium transition-all duration-200 cursor-pointer disabled:opacity-50 ${
                 hasPairingToken
                   ? "border border-[#d6c9b214] bg-[#ffffff05] text-[#f2ede5] hover:border-[#d6c9b233]"
                   : "bg-[var(--accent-article)] text-[#090c11] font-heading hover:brightness-110"

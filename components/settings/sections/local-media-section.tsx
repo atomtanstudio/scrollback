@@ -85,7 +85,7 @@ export function LocalMediaSection({ settings, onRefresh }: LocalMediaSectionProp
             value={path}
             onChange={e => { setPath(e.target.value); setSaved(false); }}
             placeholder="/home/user/feedsilo-media"
-            className="h-9 rounded-[10px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] outline-none placeholder:text-[#4a4540] focus:border-[#d6c9b233] font-mono"
+            className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] font-mono placeholder:text-[#4a4540] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
           />
           <p className="text-[10px] text-[#8a8174]">
             Absolute or relative path. The directory will be created if it does not exist. You can also set <code className="rounded bg-[#0f141b] px-1 py-0.5">LOCAL_MEDIA_PATH</code> as an environment variable.
@@ -99,14 +99,14 @@ export function LocalMediaSection({ settings, onRefresh }: LocalMediaSectionProp
           <button
             onClick={handleSave}
             disabled={saving}
-            className="h-9 rounded-[10px] bg-[var(--accent-article)] px-4 text-sm font-medium font-heading text-[#090c11] transition-all duration-200 hover:brightness-110 disabled:opacity-50 cursor-pointer"
+            className="h-9 rounded-[12px] bg-[var(--accent-article)] px-4 text-sm font-medium font-heading text-[#090c11] transition-all duration-200 hover:brightness-110 disabled:opacity-50 cursor-pointer"
           >
             {saving ? "Saving..." : "Save Path"}
           </button>
           {configured && (
             <button
               onClick={() => { setPath(""); setSaved(false); }}
-              className="h-9 rounded-[10px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#a49b8b] transition-all duration-200 hover:border-[#d6c9b233] cursor-pointer"
+              className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#a49b8b] transition-all duration-200 hover:border-[#d6c9b233] cursor-pointer"
             >
               Clear
             </button>

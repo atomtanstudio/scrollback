@@ -227,7 +227,7 @@ export function AdminPage({ isAuthed, isAdmin = true, captureCount }: AdminPageP
               <select
                 value={selectedUserId}
                 onChange={(e) => { setSelectedUserId(e.target.value); setPage(1); }}
-                className="h-9 rounded-[10px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] focus:border-[#d6c9b24d] focus:outline-none"
+                className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
               >
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>

@@ -3,7 +3,7 @@ import { BrandWordmark } from "@/components/brand-wordmark";
 
 export default function ArchivePage() {
   return (
-    <main className="min-h-screen bg-[#090c11] px-4 py-10 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-background px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1120px]">
         <div className="mb-8 flex items-center justify-between gap-4">
           <Link
@@ -28,7 +28,7 @@ export default function ArchivePage() {
           </div>
         </div>
 
-        <section className="overflow-hidden rounded-[34px] border border-[#d6c9b21a] bg-[linear-gradient(180deg,rgba(24,29,37,0.96),rgba(14,18,24,0.98))] shadow-[0_34px_90px_rgba(2,6,12,0.45)]">
+        <section className="overflow-hidden rounded-[28px] border border-[#d6c9b21a] bg-[linear-gradient(180deg,rgba(24,29,37,0.96),rgba(14,18,24,0.98))] shadow-[0_34px_90px_rgba(2,6,12,0.45)]">
           <div className="grid gap-0 lg:grid-cols-[0.95fr_1.1fr]">
             <div className="border-b border-[#d6c9b214] p-7 sm:p-10 lg:border-b-0 lg:border-r">
               <p className="text-[11px] uppercase tracking-[0.18em] text-[#a49b8b]">

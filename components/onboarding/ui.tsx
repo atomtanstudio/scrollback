@@ -5,10 +5,10 @@ export const onboardingPanelClass =
   "rounded-[24px] border border-[#d6c9b214] bg-[#ffffff08] p-4 sm:p-5";
 
 export const onboardingInputClass =
-  "w-full h-11 rounded-[16px] border border-[#d6c9b21f] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462] focus-visible:ring-offset-0";
+  "w-full h-11 rounded-[14px] border border-[#d6c9b21f] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462] focus-visible:ring-offset-0";
 
 export const onboardingPrimaryButtonClass =
-  "inline-flex h-12 items-center justify-center rounded-[16px] border border-[#cfb28a55] bg-[#b89462] px-8 font-heading text-[15px] font-semibold text-[#10141a] shadow-[0_16px_40px_rgba(184,148,98,0.24)] transition-all duration-200 hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d8c0a0] focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:brightness-100";
+  "inline-flex h-11 items-center justify-center rounded-[14px] border border-[#cfb28a55] bg-[#b89462] px-8 font-heading text-[14px] font-semibold text-[#10141a] shadow-[0_12px_32px_rgba(184,148,98,0.2)] transition-all duration-200 hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462] focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:brightness-100";
 
 export const onboardingSecondaryButtonClass =
   "inline-flex h-11 items-center justify-center rounded-[14px] border border-[#d6c9b21a] bg-[#ffffff05] px-5 text-sm font-medium text-[#cdc4b7] transition-colors hover:border-[#d6c9b236] hover:text-[#f2ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]";

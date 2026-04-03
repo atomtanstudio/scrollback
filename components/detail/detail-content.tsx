@@ -705,7 +705,7 @@ function ArticleContent({
           <div
             className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-[#f2ede5]"
             style={{
-              background: "linear-gradient(135deg, var(--accent-article) 0%, #9b7345 100%)",
+              background: "linear-gradient(135deg, var(--accent-article) 0%, var(--accent-thread) 100%)",
             }}
           >
             {initials}

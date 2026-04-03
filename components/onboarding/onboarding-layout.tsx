@@ -17,9 +17,9 @@ export function OnboardingLayout({
   children,
 }: OnboardingLayoutProps) {
   return (
-    <div className="min-h-screen bg-[#090c11] px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[760px]">
-        <div className="overflow-hidden rounded-[34px] border border-[#d6c9b21a] bg-[linear-gradient(180deg,rgba(24,29,37,0.96),rgba(14,18,24,0.98))] shadow-[0_34px_90px_rgba(2,6,12,0.45)]">
+        <div className="overflow-hidden rounded-[28px] border border-[#d6c9b21a] bg-[linear-gradient(180deg,rgba(24,29,37,0.96),rgba(14,18,24,0.98))] shadow-[0_34px_90px_rgba(2,6,12,0.45)]">
           <div className="border-b border-[#d6c9b214] px-6 py-5 sm:px-8 sm:py-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>

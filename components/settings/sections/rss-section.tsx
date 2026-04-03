@@ -281,7 +281,7 @@ export function RssSection({ onRefresh, isAdmin = true }: RssSectionProps) {
           <select
             value={selectedUserId}
             onChange={(e) => setSelectedUserId(e.target.value)}
-            className="h-9 rounded-[10px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] focus:border-[#d6c9b24d] focus:outline-none"
+            className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
           >
             {users.map((u) => (
               <option key={u.id} value={u.id}>
@@ -301,7 +301,7 @@ export function RssSection({ onRefresh, isAdmin = true }: RssSectionProps) {
                 value={feedUrl}
                 onChange={(event) => setFeedUrl(event.target.value)}
                 placeholder="https://example.com/feed.xml"
-                className="h-11 flex-1 rounded-[12px] border border-[#d6c9b214] bg-[#111821] px-4 text-sm text-[#f2ede5] placeholder:text-[#6f695f] focus:border-[#d6c9b24d] focus:outline-none"
+                className="h-11 flex-1 rounded-[12px] border border-[#d6c9b214] bg-[#111821] px-4 text-sm text-[#f2ede5] placeholder:text-[#6f695f] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
               />
               <button
                 onClick={handlePreviewFeed}

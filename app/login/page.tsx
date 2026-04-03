@@ -23,7 +23,7 @@ export default async function LoginPage() {
   const showDemo = !!(demoEmail && demoPassword);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#090c11] px-4 py-10">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-[420px]">
         <div className="mb-6 flex justify-center">
           <BrandWordmark className="text-xl text-[#f2ede5]" />

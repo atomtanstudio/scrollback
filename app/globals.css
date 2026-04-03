@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 223 24% 7%;
+    --background: 218 31% 5%;
     --surface: 222 21% 11%;
     --surface-elevated: 223 18% 15%;
     --foreground: 36 31% 94%;
@@ -41,8 +41,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-[#090c11] text-[#f2ede5] antialiased;
-    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    @apply bg-background text-foreground antialiased;
   }
 }
 

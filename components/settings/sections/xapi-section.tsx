@@ -156,7 +156,7 @@ export function XApiSection({ settings, onRefresh }: XApiSectionProps) {
                 value={bearerToken}
                 onChange={(e) => setBearerToken(e.target.value)}
                 placeholder={hasBearerToken ? "••••••••" : "AAAAAAAAAAAAAAAAAAA..."}
-                className="flex-1 h-10 rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#6f695f] focus:outline-none focus:border-[#d6c9b24d] transition-colors"
+                className="flex-1 h-10 rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#6f695f] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
               />
               {bearerToken && (
                 <button

@@ -67,7 +67,7 @@ export function AccountSection() {
             onChange={e => setCurrent(e.target.value)}
             required
             autoComplete="current-password"
-            className="h-9 rounded-[10px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] outline-none placeholder:text-[#4a4540] focus:border-[#d6c9b233]"
+            className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] placeholder:text-[#4a4540] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -79,7 +79,7 @@ export function AccountSection() {
             required
             minLength={8}
             autoComplete="new-password"
-            className="h-9 rounded-[10px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] outline-none placeholder:text-[#4a4540] focus:border-[#d6c9b233]"
+            className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] placeholder:text-[#4a4540] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -90,7 +90,7 @@ export function AccountSection() {
             onChange={e => setConfirm(e.target.value)}
             required
             autoComplete="new-password"
-            className="h-9 rounded-[10px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] outline-none placeholder:text-[#4a4540] focus:border-[#d6c9b233]"
+            className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] placeholder:text-[#4a4540] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
           />
         </div>
 
@@ -105,7 +105,7 @@ export function AccountSection() {
           <button
             type="submit"
             disabled={saving}
-            className="h-9 rounded-[10px] bg-[var(--accent-article)] px-4 text-sm font-medium font-heading text-[#090c11] transition-all duration-200 hover:brightness-110 disabled:opacity-50 cursor-pointer"
+            className="h-9 rounded-[12px] bg-[var(--accent-article)] px-4 text-sm font-medium font-heading text-[#090c11] transition-all duration-200 hover:brightness-110 disabled:opacity-50 cursor-pointer"
           >
             {saving ? "Saving..." : "Change Password"}
           </button>

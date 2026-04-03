@@ -11,7 +11,7 @@ function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: st
   return (
     <button
       type="submit"
-      className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-[14px] border border-[#cfb28a55] bg-[#b89462] px-6 text-[14px] font-semibold text-[#10141a] shadow-[0_12px_32px_rgba(184,148,98,0.2)] transition-all duration-200 hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d8c0a0] disabled:cursor-default disabled:opacity-30 disabled:hover:brightness-100"
+      className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-[14px] border border-[#cfb28a55] bg-[#b89462] px-6 text-[14px] font-semibold text-[#10141a] shadow-[0_12px_32px_rgba(184,148,98,0.2)] transition-all duration-200 hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462] disabled:cursor-default disabled:opacity-30 disabled:hover:brightness-100"
       disabled={pending}
     >
       {pending ? pendingLabel : label}
@@ -40,7 +40,7 @@ export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword }: Lo
   const [tab, setTab] = useState<"signin" | "demo">(showDemo ? "demo" : "signin");
 
   return (
-    <div className="rounded-[20px] border border-[#d6c9b214] bg-[linear-gradient(180deg,rgba(24,29,37,0.96),rgba(14,18,24,0.98))] p-6 shadow-[0_24px_64px_rgba(2,6,12,0.4)]">
+    <div className="rounded-[24px] border border-[#d6c9b214] bg-[linear-gradient(180deg,rgba(24,29,37,0.96),rgba(14,18,24,0.98))] p-6 shadow-[0_24px_64px_rgba(2,6,12,0.4)]">
       {bootstrapMode ? (
         <>
           <h1 className="text-lg font-semibold tracking-[-0.02em] text-[#f2ede5]">
@@ -123,7 +123,7 @@ export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword }: Lo
               type="email"
               placeholder="you@example.com"
               required
-              className="h-10 w-full rounded-[12px] border border-[#d6c9b21f] bg-[#0f141b] px-3.5 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+              className="h-10 w-full rounded-[14px] border border-[#d6c9b21f] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
             />
           </div>
 
@@ -136,7 +136,7 @@ export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword }: Lo
               type="password"
               placeholder="Enter your password"
               required
-              className="h-10 w-full rounded-[12px] border border-[#d6c9b21f] bg-[#0f141b] px-3.5 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+              className="h-10 w-full rounded-[14px] border border-[#d6c9b21f] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
             />
           </div>
 
@@ -150,7 +150,7 @@ export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword }: Lo
                 type="password"
                 placeholder="Repeat your password"
                 required
-                className="h-10 w-full rounded-[12px] border border-[#d6c9b21f] bg-[#0f141b] px-3.5 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+                className="h-10 w-full rounded-[14px] border border-[#d6c9b21f] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
               />
             </div>
           )}

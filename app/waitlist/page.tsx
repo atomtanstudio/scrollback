@@ -32,7 +32,7 @@ export default function WaitlistPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#090c11] px-4 py-10 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-background px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[540px]">
         <div className="mb-10 text-center">
           <Link
@@ -71,12 +71,12 @@ export default function WaitlistPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-12 flex-1 rounded-[16px] border border-[#d6c9b21f] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+                className="h-11 flex-1 rounded-[14px] border border-[#d6c9b21f] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
               />
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="h-12 shrink-0 rounded-[16px] border border-[#cfb28a55] bg-[#b89462] px-6 font-heading text-[15px] font-semibold text-[#10141a] shadow-[0_16px_40px_rgba(184,148,98,0.24)] transition-all hover:brightness-105 disabled:opacity-50"
+                className="h-11 shrink-0 rounded-[14px] border border-[#cfb28a55] bg-[#b89462] px-6 font-heading text-[14px] font-semibold text-[#10141a] shadow-[0_12px_32px_rgba(184,148,98,0.2)] transition-all hover:brightness-105 disabled:opacity-50"
               >
                 {status === "loading" ? "Joining..." : "Join the Waitlist"}
               </button>
