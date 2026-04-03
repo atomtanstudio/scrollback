@@ -61,7 +61,11 @@ ${categoriesText}
 
 Instructions:
 1. Assign 1-3 category slugs from the list above that best match this content
-2. Generate 3-8 descriptive tags (lowercase, hyphenated if multi-word)
+2. Generate 3-8 tags that describe what this content IS ABOUT — the concrete subject matter, tools mentioned, techniques shown, or visual subject of any images. Tags must be specific and useful for filtering a personal library.
+   - GOOD tags: "midjourney", "portrait-photography", "stable-diffusion", "react-hooks", "ai-art", "watercolor", "landscape"
+   - BAD tags: "growth-marketing", "social-media-strategy", "content-creation", "digital-innovation", "thought-leadership" — these are vague marketing filler that nobody would search for
+   - If the content is an image post or AI art, tag the visual subject (e.g. "portrait", "anime", "architecture") and the tool if mentioned
+   - If the content is in a foreign language, tag based on the actual topic, not the fact that it's multilingual
 3. Write a 1-2 sentence summary for a display card
 4. Determine if this content contains an AI IMAGE or VIDEO generation prompt — meaning a prompt specifically used with tools like Midjourney, DALL-E, Stable Diffusion, Flux, Ideogram, Firefly, Sora, Runway, Kling, Seedance, Pika, Luma, etc. to generate visual media.
 5. IMPORTANT: Do NOT mark as has_prompt if the content contains:
