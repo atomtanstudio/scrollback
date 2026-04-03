@@ -57,8 +57,8 @@ export async function POST(
       }
 
       const text = `${item.title || ""} ${item.body_text || ""}`.trim();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const categorySlugs = item.categories?.map((c: any) => c.category.slug) || [];
+      const allCategories = await db.category.findMany({ select: { slug: true } });
+      const categorySlugs = allCategories.map((c: { slug: string }) => c.slug);
 
       // 1. Re-classify via Gemini (summary, tags, categories)
       const { classifyContent } = await import("@/lib/embeddings/gemini");
@@ -70,10 +70,58 @@ export async function POST(
         item.author_handle
       );
       if (result) {
-        await db.contentItem.update({
-          where: { id },
-          data: { ai_summary: result.ai_summary },
-        });
+        // Clear old tags and categories
+        await db.contentTag.deleteMany({ where: { content_item_id: id } });
+        await db.contentCategory.deleteMany({ where: { content_item_id: id } });
+
+        // Update summary and prompt data
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const updateData: Record<string, any> = {
+          ai_summary: result.ai_summary,
+        };
+        if (result.has_prompt) {
+          updateData.has_prompt = true;
+          updateData.prompt_text = result.prompt_text;
+          if (result.prompt_type) updateData.prompt_type = result.prompt_type;
+        }
+        await db.contentItem.update({ where: { id }, data: updateData });
+
+        // Assign new tags
+        if (result.tags.length > 0) {
+          const tags = await Promise.all(
+            result.tags.map(async (name: string) => {
+              const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+              try {
+                return await db.tag.upsert({
+                  where: { slug },
+                  create: { name, slug },
+                  update: {},
+                });
+              } catch { return null; }
+            })
+          );
+          const validTags = tags.filter((t): t is NonNullable<typeof t> => t !== null);
+          if (validTags.length > 0) {
+            await db.contentTag.createMany({
+              data: validTags.map((tag) => ({ content_item_id: id, tag_id: tag.id })),
+              skipDuplicates: true,
+            }).catch(() => {});
+          }
+        }
+
+        // Assign new categories
+        if (result.category_slugs.length > 0) {
+          const cats = await db.category.findMany({
+            where: { slug: { in: result.category_slugs } },
+            select: { id: true },
+          });
+          if (cats.length > 0) {
+            await db.contentCategory.createMany({
+              data: cats.map((cat: { id: string }) => ({ content_item_id: id, category_id: cat.id })),
+              skipDuplicates: true,
+            }).catch(() => {});
+          }
+        }
       }
 
       // 2. Regenerate search vector
