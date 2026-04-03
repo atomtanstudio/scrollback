@@ -21,6 +21,7 @@ export const maxDuration = 300; // 5 min max for serverless
  *   ?scope=describe  — Only image descriptions (for already-downloaded media)
  *   ?scope=embed     — Only embeddings
  *   ?scope=translate — Re-translate non-English items with updated limits
+ *   ?scope=reclassify — Re-run AI classification on ALL items (clears old tags first)
  *   ?limit=50        — Max items to process per run (default 50)
  */
 export async function GET(request: Request) {
@@ -187,6 +188,120 @@ export async function GET(request: Request) {
               processed: i + 1,
               total,
               current: `Classified ${i + 1}/${total}`,
+            });
+          }
+        }
+
+        // --- Phase 1b: Reclassify ALL items (clear old tags, re-run AI) ---
+        if (scope === "reclassify") {
+          send({ phase: "reclassify", status: "Finding items to reclassify..." });
+
+          const items = await prisma.contentItem.findMany({
+            where: { ai_summary: { not: null } },
+            select: {
+              id: true,
+              title: true,
+              body_text: true,
+              source_type: true,
+              author_handle: true,
+            },
+            take: limit,
+            orderBy: { created_at: "desc" },
+          });
+
+          const total = items.length;
+          send({ phase: "reclassify", total, status: `Reclassifying ${total} items...` });
+
+          const allCategories = await prisma.category.findMany({ select: { slug: true } });
+          const categorySlugs = allCategories.map((c: { slug: string }) => c.slug);
+
+          for (let i = 0; i < items.length; i++) {
+            if (cancelled) break;
+            const item = items[i];
+            try {
+              // Clear old tags and categories for this item
+              await prisma.contentTag.deleteMany({ where: { content_item_id: item.id } });
+              await prisma.contentCategory.deleteMany({ where: { content_item_id: item.id } });
+
+              const classification = await classifyContent(
+                item.title || "",
+                item.body_text || "",
+                item.source_type,
+                categorySlugs,
+                item.author_handle
+              );
+
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const updateData: Record<string, any> = {
+                ai_summary: classification.ai_summary || null,
+              };
+
+              if (classification.has_prompt) {
+                updateData.has_prompt = true;
+                updateData.prompt_text = classification.prompt_text;
+                if (classification.prompt_type) {
+                  updateData.prompt_type = classification.prompt_type;
+                }
+              }
+
+              await prisma.contentItem.update({
+                where: { id: item.id },
+                data: updateData,
+              });
+
+              // Assign new tags (batched)
+              if (classification.tags.length > 0) {
+                const tags = await Promise.all(
+                  classification.tags.map(async (name) => {
+                    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                    try {
+                      return await prisma.tag.upsert({
+                        where: { slug },
+                        create: { name, slug },
+                        update: {},
+                      });
+                    } catch { return null; }
+                  })
+                );
+                const validTags = tags.filter((t): t is NonNullable<typeof t> => t !== null);
+                if (validTags.length > 0) {
+                  await prisma.contentTag.createMany({
+                    data: validTags.map((tag) => ({ content_item_id: item.id, tag_id: tag.id })),
+                    skipDuplicates: true,
+                  }).catch(() => {});
+                }
+              }
+
+              // Assign new categories (batched)
+              if (classification.category_slugs.length > 0) {
+                const cats = await prisma.category.findMany({
+                  where: { slug: { in: classification.category_slugs } },
+                  select: { id: true },
+                });
+                if (cats.length > 0) {
+                  await prisma.contentCategory.createMany({
+                    data: cats.map((cat: { id: string }) => ({ content_item_id: item.id, category_id: cat.id })),
+                    skipDuplicates: true,
+                  }).catch(() => {});
+                }
+              }
+
+              totalProcessed++;
+            } catch (err) {
+              totalErrors++;
+              send({
+                phase: "reclassify",
+                progress: (i + 1) / total,
+                error: `Item ${item.id}: ${err instanceof Error ? err.message : "Unknown error"}`,
+              });
+            }
+
+            send({
+              phase: "reclassify",
+              progress: (i + 1) / total,
+              processed: i + 1,
+              total,
+              current: `Reclassified ${i + 1}/${total}`,
             });
           }
         }

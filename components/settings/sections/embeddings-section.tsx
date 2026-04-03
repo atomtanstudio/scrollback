@@ -120,6 +120,17 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
         </div>
 
         <div className="border-t border-[#d6c9b214] pt-4">
+          <h4 className="mb-2 text-sm font-medium text-[#f2ede5]">Reclassify All Items</h4>
+          <p className="mb-3 text-xs text-[#a49b8b]">
+            Clear old tags and re-run AI classification on all items. Use after improving classification prompts. Processes up to 50 items per run — run multiple times for larger libraries.
+          </p>
+          <ProgressBar
+            endpoint="/api/backfill/classify?scope=reclassify"
+            buttonLabel="Reclassify Items"
+          />
+        </div>
+
+        <div className="border-t border-[#d6c9b214] pt-4">
           <h4 className="mb-2 text-sm font-medium text-[#f2ede5]">Re-translate Foreign Language Items</h4>
           <p className="mb-3 text-xs text-[#a49b8b]">
             Re-translate non-English items that have missing or incomplete translations. Useful after updating translation limits.
