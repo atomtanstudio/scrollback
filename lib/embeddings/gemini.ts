@@ -149,67 +149,79 @@ export async function translateToEnglish(
   bodyText: string
 ): Promise<TranslationResult> {
   const genai = getClient();
-  const truncatedTitle = title.slice(0, 1000);
-  const truncatedBody = bodyText.slice(0, 30000);
+  const noResult: TranslationResult = { language: null, translated: false, translated_title: null, translated_body_text: null };
 
-  const prompt = `Detect the primary language of this captured content and translate it to natural English only if needed.
+  // Step 1: Detect language (tiny output — won't hit token limits)
+  const sample = (title + " " + bodyText).slice(0, 500);
+  const detectPrompt = `What language is this text? Return ONLY a JSON object like {"language":"ja","is_english":false}. Use lowercase ISO 639-1 codes (en, ja, zh, ko, ru, ar, de, fr, es, pt, etc.).\n\nText: ${sample}`;
 
-Title:
-${truncatedTitle || "(none)"}
-
-Body:
-${truncatedBody || "(none)"}
-
-Rules:
-- Return the primary language as a lowercase ISO 639-1 code when possible (examples: en, ja, zh, ko, ru, ar, de, fr, es, pt, etc.).
-- If the content is already English or mostly English, do not translate it.
-- Translate ALL of the provided text — do not summarize, truncate, or skip any sections.
-- Preserve URLs, @handles, hashtags, emoji, and any structured prompt syntax.
-- Preserve paragraph structure and line breaks. If the source text is article-like and lacks clear breaks, infer readable paragraph breaks and separate paragraphs with blank lines.
-- Keep the translation faithful and readable, not overly literal.
-
-Return ONLY JSON in this exact shape:
-{
-  "language": "en",
-  "translated": false,
-  "translated_title": null,
-  "translated_body_text": null
-}`;
-
-  const result = await genai.models.generateContent({
+  const detectResult = await genai.models.generateContent({
     model: CLASSIFY_MODEL,
-    contents: prompt,
+    contents: detectPrompt,
   });
 
-  const text = result.text?.trim();
-  if (!text) {
-    return { language: null, translated: false, translated_title: null, translated_body_text: null };
-  }
+  const detectText = detectResult.text?.trim();
+  if (!detectText) return noResult;
 
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    return { language: null, translated: false, translated_title: null, translated_body_text: null };
-  }
+  const detectJson = detectText.match(/\{[\s\S]*\}/);
+  if (!detectJson) return noResult;
 
+  let language: string;
   try {
-    const parsed = JSON.parse(jsonMatch[0]);
-    const translated = !!parsed.translated;
-    const language = typeof parsed.language === "string" ? parsed.language.toLowerCase().slice(0, 8) : null;
-    return {
-      language,
-      translated,
-      translated_title:
-        translated && typeof parsed.translated_title === "string"
-          ? parsed.translated_title.slice(0, 2000)
-          : null,
-      translated_body_text:
-        translated && typeof parsed.translated_body_text === "string"
-          ? parsed.translated_body_text.slice(0, 60000)
-          : null,
-    };
+    const parsed = JSON.parse(detectJson[0]);
+    language = typeof parsed.language === "string" ? parsed.language.toLowerCase().slice(0, 8) : "en";
+    if (parsed.is_english === true || language === "en") {
+      return { language: "en", translated: false, translated_title: null, translated_body_text: null };
+    }
   } catch {
-    return { language: null, translated: false, translated_title: null, translated_body_text: null };
+    return noResult;
   }
+
+  // Step 2: Translate title (separate call, plain text output)
+  let translatedTitle: string | null = null;
+  if (title && title.length > 0) {
+    const titlePrompt = `Translate this ${language} text to natural English. Return ONLY the translated text, nothing else. Preserve URLs, @handles, hashtags, and emoji.\n\n${title.slice(0, 1000)}`;
+    try {
+      const titleResult = await genai.models.generateContent({
+        model: CLASSIFY_MODEL,
+        contents: titlePrompt,
+      });
+      translatedTitle = titleResult.text?.trim() || null;
+    } catch {
+      // Title translation failed, continue with body
+    }
+  }
+
+  // Step 3: Translate body (separate call, plain text output — no JSON wrapper means no output limit issues)
+  let translatedBody: string | null = null;
+  if (bodyText && bodyText.length > 0) {
+    const bodyPrompt = `Translate this ${language} text to natural English. Return ONLY the translated text, nothing else.
+
+Rules:
+- Translate ALL of the text — do not summarize, truncate, or skip any sections.
+- Preserve URLs, @handles, hashtags, emoji, and any structured prompt syntax.
+- Preserve paragraph structure and line breaks.
+- Keep the translation faithful and readable, not overly literal.
+
+${bodyText.slice(0, 30000)}`;
+    try {
+      const bodyResult = await genai.models.generateContent({
+        model: CLASSIFY_MODEL,
+        contents: bodyPrompt,
+      });
+      translatedBody = bodyResult.text?.trim() || null;
+    } catch {
+      // Body translation failed
+    }
+  }
+
+  const hasTranslation = !!(translatedTitle || translatedBody);
+  return {
+    language,
+    translated: hasTranslation,
+    translated_title: translatedTitle ? translatedTitle.slice(0, 2000) : null,
+    translated_body_text: translatedBody ? translatedBody.slice(0, 60000) : null,
+  };
 }
 
 // --- Image description via Gemini Vision ---
