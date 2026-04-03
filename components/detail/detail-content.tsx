@@ -770,7 +770,7 @@ function ArticleContent({
           </div>
         );
       })()}
-      {shouldRenderHtml && decoratedBodyHtml && !translationAvailable ? (
+      {shouldRenderHtml && decoratedBodyHtml && (!translationAvailable || showOriginal) ? (
         <div
           className="prose prose-invert max-w-none
             prose-headings:font-heading prose-headings:text-[#f2ede5]
@@ -790,7 +790,7 @@ function ArticleContent({
             prose-figcaption:mt-3 prose-figcaption:px-4 prose-figcaption:pb-4 prose-figcaption:text-center prose-figcaption:text-xs prose-figcaption:leading-6 prose-figcaption:text-[#8a8174]"
           dangerouslySetInnerHTML={{ __html: decoratedBodyHtml }}
         />
-      ) : fallbackHtmlText && !translationAvailable ? (
+      ) : fallbackHtmlText && (!translationAvailable || showOriginal) ? (
         <div className="space-y-5">
           <ArticleTextSegments bodyText={fallbackHtmlText} mediaItems={item.media_items} />
         </div>
