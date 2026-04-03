@@ -18,6 +18,7 @@ interface ProgressData {
   current?: string;
   done?: boolean;
   error?: string;
+  summary?: string;
 }
 
 export function ProgressBar({ endpoint, buttonLabel, className }: ProgressBarProps) {
@@ -81,7 +82,7 @@ export function ProgressBar({ endpoint, buttonLabel, className }: ProgressBarPro
     };
   }, [endpoint]);
 
-  const percent = data ? Math.round(data.progress * 100) : 0;
+  const percent = data?.progress ? Math.round(data.progress * 100) : 0;
 
   return (
     <div className={cn("flex flex-col gap-3", className)}>
@@ -111,7 +112,7 @@ export function ProgressBar({ endpoint, buttonLabel, className }: ProgressBarPro
           </div>
           {state === "done" && (
             <p className="text-xs text-emerald-300">
-              Done: {data?.processed} items processed
+              {data?.summary || `Done: ${data?.processed ?? 0} items processed`}
             </p>
           )}
         </div>

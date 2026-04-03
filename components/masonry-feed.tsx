@@ -218,12 +218,14 @@ export function MasonryFeed({
     if (hasUserInteracted && hasMeasuredLayout && inView && hasMore && !isLoading && !loadCooldownRef.current) loadMore();
   }, [hasUserInteracted, hasMeasuredLayout, inView, loadMore, hasMore, isLoading]);
 
-  // Reset on type or sort change
+  // Reset on type, tag, or sort change
   const prevTypeRef = useRef(type);
+  const prevTagRef = useRef(tag);
   const prevSortRef = useRef(sort);
   useEffect(() => {
-    if (prevTypeRef.current !== type || prevSortRef.current !== sort) {
+    if (prevTypeRef.current !== type || prevTagRef.current !== tag || prevSortRef.current !== sort) {
       prevTypeRef.current = type;
+      prevTagRef.current = tag;
       prevSortRef.current = sort;
       notifiedTypeRef.current = null;
       setItems(filteredInitialItems);
@@ -234,20 +236,21 @@ export function MasonryFeed({
       setPositions(new Map());
       calculatedIdsRef.current = "";
     }
-  }, [type, sort, filteredInitialItems, initialHasMore, initialTotal]);
+  }, [type, tag, sort, filteredInitialItems, initialHasMore, initialTotal]);
 
   useEffect(() => {
-    if (!type && (!sort || sort === "recent")) return;
+    if (!type && !tag && (!sort || sort === "recent")) return;
     void fetchPage([], true);
-  }, [type, sort, fetchPage]);
+  }, [type, tag, sort, fetchPage]);
 
   useEffect(() => {
-    if (!type || !onInitialRenderReady) return;
-    if (notifiedTypeRef.current === type) return;
+    if ((!type && !tag) || !onInitialRenderReady) return;
+    const filterKey = `${type}-${tag}`;
+    if (notifiedTypeRef.current === filterKey) return;
     if (isLoading || !hasMeasuredLayout || items.length === 0) return;
-    notifiedTypeRef.current = type;
+    notifiedTypeRef.current = filterKey;
     onInitialRenderReady();
-  }, [type, onInitialRenderReady, isLoading, hasMeasuredLayout, items.length]);
+  }, [type, tag, onInitialRenderReady, isLoading, hasMeasuredLayout, items.length]);
 
   const setItemRef = useCallback((id: string, el: HTMLDivElement | null) => {
     if (el) itemRefs.current.set(id, el);
