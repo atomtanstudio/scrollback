@@ -40,9 +40,11 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
   const urlType = searchParams.get("type") || "";
   const urlSort = searchParams.get("sort") || "recent";
   const urlQ = searchParams.get("q") || "";
+  const urlTag = searchParams.get("tag") || "";
 
   const activeType = VALID_TYPES.has(urlType) ? urlType : "";
   const activeSort = VALID_SORTS.has(urlSort) ? urlSort : "recent";
+  const activeTag = urlTag;
 
   const [searchResults, setSearchResults] = useState<ContentItemWithMedia[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -112,7 +114,7 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
     (type: string) => {
       setSearchResults(null);
       setSearchQuery("");
-      router.push(buildUrl({ type, sort: activeSort }), { scroll: false });
+      router.push(buildUrl({ type, sort: activeSort, tag: "" }), { scroll: false });
       if (paletteOpen) {
         pendingPaletteScrollRef.current = true;
       } else {
@@ -210,6 +212,8 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
     ? isSearching
       ? "Searching..."
       : `${searchResults.length} result${searchResults.length !== 1 ? "s" : ""}`
+    : activeTag
+      ? `Tagged: ${activeTag.replace(/-/g, " ")}`
     : activeType === "tweet"
       ? "Tweets"
       : activeType === "thread"
@@ -362,6 +366,16 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                   {searchQuery && searchResults && (
                     <span>for &ldquo;{searchQuery}&rdquo;</span>
                   )}
+                  {activeTag && (
+                    <button
+                      type="button"
+                      onClick={() => router.push("/", { scroll: false })}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[#b8946233] bg-[#b894620a] px-3 py-1 text-[12px] text-[#b89462] transition-colors hover:bg-[#b8946218]"
+                    >
+                      {activeTag.replace(/-/g, " ")}
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                  )}
                   <span>{filteredTotalCount.toLocaleString()} items</span>
                 </div>
               </div>
@@ -382,13 +396,14 @@ export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAu
                 )
               ) : (
                 <MasonryFeed
-                  key={`${activeType}-${activeSort}`}
+                  key={`${activeType}-${activeTag}-${activeSort}`}
                   initialItems={initialItems}
                   totalCount={filteredTotalCount}
                   initialHasMore={initialHasMore}
                   type={activeType || undefined}
+                  tag={activeTag || undefined}
                   sort={activeSort}
-                  onInitialRenderReady={activeType ? handleFilteredFeedReady : undefined}
+                  onInitialRenderReady={activeType || activeTag ? handleFilteredFeedReady : undefined}
                 />
               )}
             </section>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { formatFullDate } from "@/lib/format";
 import type { DetailItem } from "@/lib/db/types";
 import { EngagementBento } from "./engagement-bento";
@@ -111,9 +112,10 @@ function TagsAndCategories({
     <SidebarSection title="Tags">
       <div className="flex flex-wrap gap-2">
         {hasCategories && categories.map(({ category }) => (
-          <span
+          <Link
             key={`cat-${category.id}`}
-            className="rounded-full border px-3 py-1 text-[11px] font-medium"
+            href={`/?tag=${encodeURIComponent(category.slug)}`}
+            className="rounded-full border px-3 py-1 text-[11px] font-medium transition-opacity hover:opacity-80"
             style={{
               backgroundColor: `${accent}18`,
               color: accent,
@@ -121,12 +123,13 @@ function TagsAndCategories({
             }}
           >
             {category.name}
-          </span>
+          </Link>
         ))}
         {hasTags && tags.map(({ tag }) => (
-          <span
+          <Link
             key={`tag-${tag.id}`}
-            className="rounded-full border px-3 py-1 text-[11px]"
+            href={`/?tag=${encodeURIComponent(tag.slug)}`}
+            className="rounded-full border px-3 py-1 text-[11px] transition-opacity hover:opacity-80"
             style={{
               backgroundColor: `${accent}0a`,
               color: accent,
@@ -134,7 +137,7 @@ function TagsAndCategories({
             }}
           >
             {tag.name}
-          </span>
+          </Link>
         ))}
       </div>
     </SidebarSection>

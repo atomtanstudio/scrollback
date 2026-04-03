@@ -5,6 +5,7 @@ export type SortMode = "recent" | "most_liked" | "most_viewed";
 export interface FetchItemsOptions {
   limit?: number;
   type?: string;
+  tag?: string;
   excludeIds?: string[];
   search?: string;
   sort?: SortMode;
@@ -14,7 +15,7 @@ export interface FetchItemsOptions {
 export async function fetchItems(options: FetchItemsOptions) {
   const prisma = await getClient();
   const dbType = getDatabaseType();
-  const { limit = 50, type, excludeIds = [], sort = "recent", userId } = options;
+  const { limit = 50, type, tag, excludeIds = [], sort = "recent", userId } = options;
   const batchSize = limit + 1;
   const preferPublishedAt = type === "rss";
 
@@ -29,6 +30,11 @@ export async function fetchItems(options: FetchItemsOptions) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const baseWhere: any = { user_id: userId };
+
+  // Filter by tag slug via the join table
+  if (tag) {
+    baseWhere.tags = { some: { tag: { slug: tag } } };
+  }
 
   if (type) {
     if (type === "art") {

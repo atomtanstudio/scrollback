@@ -118,6 +118,17 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
             buttonLabel="Generate Embeddings"
           />
         </div>
+
+        <div className="border-t border-[#d6c9b214] pt-4">
+          <h4 className="mb-2 text-sm font-medium text-[#f2ede5]">Re-translate Foreign Language Items</h4>
+          <p className="mb-3 text-xs text-[#a49b8b]">
+            Re-translate non-English items that have missing or incomplete translations. Useful after updating translation limits.
+          </p>
+          <ProgressBar
+            endpoint="/api/backfill/classify?scope=translate"
+            buttonLabel="Re-translate Items"
+          />
+        </div>
       </div>
     </div>
   );

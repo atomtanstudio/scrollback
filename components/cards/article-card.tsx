@@ -97,7 +97,7 @@ export function ArticleCard({ item, href }: ArticleCardProps) {
           <div className="mb-2 flex flex-wrap gap-2">
             {sourceDomain && (
               <div className="inline-flex rounded-full border border-[rgba(184,148,98,0.24)] bg-[rgba(184,148,98,0.12)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#e0c29c]">
-                {sourceDomain}
+                {sourceDomain} article
               </div>
             )}
           </div>

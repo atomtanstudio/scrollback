@@ -145,8 +145,8 @@ export async function translateToEnglish(
   bodyText: string
 ): Promise<TranslationResult> {
   const genai = getClient();
-  const truncatedTitle = title.slice(0, 500);
-  const truncatedBody = bodyText.slice(0, 4000);
+  const truncatedTitle = title.slice(0, 1000);
+  const truncatedBody = bodyText.slice(0, 30000);
 
   const prompt = `Detect the primary language of this captured content and translate it to natural English only if needed.
 
@@ -157,8 +157,9 @@ Body:
 ${truncatedBody || "(none)"}
 
 Rules:
-- Return the primary language as a lowercase ISO 639-1 code when possible (examples: en, ja, zh, ko).
+- Return the primary language as a lowercase ISO 639-1 code when possible (examples: en, ja, zh, ko, ru, ar, de, fr, es, pt, etc.).
 - If the content is already English or mostly English, do not translate it.
+- Translate ALL of the provided text — do not summarize, truncate, or skip any sections.
 - Preserve URLs, @handles, hashtags, emoji, and any structured prompt syntax.
 - Preserve paragraph structure and line breaks. If the source text is article-like and lacks clear breaks, infer readable paragraph breaks and separate paragraphs with blank lines.
 - Keep the translation faithful and readable, not overly literal.
@@ -199,7 +200,7 @@ Return ONLY JSON in this exact shape:
           : null,
       translated_body_text:
         translated && typeof parsed.translated_body_text === "string"
-          ? parsed.translated_body_text.slice(0, 20000)
+          ? parsed.translated_body_text.slice(0, 60000)
           : null,
     };
   } catch {

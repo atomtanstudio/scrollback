@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { getClient } from "@/lib/db/client";
 import { getSearchProvider } from "@/lib/db/search-provider";
-import { generateEmbedding, classifyContent, describeImage } from "@/lib/embeddings/gemini";
+import { generateEmbedding, classifyContent, describeImage, translateToEnglish } from "@/lib/embeddings/gemini";
 import { isR2Configured } from "@/lib/storage/r2";
 import { downloadAndStoreMedia } from "@/lib/storage/download";
 import { qualifiesAsArtCapture } from "@/lib/art-detection";
@@ -20,6 +20,7 @@ export const maxDuration = 300; // 5 min max for serverless
  *   ?scope=media     — Only media downloads + image descriptions
  *   ?scope=describe  — Only image descriptions (for already-downloaded media)
  *   ?scope=embed     — Only embeddings
+ *   ?scope=translate — Re-translate non-English items with updated limits
  *   ?limit=50        — Max items to process per run (default 50)
  */
 export async function GET(request: Request) {
@@ -347,6 +348,80 @@ export async function GET(request: Request) {
               processed: i + 1,
               total,
               current: `Described ${i + 1}/${total}`,
+            });
+          }
+        }
+
+        // --- Phase 5: Re-translate non-English items ---
+        if (scope === "translate") {
+          send({ phase: "translate", status: "Finding non-English items to re-translate..." });
+
+          // Find items that were detected as non-English — either those with
+          // truncated translations (body longer than old 4000 char limit) or
+          // items that have a language set but no translation yet.
+          const items = await prisma.contentItem.findMany({
+            where: {
+              language: { not: null },
+              NOT: { language: "en" },
+            },
+            select: {
+              id: true,
+              title: true,
+              body_text: true,
+              translated_body_text: true,
+            },
+            take: limit,
+            orderBy: { created_at: "desc" },
+          });
+
+          // Filter to items that likely have incomplete translations:
+          // - no translation at all, OR
+          // - translated body is significantly shorter than original (truncated)
+          const needsRetranslation = items.filter((item: { translated_body_text: string | null; body_text: string }) => {
+            if (!item.translated_body_text) return true;
+            // If the original is longer than the old limit and the translation
+            // is much shorter, it was likely truncated
+            if (item.body_text.length > 4000 && item.translated_body_text.length < item.body_text.length * 0.5) {
+              return true;
+            }
+            return false;
+          });
+
+          const total = needsRetranslation.length;
+          send({ phase: "translate", total, status: `Re-translating ${total} items...` });
+
+          for (let i = 0; i < needsRetranslation.length; i++) {
+            if (cancelled) break;
+            const item = needsRetranslation[i];
+            try {
+              const translation = await translateToEnglish(item.title, item.body_text);
+
+              if (translation.translated && translation.translated_body_text) {
+                await prisma.contentItem.update({
+                  where: { id: item.id },
+                  data: {
+                    language: translation.language,
+                    translated_title: translation.translated_title,
+                    translated_body_text: translation.translated_body_text,
+                  },
+                });
+              }
+
+              totalProcessed++;
+            } catch (err) {
+              totalErrors++;
+              send({
+                phase: "translate",
+                error: `Item ${item.id}: ${err instanceof Error ? err.message : "Unknown error"}`,
+              });
+            }
+
+            send({
+              phase: "translate",
+              progress: (i + 1) / total,
+              processed: i + 1,
+              total,
+              current: `Translated ${i + 1}/${total}`,
             });
           }
         }

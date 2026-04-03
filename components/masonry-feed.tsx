@@ -11,6 +11,7 @@ interface MasonryFeedProps {
   totalCount: number;
   initialHasMore?: boolean;
   type?: string;
+  tag?: string;
   sort?: string;
   onInitialRenderReady?: () => void;
 }
@@ -30,6 +31,7 @@ export function MasonryFeed({
   totalCount: initialTotal,
   initialHasMore,
   type,
+  tag,
   sort,
   onInitialRenderReady,
 }: MasonryFeedProps) {
@@ -173,6 +175,7 @@ export function MasonryFeed({
         excludeIds: excludeIds.join(","),
       });
       if (type) params.set("type", type);
+      if (tag) params.set("tag", tag);
       if (sort && sort !== "recent") params.set("sort", sort);
 
       const res = await fetch(`/api/items?${params}`, {
@@ -200,7 +203,7 @@ export function MasonryFeed({
     } finally {
       setIsLoading(false);
     }
-  }, [type, sort]);
+  }, [type, tag, sort]);
 
   const loadCooldownRef = useRef(false);
   const loadMore = useCallback(async () => {

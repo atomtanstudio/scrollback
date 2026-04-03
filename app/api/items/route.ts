@@ -19,11 +19,12 @@ export async function GET(request: NextRequest) {
   const excludeIdsParam = searchParams.get("excludeIds");
   const sortParam = searchParams.get("sort") as SortMode | null;
   const sort: SortMode = sortParam && VALID_SORTS.has(sortParam) ? sortParam : "recent";
+  const tag = searchParams.get("tag") || undefined;
 
   if (excludeIdsParam !== null) {
     const excludeIds = excludeIdsParam ? excludeIdsParam.split(",") : [];
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)));
-    const result = await fetchItems({ limit, type, excludeIds, sort, userId });
+    const result = await fetchItems({ limit, type, tag, excludeIds, sort, userId });
     return NextResponse.json(result);
   }
 
