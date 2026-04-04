@@ -18,6 +18,9 @@ interface HomePageProps {
   stats: { total: number; tweets: number; threads: number; articles: number; rss: number; art: number };
   isAuthed: boolean;
   isAdmin?: boolean;
+  initialType?: string;
+  initialSort?: string;
+  initialTag?: string;
 }
 
 const VALID_TYPES = new Set(["tweet", "thread", "article", "rss", "art"]);
@@ -32,15 +35,25 @@ function buildUrl(params: Record<string, string>) {
   return qs ? `/?${qs}` : "/";
 }
 
-export function HomePage({ initialItems, totalCount, initialHasMore, stats, isAuthed, isAdmin = false }: HomePageProps) {
+export function HomePage({
+  initialItems,
+  totalCount,
+  initialHasMore,
+  stats,
+  isAuthed,
+  isAdmin = false,
+  initialType = "",
+  initialSort = "recent",
+  initialTag = "",
+}: HomePageProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   // Read state from URL
-  const urlType = searchParams.get("type") || "";
-  const urlSort = searchParams.get("sort") || "recent";
+  const urlType = searchParams.get("type") || initialType;
+  const urlSort = searchParams.get("sort") || initialSort;
   const urlQ = searchParams.get("q") || "";
-  const urlTag = searchParams.get("tag") || "";
+  const urlTag = searchParams.get("tag") || initialTag;
 
   const activeType = VALID_TYPES.has(urlType) ? urlType : "";
   const activeSort = VALID_SORTS.has(urlSort) ? urlSort : "recent";

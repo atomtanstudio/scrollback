@@ -114,7 +114,7 @@ function TagsAndCategories({
         {hasCategories && categories.map(({ category }) => (
           <Link
             key={`cat-${category.id}`}
-            href={`/?tag=${encodeURIComponent(category.slug)}`}
+            href={`/tag/${encodeURIComponent(category.slug)}`}
             className="rounded-full border px-3 py-1 text-[11px] font-medium transition-opacity hover:opacity-80"
             style={{
               backgroundColor: `${accent}18`,
@@ -128,7 +128,7 @@ function TagsAndCategories({
         {hasTags && tags.map(({ tag }) => (
           <Link
             key={`tag-${tag.id}`}
-            href={`/?tag=${encodeURIComponent(tag.slug)}`}
+            href={`/tag/${encodeURIComponent(tag.slug)}`}
             className="rounded-full border px-3 py-1 text-[11px] transition-opacity hover:opacity-80"
             style={{
               backgroundColor: `${accent}0a`,
