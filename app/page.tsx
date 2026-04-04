@@ -24,6 +24,14 @@ export default async function Home({
   const rawSort = Array.isArray(params.sort) ? params.sort[0] : params.sort;
   const sort: SortMode = rawSort && VALID_SORTS.has(rawSort as SortMode) ? (rawSort as SortMode) : "recent";
 
+  if (rawTag) {
+    const next = new URLSearchParams();
+    if (rawType) next.set("type", rawType);
+    if (sort && sort !== "recent") next.set("sort", sort);
+    const qs = next.toString();
+    redirect(`/tag/${encodeURIComponent(rawTag)}${qs ? `?${qs}` : ""}`);
+  }
+
   const [{ items, totalCount, hasMore }, stats] = await Promise.all([
     fetchItems({ limit: 50, userId, type: rawType || undefined, tag: rawTag || undefined, sort }),
     fetchStats(userId),
