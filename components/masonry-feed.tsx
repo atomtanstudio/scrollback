@@ -245,7 +245,6 @@ export function MasonryFeed({
   }, [type, tag, sort, filteredInitialItems, initialHasMore, initialTotal]);
 
   useEffect(() => {
-    if (!type && !tag && (!sort || sort === "recent")) return;
     void fetchPage([], true);
   }, [type, tag, sort, fetchPage]);
 
