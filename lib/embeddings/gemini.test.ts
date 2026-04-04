@@ -60,4 +60,19 @@ describe("translateToEnglish", () => {
     expect(result.translated).toBe(true);
     expect(result.translated_body_text).toBe("First translated chunk.\n\nSecond translated chunk.");
   });
+
+  it("retries a chunk with a stricter prompt when the first pass is still untranslated", async () => {
+    generateContent
+      .mockResolvedValueOnce({ text: '{"language":"zh","is_english":false}' })
+      .mockResolvedValueOnce({ text: "这是没有翻译的输出" })
+      .mockResolvedValueOnce({ text: "This is the translated output." });
+
+    const { translateToEnglish } = await import("./gemini");
+    const result = await translateToEnglish("", "这是原文");
+
+    expect(result.language).toBe("zh");
+    expect(result.translated).toBe(true);
+    expect(result.translated_body_text).toBe("This is the translated output.");
+    expect(generateContent).toHaveBeenCalledTimes(3);
+  });
 });

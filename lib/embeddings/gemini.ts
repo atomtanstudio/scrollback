@@ -97,9 +97,9 @@ function isUsefulTranslation(
     const cjkBefore = countMatches(originalText, CJK_CHAR_REGEX) + countMatches(originalText, HANGUL_CHAR_REGEX);
     const cjkAfter = countMatches(translatedText, CJK_CHAR_REGEX) + countMatches(translatedText, HANGUL_CHAR_REGEX);
 
-    if ((sourceHint === "ja" || sourceHint === "zh" || sourceHint === "ko" || sourceLanguage === "yue") && cjkBefore >= 6) {
+    if ((sourceHint === "ja" || sourceHint === "zh" || sourceHint === "ko" || sourceLanguage === "yue") && cjkBefore >= 4) {
       if (!looksMostlyEnglish(translatedText)) return false;
-      if (cjkAfter >= Math.max(6, Math.floor(cjkBefore * 0.5))) return false;
+      if (cjkAfter >= Math.max(4, Math.floor(cjkBefore * 0.5))) return false;
     }
   }
 
@@ -164,16 +164,23 @@ async function translateChunk(
   text: string,
   kind: "title" | "body",
   index: number,
-  total: number
+  total: number,
+  strict = false
 ): Promise<string | null> {
   const chunkLabel = total > 1 ? `Chunk ${index + 1} of ${total}. ` : "";
+  const strictRules = strict
+    ? `- Output English only. Do not leave any sentence in ${sourceLanguage}.
+- Translate every non-English sentence fully into English.
+- Do not provide explanations, labels, or the original text alongside the translation.
+- Keep proper nouns, product names, handles, hashtags, URLs, and emoji as-is.`
+    : `- Translate ALL of the text. Do not summarize, shorten, or omit anything.
+- Preserve URLs, @handles, hashtags, cashtags, emoji, and markdown/code fences.
+- Preserve paragraph structure and line breaks.
+- If a term is already in English, keep it as-is.`;
   const prompt = `Translate this ${sourceLanguage} ${kind} to natural English. Return ONLY the translated text, nothing else.
 
 ${chunkLabel}Rules:
-- Translate ALL of the text. Do not summarize, shorten, or omit anything.
-- Preserve URLs, @handles, hashtags, cashtags, emoji, and markdown/code fences.
-- Preserve paragraph structure and line breaks.
-- If a term is already in English, keep it as-is.
+${strictRules}
 
 ${text}`;
 
@@ -181,12 +188,39 @@ ${text}`;
     model: CLASSIFY_MODEL,
     contents: prompt,
     config: {
-      temperature: 0.1,
+      temperature: strict ? 0 : 0.1,
       maxOutputTokens: kind === "title" ? 1200 : 8192,
     },
   });
 
   return result.text?.trim() || null;
+}
+
+async function translateChunkWithRetry(
+  genai: GoogleGenAI,
+  sourceLanguage: string,
+  text: string,
+  kind: "title" | "body",
+  index: number,
+  total: number
+): Promise<string | null> {
+  const firstPass = await translateChunk(genai, sourceLanguage, text, kind, index, total);
+  if (isUsefulTranslation(text, firstPass, sourceLanguage)) {
+    return firstPass;
+  }
+
+  const retryPass = await translateChunk(genai, sourceLanguage, text, kind, index, total, true);
+  if (isUsefulTranslation(text, retryPass, sourceLanguage)) {
+    return retryPass;
+  }
+
+  const retryOutput = retryPass as string | null;
+  const firstOutput = firstPass as string | null;
+  return (
+    (retryOutput ? retryOutput.trim() : null) ||
+    (firstOutput ? firstOutput.trim() : null) ||
+    null
+  );
 }
 
 /**
@@ -351,7 +385,7 @@ ${sample}`;
   let translatedTitle: string | null = null;
   if (title && title.length > 0) {
     try {
-      translatedTitle = await translateChunk(genai, language, title.slice(0, 1000), "title", 0, 1);
+      translatedTitle = await translateChunkWithRetry(genai, language, title.slice(0, 1000), "title", 0, 1);
     } catch {
       // Title translation failed, continue with body
     }
@@ -365,7 +399,7 @@ ${sample}`;
       const translatedChunks: string[] = [];
 
       for (let i = 0; i < chunks.length; i++) {
-        const translatedChunk = await translateChunk(genai, language, chunks[i], "body", i, chunks.length);
+        const translatedChunk = await translateChunkWithRetry(genai, language, chunks[i], "body", i, chunks.length);
         if (!translatedChunk) {
           translatedChunks.length = 0;
           break;
