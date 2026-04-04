@@ -54,6 +54,12 @@ export async function fetchItems(options: FetchItemsOptions) {
     ...excludeFilter,
     ...(Object.keys(baseWhere).length > 0 ? { AND: [baseWhere, { source_type: { not: "thread" } }] } : { source_type: { not: "thread" } }),
   };
+  const threadWhere = {
+    ...baseWhere,
+    source_type: "thread",
+    conversation_id: { not: null },
+    ...excludeFilter,
+  };
 
   const include = {
     media_items: true,
@@ -91,12 +97,7 @@ export async function fetchItems(options: FetchItemsOptions) {
     isThreadFilter
       ? useSqliteThreadDedupe
         ? prisma.contentItem.findMany({
-            where: {
-              source_type: "thread",
-              conversation_id: { not: null },
-              user_id: userId,
-              ...excludeFilter,
-            },
+            where: threadWhere,
             include,
             orderBy: [{ created_at: "desc" }],
             take: Math.max(batchSize * 6, 100),
@@ -133,18 +134,26 @@ export async function fetchItems(options: FetchItemsOptions) {
               .slice(0, batchSize);
           })
         : (prisma.$queryRawUnsafe(
-            `SELECT DISTINCT ON (author_handle) id FROM (
+             `SELECT DISTINCT ON (author_handle) id FROM (
                SELECT DISTINCT ON (conversation_id) id, author_handle, created_at
                FROM content_items
                WHERE source_type = 'thread'
                  AND conversation_id IS NOT NULL
                  AND user_id = $1::uuid
-                 ${excludeIds.length > 0 ? `AND id NOT IN (${excludeIds.map((_, i) => `$${i + 2}`).join(",")})` : ""}
+                 ${tag ? `AND EXISTS (
+                   SELECT 1
+                   FROM content_tags ct
+                   JOIN tags t ON t.id = ct.tag_id
+                   WHERE ct.content_item_id = content_items.id
+                     AND t.slug = $2
+                 )` : ""}
+                 ${excludeIds.length > 0 ? `AND id NOT IN (${excludeIds.map((_, i) => `$${i + (tag ? 3 : 2)}`).join(",")})` : ""}
                ORDER BY conversation_id, COALESCE(posted_at, created_at) ASC
              ) roots
              ORDER BY author_handle, created_at DESC
-             LIMIT $${excludeIds.length + 2}`,
+             LIMIT $${excludeIds.length + (tag ? 3 : 2)}`,
             userId,
+            ...(tag ? [tag] : []),
             ...excludeIds,
             batchSize,
           ) as Promise<Array<{ id: string }>>).then(async (rows) => {
