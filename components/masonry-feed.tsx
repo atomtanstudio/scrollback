@@ -36,12 +36,10 @@ export function MasonryFeed({
   onInitialRenderReady,
 }: MasonryFeedProps) {
   const filteredInitialItems = filterByType(initialItems, type);
-  // When filtering by tag, server-rendered items aren't filtered — start empty and fetch
-  const useServerItems = !tag;
-  const [items, setItems] = useState(() => useServerItems ? filteredInitialItems : []);
-  const [, setTotalCount] = useState(useServerItems ? initialTotal : 0);
-  const [hasMore, setHasMore] = useState(useServerItems ? (initialHasMore ?? (filteredInitialItems.length < initialTotal)) : true);
-  const [isLoading, setIsLoading] = useState(!!tag);
+  const [items, setItems] = useState(() => filteredInitialItems);
+  const [, setTotalCount] = useState(initialTotal);
+  const [hasMore, setHasMore] = useState(initialHasMore ?? (filteredInitialItems.length < initialTotal));
+  const [isLoading, setIsLoading] = useState(false);
   const [hasMeasuredLayout, setHasMeasuredLayout] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
 

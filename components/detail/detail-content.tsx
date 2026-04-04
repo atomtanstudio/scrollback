@@ -17,13 +17,6 @@ interface DetailContentProps {
   cardType: CardType;
 }
 
-const accentColors: Record<CardType, string> = {
-  tweet: "var(--accent-tweet)",
-  thread: "var(--accent-thread)",
-  article: "var(--accent-article)",
-  art: "var(--accent-art)",
-};
-
 const INLINE_MEDIA_RE = /(\[(?:Video|Image):\s*https?:\/\/[^\]]+\])/g;
 
 function renderTextWithInlineMedia(text: string, keyPrefix: string) {
@@ -403,34 +396,6 @@ function normalizePromptComparisonText(value: string | null | undefined) {
     .toLowerCase();
 }
 
-function TagsSection({
-  tags,
-  cardType,
-}: {
-  tags: DetailItem["tags"];
-  cardType: CardType;
-}) {
-  if (!tags || tags.length === 0) return null;
-  const accent = accentColors[cardType];
-  return (
-    <div className="flex flex-wrap gap-2 mt-6">
-      {tags.map(({ tag }) => (
-        <span
-          key={tag.id}
-          className="rounded-full px-3 py-1 text-xs border"
-          style={{
-            backgroundColor: `${accent}14`,
-            color: accent,
-            borderColor: `${accent}26`,
-          }}
-        >
-          {tag.name}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 function TranslationToggle({
   item,
   titleClassName,
@@ -626,7 +591,6 @@ function TweetThreadContent({
           </blockquote>
         </div>
       )}
-      <TagsSection tags={item.tags} cardType={cardType} />
     </div>
   );
 }
@@ -932,7 +896,6 @@ function ArtContent({
           </blockquote>
         </div>
       )}
-      <TagsSection tags={item.tags} cardType="art" />
     </div>
   );
 }
@@ -959,10 +922,7 @@ export function DetailContent({ item, cardType }: DetailContentProps) {
           />
         )}
         {cardType === "article" && (
-          <>
-            <ArticleContent item={item} onMediaClick={handleMediaClick} />
-            <TagsSection tags={item.tags} cardType={cardType} />
-          </>
+          <ArticleContent item={item} onMediaClick={handleMediaClick} />
         )}
         {cardType === "art" && (
           <ArtContent item={item} onMediaClick={handleMediaClick} />

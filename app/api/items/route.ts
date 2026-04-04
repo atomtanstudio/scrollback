@@ -46,6 +46,13 @@ export async function GET(request: NextRequest) {
   } else if (type) {
     where.source_type = type;
   }
+  if (tag) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (where as any).OR = [
+      { tags: { some: { tag: { slug: tag } } } },
+      { categories: { some: { category: { slug: tag } } } },
+    ];
+  }
 
   const prisma = await getClient();
   const [items, total] = await Promise.all([

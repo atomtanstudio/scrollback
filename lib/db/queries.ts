@@ -33,7 +33,10 @@ export async function fetchItems(options: FetchItemsOptions) {
 
   // Filter by tag slug via the join table
   if (tag) {
-    baseWhere.tags = { some: { tag: { slug: tag } } };
+    baseWhere.OR = [
+      { tags: { some: { tag: { slug: tag } } } },
+      { categories: { some: { category: { slug: tag } } } },
+    ];
   }
 
   if (type) {
@@ -140,12 +143,21 @@ export async function fetchItems(options: FetchItemsOptions) {
                WHERE source_type = 'thread'
                  AND conversation_id IS NOT NULL
                  AND user_id = $1::uuid
-                 ${tag ? `AND EXISTS (
-                   SELECT 1
-                   FROM content_tags ct
-                   JOIN tags t ON t.id = ct.tag_id
-                   WHERE ct.content_item_id = content_items.id
-                     AND t.slug = $2
+                 ${tag ? `AND (
+                   EXISTS (
+                     SELECT 1
+                     FROM content_tags ct
+                     JOIN tags t ON t.id = ct.tag_id
+                     WHERE ct.content_item_id = content_items.id
+                       AND t.slug = $2
+                   )
+                   OR EXISTS (
+                     SELECT 1
+                     FROM content_categories cc
+                     JOIN categories c ON c.id = cc.category_id
+                     WHERE cc.content_item_id = content_items.id
+                       AND c.slug = $2
+                   )
                  )` : ""}
                  ${excludeIds.length > 0 ? `AND id NOT IN (${excludeIds.map((_, i) => `$${i + (tag ? 3 : 2)}`).join(",")})` : ""}
                ORDER BY conversation_id, COALESCE(posted_at, created_at) ASC
