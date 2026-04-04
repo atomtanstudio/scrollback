@@ -6,6 +6,7 @@ import { generateEmbedding, classifyContent, describeImage, translateToEnglish }
 import { isR2Configured } from "@/lib/storage/r2";
 import { downloadAndStoreMedia } from "@/lib/storage/download";
 import { qualifiesAsArtCapture } from "@/lib/art-detection";
+import { needsRetranslation, originalLooksLikeForeignText } from "@/lib/translation-backfill";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 min max for serverless
@@ -471,47 +472,64 @@ export async function GET(request: Request) {
         if (scope === "translate") {
           send({ phase: "translate", status: "Finding non-English items to re-translate..." });
 
-          // Find items that were detected as non-English — either those with
-          // truncated translations (body longer than old 4000 char limit) or
-          // items that have a language set but no translation yet.
           const items = await prisma.contentItem.findMany({
             where: {
-              language: { not: null },
-              NOT: { language: "en" },
+              OR: [
+                {
+                  language: { not: null },
+                  NOT: { language: "en" },
+                },
+                {
+                  translated_body_text: null,
+                },
+              ],
             },
             select: {
               id: true,
               title: true,
               body_text: true,
+              language: true,
+              translated_title: true,
               translated_body_text: true,
             },
-            take: limit,
             orderBy: { created_at: "desc" },
+            take: Math.min(limit * 5, 2000),
           });
 
-          // Filter to items that likely have incomplete translations:
-          // - no translation at all, OR
-          // - translated body is significantly shorter than original (truncated)
-          const needsRetranslation = items.filter((item: { translated_body_text: string | null; body_text: string }) => {
-            if (!item.translated_body_text) return true;
-            // If the original is longer than the old limit and the translation
-            // is much shorter, it was likely truncated
-            if (item.body_text.length > 4000 && item.translated_body_text.length < item.body_text.length * 0.5) {
-              return true;
-            }
-            return false;
+          const eligibleItems = items.filter((item: {
+            id: string;
+            title: string | null;
+            body_text: string;
+            language: string | null;
+            translated_title: string | null;
+            translated_body_text: string | null;
+          }) =>
+            item.language?.toLowerCase() !== "en" || originalLooksLikeForeignText(item.title, item.body_text)
+          );
+          const queue = eligibleItems.filter((item: {
+            id: string;
+            title: string | null;
+            body_text: string;
+            language: string | null;
+            translated_title: string | null;
+            translated_body_text: string | null;
+          }) => needsRetranslation(item)).slice(0, limit);
+
+          const total = queue.length;
+          send({
+            phase: "translate",
+            total,
+            status: `Re-translating ${total} items...`,
+            current: `Found ${queue.length} items to retry out of ${eligibleItems.length} likely foreign-language items`,
           });
 
-          const total = needsRetranslation.length;
-          send({ phase: "translate", total, status: `Re-translating ${total} items...` });
-
-          for (let i = 0; i < needsRetranslation.length; i++) {
+          for (let i = 0; i < queue.length; i++) {
             if (cancelled) break;
-            const item = needsRetranslation[i];
+            const item = queue[i];
             try {
               const translation = await translateToEnglish(item.title, item.body_text);
 
-              if (translation.translated && translation.translated_body_text) {
+              if (translation.translated) {
                 await prisma.contentItem.update({
                   where: { id: item.id },
                   data: {

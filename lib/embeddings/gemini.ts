@@ -34,6 +34,161 @@ export interface TranslationResult {
   translated: boolean;
 }
 
+const CJK_CHAR_REGEX = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/g;
+const HANGUL_CHAR_REGEX = /[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]/g;
+const LATIN_CHAR_REGEX = /[A-Za-z]/g;
+const MAX_TRANSLATION_CHARS_PER_CHUNK = 3500;
+
+function countMatches(value: string, regex: RegExp): number {
+  return value.match(regex)?.length || 0;
+}
+
+function normalizeLanguageCode(language: string | null | undefined): string | null {
+  const code = language?.trim().toLowerCase();
+  if (!code) return null;
+  if (code === "english") return "en";
+  if (code.startsWith("en")) return "en";
+  if (code.startsWith("ja")) return "ja";
+  if (code.startsWith("ko")) return "ko";
+  if (code.startsWith("yue")) return "yue";
+  if (code.startsWith("cmn")) return "zh";
+  if (code.startsWith("zh")) return "zh";
+  return code.slice(0, 8);
+}
+
+function inferLanguageFromScript(text: string): string | null {
+  const cjkCount = countMatches(text, CJK_CHAR_REGEX);
+  const hangulCount = countMatches(text, HANGUL_CHAR_REGEX);
+
+  if (hangulCount >= 4 && hangulCount > cjkCount) return "ko";
+  if (cjkCount >= 4) {
+    const hasKana = /[\u3040-\u30ff]/.test(text);
+    return hasKana ? "ja" : "zh";
+  }
+
+  return null;
+}
+
+function looksMostlyEnglish(text: string): boolean {
+  const latinCount = countMatches(text, LATIN_CHAR_REGEX);
+  const cjkCount = countMatches(text, CJK_CHAR_REGEX);
+  const hangulCount = countMatches(text, HANGUL_CHAR_REGEX);
+  const nonLatinCount = cjkCount + hangulCount;
+
+  if (latinCount === 0) return false;
+  if (nonLatinCount === 0) return true;
+  return latinCount >= nonLatinCount * 2;
+}
+
+function isUsefulTranslation(
+  original: string,
+  translated: string | null,
+  sourceLanguage: string | null
+): translated is string {
+  const originalText = original.trim();
+  const translatedText = translated?.trim();
+
+  if (!translatedText) return false;
+  if (!originalText) return false;
+  if (translatedText === originalText) return false;
+
+  if (sourceLanguage && sourceLanguage !== "en") {
+    const sourceHint = inferLanguageFromScript(originalText);
+    const cjkBefore = countMatches(originalText, CJK_CHAR_REGEX) + countMatches(originalText, HANGUL_CHAR_REGEX);
+    const cjkAfter = countMatches(translatedText, CJK_CHAR_REGEX) + countMatches(translatedText, HANGUL_CHAR_REGEX);
+
+    if ((sourceHint === "ja" || sourceHint === "zh" || sourceHint === "ko" || sourceLanguage === "yue") && cjkBefore >= 6) {
+      if (!looksMostlyEnglish(translatedText)) return false;
+      if (cjkAfter >= Math.max(6, Math.floor(cjkBefore * 0.5))) return false;
+    }
+  }
+
+  return true;
+}
+
+function splitIntoTranslationChunks(text: string, maxChars = MAX_TRANSLATION_CHARS_PER_CHUNK): string[] {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+  if (trimmed.length <= maxChars) return [trimmed];
+
+  const chunks: string[] = [];
+  let current = "";
+  const paragraphs = trimmed.split(/\n{2,}/);
+
+  for (const paragraph of paragraphs) {
+    const value = paragraph.trim();
+    if (!value) continue;
+
+    if (value.length > maxChars) {
+      const lines = value.split("\n");
+      for (const line of lines) {
+        const candidate = current ? `${current}\n${line}` : line;
+        if (candidate.length <= maxChars) {
+          current = candidate;
+          continue;
+        }
+
+        if (current) {
+          chunks.push(current);
+          current = "";
+        }
+
+        if (line.length <= maxChars) {
+          current = line;
+          continue;
+        }
+
+        for (let i = 0; i < line.length; i += maxChars) {
+          chunks.push(line.slice(i, i + maxChars));
+        }
+      }
+      continue;
+    }
+
+    const candidate = current ? `${current}\n\n${value}` : value;
+    if (candidate.length <= maxChars) {
+      current = candidate;
+    } else {
+      if (current) chunks.push(current);
+      current = value;
+    }
+  }
+
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+async function translateChunk(
+  genai: GoogleGenAI,
+  sourceLanguage: string,
+  text: string,
+  kind: "title" | "body",
+  index: number,
+  total: number
+): Promise<string | null> {
+  const chunkLabel = total > 1 ? `Chunk ${index + 1} of ${total}. ` : "";
+  const prompt = `Translate this ${sourceLanguage} ${kind} to natural English. Return ONLY the translated text, nothing else.
+
+${chunkLabel}Rules:
+- Translate ALL of the text. Do not summarize, shorten, or omit anything.
+- Preserve URLs, @handles, hashtags, cashtags, emoji, and markdown/code fences.
+- Preserve paragraph structure and line breaks.
+- If a term is already in English, keep it as-is.
+
+${text}`;
+
+  const result = await genai.models.generateContent({
+    model: CLASSIFY_MODEL,
+    contents: prompt,
+    config: {
+      temperature: 0.1,
+      maxOutputTokens: kind === "title" ? 1200 : 8192,
+    },
+  });
+
+  return result.text?.trim() || null;
+}
+
 /**
  * Unified content classification via Gemini.
  * Single API call produces: summary, tags, categories, and prompt detection.
@@ -152,12 +307,22 @@ export async function translateToEnglish(
   const noResult: TranslationResult = { language: null, translated: false, translated_title: null, translated_body_text: null };
 
   // Step 1: Detect language (tiny output — won't hit token limits)
-  const sample = (title + " " + bodyText).slice(0, 500);
-  const detectPrompt = `What language is this text? Return ONLY a JSON object like {"language":"ja","is_english":false}. Use lowercase ISO 639-1 codes (en, ja, zh, ko, ru, ar, de, fr, es, pt, etc.).\n\nText: ${sample}`;
+  const combinedText = `${title || ""}\n${bodyText || ""}`.trim();
+  const scriptHint = inferLanguageFromScript(combinedText);
+  const sample = combinedText.slice(0, 1500);
+  const detectPrompt = `Detect the primary language of this text. Return ONLY a JSON object like {"language":"ja","is_english":false}. Use lowercase ISO 639-1 when possible. For Cantonese, return "yue". If the text is mixed, choose the language that carries most of the meaning.
+
+Text:
+${sample}`;
 
   const detectResult = await genai.models.generateContent({
     model: CLASSIFY_MODEL,
     contents: detectPrompt,
+    config: {
+      temperature: 0,
+      responseMimeType: "application/json",
+      maxOutputTokens: 120,
+    },
   });
 
   const detectText = detectResult.text?.trim();
@@ -169,8 +334,13 @@ export async function translateToEnglish(
   let language: string;
   try {
     const parsed = JSON.parse(detectJson[0]);
-    language = typeof parsed.language === "string" ? parsed.language.toLowerCase().slice(0, 8) : "en";
-    if (parsed.is_english === true || language === "en") {
+    const detected = normalizeLanguageCode(typeof parsed.language === "string" ? parsed.language : null);
+    language = detected || "en";
+    const isEnglish = parsed.is_english === true || parsed.isEnglish === true;
+
+    if ((isEnglish || language === "en") && scriptHint && scriptHint !== "en") {
+      language = scriptHint;
+    } else if (isEnglish === true || language === "en") {
       return { language: "en", translated: false, translated_title: null, translated_body_text: null };
     }
   } catch {
@@ -180,13 +350,8 @@ export async function translateToEnglish(
   // Step 2: Translate title (separate call, plain text output)
   let translatedTitle: string | null = null;
   if (title && title.length > 0) {
-    const titlePrompt = `Translate this ${language} text to natural English. Return ONLY the translated text, nothing else. Preserve URLs, @handles, hashtags, and emoji.\n\n${title.slice(0, 1000)}`;
     try {
-      const titleResult = await genai.models.generateContent({
-        model: CLASSIFY_MODEL,
-        contents: titlePrompt,
-      });
-      translatedTitle = titleResult.text?.trim() || null;
+      translatedTitle = await translateChunk(genai, language, title.slice(0, 1000), "title", 0, 1);
     } catch {
       // Title translation failed, continue with body
     }
@@ -195,32 +360,33 @@ export async function translateToEnglish(
   // Step 3: Translate body (separate call, plain text output — no JSON wrapper means no output limit issues)
   let translatedBody: string | null = null;
   if (bodyText && bodyText.length > 0) {
-    const bodyPrompt = `Translate this ${language} text to natural English. Return ONLY the translated text, nothing else.
-
-Rules:
-- Translate ALL of the text — do not summarize, truncate, or skip any sections.
-- Preserve URLs, @handles, hashtags, emoji, and any structured prompt syntax.
-- Preserve paragraph structure and line breaks.
-- Keep the translation faithful and readable, not overly literal.
-
-${bodyText.slice(0, 30000)}`;
     try {
-      const bodyResult = await genai.models.generateContent({
-        model: CLASSIFY_MODEL,
-        contents: bodyPrompt,
-      });
-      translatedBody = bodyResult.text?.trim() || null;
+      const chunks = splitIntoTranslationChunks(bodyText.slice(0, 30000));
+      const translatedChunks: string[] = [];
+
+      for (let i = 0; i < chunks.length; i++) {
+        const translatedChunk = await translateChunk(genai, language, chunks[i], "body", i, chunks.length);
+        if (!translatedChunk) {
+          translatedChunks.length = 0;
+          break;
+        }
+        translatedChunks.push(translatedChunk);
+      }
+
+      translatedBody = translatedChunks.length > 0 ? translatedChunks.join("\n\n").trim() : null;
     } catch {
       // Body translation failed
     }
   }
 
-  const hasTranslation = !!(translatedTitle || translatedBody);
+  const usefulTitle = isUsefulTranslation(title, translatedTitle, language) ? translatedTitle!.trim() : null;
+  const usefulBody = isUsefulTranslation(bodyText, translatedBody, language) ? translatedBody!.trim() : null;
+  const hasTranslation = !!(usefulTitle || usefulBody);
   return {
     language,
     translated: hasTranslation,
-    translated_title: translatedTitle ? translatedTitle.slice(0, 2000) : null,
-    translated_body_text: translatedBody ? translatedBody.slice(0, 60000) : null,
+    translated_title: usefulTitle ? usefulTitle.slice(0, 2000) : null,
+    translated_body_text: usefulBody ? usefulBody.slice(0, 60000) : null,
   };
 }
 

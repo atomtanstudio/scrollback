@@ -484,6 +484,50 @@ function TranslationToggle({
   );
 }
 
+function InlineMediaTranslationToggle({
+  item,
+  onMediaClick,
+}: {
+  item: DetailItem;
+  onMediaClick: (index: number) => void;
+}) {
+  const [showOriginal, setShowOriginal] = useState(false);
+  const hasTranslation = hasEnglishTranslation(item);
+  const displayBodyText = getDisplayBodyText(item);
+  const originalBodyText = item.body_text || displayBodyText;
+  const bodyText = showOriginal ? originalBodyText : displayBodyText;
+  const showGallery = !showOriginal && hasTranslation;
+
+  return (
+    <>
+      {hasTranslation && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[18px] border border-[#d6c9b214] bg-[#ffffff05] px-4 py-3">
+          <p className="text-[12px] text-[#b4ab9d]">
+            Translated from {getLanguageLabel(item.language)}.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowOriginal((value) => !value)}
+            className="rounded-full border border-[#d6c9b214] bg-[#0f141b] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#f2ede5] transition-colors hover:border-[#d6c9b233] hover:text-white"
+          >
+            {showOriginal ? "Show English" : "Show original"}
+          </button>
+        </div>
+      )}
+      {bodyText ? (
+        <div className="space-y-5">
+          <ArticleTextSegments bodyText={bodyText} mediaItems={item.media_items} />
+        </div>
+      ) : null}
+      {showGallery && item.media_items && item.media_items.length > 0 && (
+        <div className="mt-6">
+          <MediaRenderer mediaItems={item.media_items} onMediaClick={onMediaClick} />
+        </div>
+      )}
+    </>
+  );
+}
+
 function AuthorHeader({ item }: { item: DetailItem }) {
   const displayName = item.author_display_name || item.author_handle || "Unknown";
   const initials = displayName.slice(0, 2).toUpperCase();
@@ -539,19 +583,16 @@ function TweetThreadContent({
   onMediaClick: (index: number) => void;
 }) {
   const displayBodyText = getDisplayBodyText(item);
+  const translationAvailable = hasEnglishTranslation(item);
   // Check original body_text for markers — translated version may strip them
   const rawBodyText = item.body_text || "";
   const hasInlineMedia = rawBodyText.includes("[Image:") || rawBodyText.includes("[Video:");
-  // Use original body_text when it has inline markers (translation mangles them)
-  const bodyForRendering = hasInlineMedia ? rawBodyText : displayBodyText;
   return (
     <div>
       <AuthorHeader item={item} />
       <div className="my-6 border-t border-[#d6c9b214]" />
-      {hasInlineMedia && bodyForRendering ? (
-        <div className="space-y-5">
-          <ArticleTextSegments bodyText={bodyForRendering} mediaItems={item.media_items} />
-        </div>
+      {hasInlineMedia ? (
+        <InlineMediaTranslationToggle item={item} onMediaClick={onMediaClick} />
       ) : (
         <>
           <div className="space-y-4 text-base leading-[1.75] text-[#cdc4b7]">
