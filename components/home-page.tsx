@@ -409,6 +409,7 @@ export function HomePage({
                     key={`search-${searchQuery}`}
                     initialItems={searchResults}
                     totalCount={searchResults.length}
+                    disableLiveFetch
                   />
                 )
               ) : (

@@ -13,6 +13,7 @@ interface MasonryFeedProps {
   type?: string;
   tag?: string;
   sort?: string;
+  disableLiveFetch?: boolean;
   onInitialRenderReady?: () => void;
 }
 
@@ -33,6 +34,7 @@ export function MasonryFeed({
   type,
   tag,
   sort,
+  disableLiveFetch = false,
   onInitialRenderReady,
 }: MasonryFeedProps) {
   const filteredInitialItems = filterByType(initialItems, type);
@@ -245,8 +247,9 @@ export function MasonryFeed({
   }, [type, tag, sort, filteredInitialItems, initialHasMore, initialTotal]);
 
   useEffect(() => {
+    if (disableLiveFetch) return;
     void fetchPage([], true);
-  }, [type, tag, sort, fetchPage]);
+  }, [type, tag, sort, fetchPage, disableLiveFetch]);
 
   useEffect(() => {
     if ((!type && !tag) || !onInitialRenderReady) return;
