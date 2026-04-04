@@ -57,10 +57,20 @@ export async function fetchItems(options: FetchItemsOptions) {
     ...excludeFilter,
     ...(Object.keys(baseWhere).length > 0 ? { AND: [baseWhere, { source_type: { not: "thread" } }] } : { source_type: { not: "thread" } }),
   };
-  const threadWhere = {
+  const dedupableThreadWhere = {
     ...baseWhere,
     source_type: "thread",
     conversation_id: { not: null },
+    author_handle: { not: null },
+    ...excludeFilter,
+  };
+  const orphanThreadWhere = {
+    ...baseWhere,
+    source_type: "thread",
+    OR: [
+      { conversation_id: null },
+      { author_handle: null },
+    ],
     ...excludeFilter,
   };
 
@@ -82,7 +92,7 @@ export async function fetchItems(options: FetchItemsOptions) {
   const isThreadFilter = type === "thread" || !type;
   const useSqliteThreadDedupe = dbType === "sqlite";
 
-  const [nonThreadItems, threadItems, totalCount] = await Promise.all([
+  const [nonThreadItems, orphanThreadItems, threadItems, totalCount] = await Promise.all([
     // Non-thread items (skip if filtering to threads only)
     type === "thread"
       ? Promise.resolve([])
@@ -92,6 +102,15 @@ export async function fetchItems(options: FetchItemsOptions) {
           orderBy,
           take: batchSize,
         }),
+    // Keep thread captures that cannot be safely deduplicated visible in the feed.
+    isThreadFilter
+      ? prisma.contentItem.findMany({
+          where: orphanThreadWhere,
+          include,
+          orderBy,
+          take: batchSize,
+        })
+      : Promise.resolve([]),
     // One thread per author: the same thread can be captured multiple times
     // from different entry points, yielding different conversation_ids.
     // Deduplicating by author_handle ensures only one thread card per author
@@ -100,7 +119,7 @@ export async function fetchItems(options: FetchItemsOptions) {
     isThreadFilter
       ? useSqliteThreadDedupe
         ? prisma.contentItem.findMany({
-            where: threadWhere,
+            where: dedupableThreadWhere,
             include,
             orderBy: [{ created_at: "desc" }],
             take: Math.max(batchSize * 6, 100),
@@ -142,6 +161,7 @@ export async function fetchItems(options: FetchItemsOptions) {
                FROM content_items
                WHERE source_type = 'thread'
                  AND conversation_id IS NOT NULL
+                 AND author_handle IS NOT NULL
                  AND user_id = $1::uuid
                  ${tag ? `AND (
                    EXISTS (
@@ -182,7 +202,7 @@ export async function fetchItems(options: FetchItemsOptions) {
 
   // Merge and sort by created_at descending, then trim to the requested batch size.
   // `hasMore` must be based on the deduplicated feed result, not raw content row counts.
-  const mergedCandidates = [...nonThreadItems, ...threadItems]
+  const mergedCandidates = [...nonThreadItems, ...orphanThreadItems, ...threadItems]
     .sort((a, b) => itemSortKey(b) - itemSortKey(a));
   const hasMore = mergedCandidates.length > limit;
   const merged = mergedCandidates.slice(0, limit);
@@ -197,10 +217,11 @@ export async function fetchStats(userId: string) {
   const [total, tweets, rawThreads, articles, rss, art] = await Promise.all([
     prisma.contentItem.count({ where: { user_id: userId } }),
     prisma.contentItem.count({ where: { source_type: "tweet", user_id: userId } }),
-    // Deduplicated thread count: one per conversation, then one per author
+    // Deduplicated thread count: one per conversation, then one per author,
+    // plus thread captures that cannot be deduplicated safely.
     dbType === "sqlite"
       ? prisma.contentItem.findMany({
-          where: { source_type: "thread", conversation_id: { not: null }, user_id: userId },
+          where: { source_type: "thread", conversation_id: { not: null }, author_handle: { not: null }, user_id: userId },
           select: { conversation_id: true, author_handle: true, posted_at: true, created_at: true },
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         }).then((rows: any[]) => {
@@ -217,20 +238,36 @@ export async function fetchStats(userId: string) {
           for (const row of Array.from(byConv.values())) {
             authors.add((row.author_handle || "").toLowerCase());
           }
-          return authors.size;
+          return prisma.contentItem.count({
+            where: {
+              source_type: "thread",
+              user_id: userId,
+              OR: [{ conversation_id: null }, { author_handle: null }],
+            },
+          }).then((orphanCount: number) => authors.size + orphanCount);
         })
       : (prisma.$queryRawUnsafe(
           `SELECT COUNT(*) as count FROM (
              SELECT DISTINCT ON (author_handle) author_handle FROM (
                SELECT DISTINCT ON (conversation_id) author_handle
                FROM content_items
-               WHERE source_type = 'thread' AND conversation_id IS NOT NULL AND user_id = $1::uuid
+               WHERE source_type = 'thread' AND conversation_id IS NOT NULL AND author_handle IS NOT NULL AND user_id = $1::uuid
                ORDER BY conversation_id, COALESCE(posted_at, created_at) ASC
              ) roots
              ORDER BY author_handle
            ) deduped`,
           userId
-        ) as Promise<Array<{ count: bigint }>>).then((rows) => Number(rows[0]?.count ?? 0)),
+        ) as Promise<Array<{ count: bigint }>>).then(async (rows) => {
+          const deduped = Number(rows[0]?.count ?? 0);
+          const orphanCount = await prisma.contentItem.count({
+            where: {
+              source_type: "thread",
+              user_id: userId,
+              OR: [{ conversation_id: null }, { author_handle: null }],
+            },
+          });
+          return deduped + orphanCount;
+        }),
     prisma.contentItem.count({ where: { source_type: "article", source_platform: { not: "rss" }, user_id: userId } }),
     prisma.contentItem.count({ where: { source_platform: "rss", user_id: userId } }),
     prisma.contentItem.count({
