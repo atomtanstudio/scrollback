@@ -1,12 +1,16 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { BackNavigation } from "./back-navigation";
 import { DetailContent } from "./detail-content";
 import { DetailSidebar } from "./detail-sidebar";
 import { ThreadChain } from "./thread-chain";
 import { RelatedItems } from "./related-items";
 import type { DetailItem, ContentItemWithMedia } from "@/lib/db/types";
+import { hasEnglishTranslation } from "@/lib/content-display";
+import { originalLooksLikeForeignText } from "@/lib/translation-backfill";
 
 type CardType = "tweet" | "thread" | "article" | "art";
 
@@ -50,9 +54,29 @@ interface ItemDetailPageProps {
 }
 
 export function ItemDetailPage({ item, threadSiblings = [], isAuthed = false }: ItemDetailPageProps) {
+  const router = useRouter();
   const cardType = getCardType(item.source_type);
   const isArticle = cardType === "article";
   const isThread = cardType === "thread";
+  const [pollCount, setPollCount] = useState(0);
+
+  const shouldPollForTranslation = useMemo(() => {
+    if (item.processing_status === "error") return false;
+    if (item.processing_status !== "indexed") return true;
+    return originalLooksLikeForeignText(item.title, item.body_text) && !hasEnglishTranslation(item);
+  }, [item]);
+
+  useEffect(() => {
+    if (!shouldPollForTranslation) return;
+    if (pollCount >= 18) return; // about 90 seconds at 5s intervals
+
+    const timer = window.setTimeout(() => {
+      setPollCount((count) => count + 1);
+      router.refresh();
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [pollCount, router, shouldPollForTranslation]);
 
   return (
     <div className="relative z-[1] mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
@@ -64,6 +88,28 @@ export function ItemDetailPage({ item, threadSiblings = [], isAuthed = false }: 
         <motion.div variants={itemVariants}>
           <BackNavigation />
         </motion.div>
+
+        {shouldPollForTranslation && (
+          <motion.div variants={itemVariants} className="mb-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-[rgba(184,148,98,0.24)] bg-[linear-gradient(180deg,rgba(184,148,98,0.10),rgba(255,255,255,0.03))] px-4 py-3">
+              <div>
+                <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#f0cf9f]">
+                  Processing Capture
+                </p>
+                <p className="mt-1 text-[13px] text-[#cdbda6]">
+                  Translating and indexing this item in the background. This page refreshes automatically while it finishes.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => router.refresh()}
+                className="rounded-full border border-[#d6c9b214] bg-[#0f141b] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#f2ede5] transition-colors hover:border-[#d6c9b233] hover:text-white"
+              >
+                Refresh now
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <motion.div variants={itemVariants}>
