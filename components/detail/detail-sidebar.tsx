@@ -1,6 +1,4 @@
 "use client";
-
-import Link from "next/link";
 import { formatFullDate } from "@/lib/format";
 import type { DetailItem } from "@/lib/db/types";
 import { EngagementBento } from "./engagement-bento";
@@ -112,7 +110,7 @@ function TagsAndCategories({
     <SidebarSection title="Tags">
       <div className="flex flex-wrap gap-2">
         {hasCategories && categories.map(({ category }) => (
-          <Link
+          <a
             key={`cat-${category.id}`}
             href={`/tag/${encodeURIComponent(category.slug)}`}
             className="rounded-full border px-3 py-1 text-[11px] font-medium transition-opacity hover:opacity-80"
@@ -123,10 +121,10 @@ function TagsAndCategories({
             }}
           >
             {category.name}
-          </Link>
+          </a>
         ))}
         {hasTags && tags.map(({ tag }) => (
-          <Link
+          <a
             key={`tag-${tag.id}`}
             href={`/tag/${encodeURIComponent(tag.slug)}`}
             className="rounded-full border px-3 py-1 text-[11px] transition-opacity hover:opacity-80"
@@ -137,7 +135,7 @@ function TagsAndCategories({
             }}
           >
             {tag.name}
-          </Link>
+          </a>
         ))}
       </div>
     </SidebarSection>
