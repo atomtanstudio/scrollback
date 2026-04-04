@@ -583,7 +583,6 @@ function TweetThreadContent({
   onMediaClick: (index: number) => void;
 }) {
   const displayBodyText = getDisplayBodyText(item);
-  const translationAvailable = hasEnglishTranslation(item);
   // Check original body_text for markers — translated version may strip them
   const rawBodyText = item.body_text || "";
   const hasInlineMedia = rawBodyText.includes("[Image:") || rawBodyText.includes("[Video:");
