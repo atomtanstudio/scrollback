@@ -14,7 +14,6 @@ export interface FetchItemsOptions {
 
 export async function fetchItems(options: FetchItemsOptions) {
   const prisma = await getClient();
-  const dbType = getDatabaseType();
   const { limit = 50, type, tag, excludeIds = [], sort = "recent", userId } = options;
   const batchSize = limit + 1;
   const preferPublishedAt = type === "rss";
@@ -86,11 +85,51 @@ export async function fetchItems(options: FetchItemsOptions) {
     return new Date((preferPublishedAt ? item.posted_at : null) ?? item.created_at).getTime();
   };
 
+  // Pick one recent thread card per author, choosing the root tweet from each conversation.
+  // This keeps large threads from flooding the feed while still surfacing the newest thread
+  // capture per author in globally recent order.
+  const dedupeThreads = <T extends {
+    conversation_id: string | null;
+    author_handle: string | null;
+    posted_at: Date | string | null;
+    created_at: Date | string;
+  }>(rows: T[]): T[] => {
+    const earliestByConversation = new Map<string, T>();
+    for (const row of rows) {
+      if (!row.conversation_id) continue;
+      const existing = earliestByConversation.get(row.conversation_id);
+      const rowTime = new Date(row.posted_at ?? row.created_at).getTime();
+      const existingTime = existing
+        ? new Date(existing.posted_at ?? existing.created_at).getTime()
+        : Number.POSITIVE_INFINITY;
+      if (!existing || rowTime < existingTime) {
+        earliestByConversation.set(row.conversation_id, row);
+      }
+    }
+
+    const latestByAuthor = new Map<string, T>();
+    for (const row of Array.from(earliestByConversation.values())) {
+      const authorKey = (row.author_handle || "").toLowerCase();
+      if (!authorKey) continue;
+      const existing = latestByAuthor.get(authorKey);
+      const rowTime = new Date(row.created_at).getTime();
+      const existingTime = existing
+        ? new Date(existing.created_at).getTime()
+        : Number.NEGATIVE_INFINITY;
+      if (!existing || rowTime > existingTime) {
+        latestByAuthor.set(authorKey, row);
+      }
+    }
+
+    return Array.from(latestByAuthor.values())
+      .sort((a, b) => itemSortKey(b) - itemSortKey(a))
+      .slice(0, batchSize);
+  };
+
   // Fetch non-thread items and deduplicated thread items separately, then merge.
   // This avoids the problem where a single thread with 100 replies drowns out
   // all other content when fetching a flat list.
   const isThreadFilter = type === "thread" || !type;
-  const useSqliteThreadDedupe = dbType === "sqlite";
 
   const [nonThreadItems, orphanThreadItems, threadItems, totalCount] = await Promise.all([
     // Non-thread items (skip if filtering to threads only)
@@ -117,85 +156,12 @@ export async function fetchItems(options: FetchItemsOptions) {
     // appears in the feed regardless of how many captures occurred.
     // Within each author's threads, we pick the root tweet (earliest posted_at).
     isThreadFilter
-      ? useSqliteThreadDedupe
-        ? prisma.contentItem.findMany({
-            where: dedupableThreadWhere,
-            include,
-            orderBy: [{ created_at: "desc" }],
-            take: Math.max(batchSize * 6, 100),
-          }).then((rows: Awaited<ReturnType<typeof prisma.contentItem.findMany>>) => {
-            const earliestByConversation = new Map<string, (typeof rows)[number]>();
-            for (const row of rows) {
-              if (!row.conversation_id) continue;
-              const existing = earliestByConversation.get(row.conversation_id);
-              const rowTime = new Date(row.posted_at ?? row.created_at).getTime();
-              const existingTime = existing
-                ? new Date(existing.posted_at ?? existing.created_at).getTime()
-                : Number.POSITIVE_INFINITY;
-              if (!existing || rowTime < existingTime) {
-                earliestByConversation.set(row.conversation_id, row);
-              }
-            }
-
-            const latestByAuthor = new Map<string, (typeof rows)[number]>();
-            for (const row of Array.from(earliestByConversation.values())) {
-              const authorKey = (row.author_handle || "").toLowerCase();
-              if (!authorKey) continue;
-              const existing = latestByAuthor.get(authorKey);
-              const rowTime = new Date(row.created_at).getTime();
-              const existingTime = existing
-                ? new Date(existing.created_at).getTime()
-                : Number.NEGATIVE_INFINITY;
-              if (!existing || rowTime > existingTime) {
-                latestByAuthor.set(authorKey, row);
-              }
-            }
-
-            return Array.from(latestByAuthor.values())
-              .sort((a, b) => itemSortKey(b) - itemSortKey(a))
-              .slice(0, batchSize);
-          })
-        : (prisma.$queryRawUnsafe(
-             `SELECT DISTINCT ON (author_handle) id FROM (
-               SELECT DISTINCT ON (conversation_id) id, author_handle, created_at
-               FROM content_items
-               WHERE source_type = 'thread'
-                 AND conversation_id IS NOT NULL
-                 AND author_handle IS NOT NULL
-                 AND user_id = $1::uuid
-                 ${tag ? `AND (
-                   EXISTS (
-                     SELECT 1
-                     FROM content_tags ct
-                     JOIN tags t ON t.id = ct.tag_id
-                     WHERE ct.content_item_id = content_items.id
-                       AND t.slug = $2
-                   )
-                   OR EXISTS (
-                     SELECT 1
-                     FROM content_categories cc
-                     JOIN categories c ON c.id = cc.category_id
-                     WHERE cc.content_item_id = content_items.id
-                       AND c.slug = $2
-                   )
-                 )` : ""}
-                 ${excludeIds.length > 0 ? `AND id NOT IN (${excludeIds.map((_, i) => `$${i + (tag ? 3 : 2)}`).join(",")})` : ""}
-               ORDER BY conversation_id, COALESCE(posted_at, created_at) ASC
-             ) roots
-             ORDER BY author_handle, created_at DESC
-             LIMIT $${excludeIds.length + (tag ? 3 : 2)}`,
-            userId,
-            ...(tag ? [tag] : []),
-            ...excludeIds,
-            batchSize,
-          ) as Promise<Array<{ id: string }>>).then(async (rows) => {
-            if (rows.length === 0) return [];
-            return prisma.contentItem.findMany({
-              where: { id: { in: rows.map((r) => r.id) } },
-              include,
-              orderBy: [{ created_at: "desc" }],
-            });
-          })
+      ? prisma.contentItem.findMany({
+          where: dedupableThreadWhere,
+          include,
+          orderBy: [{ created_at: "desc" }],
+          take: Math.max(batchSize * 6, 100),
+        }).then((rows: Awaited<ReturnType<typeof prisma.contentItem.findMany>>) => dedupeThreads(rows))
       : Promise.resolve([]),
     prisma.contentItem.count({ where: baseWhere }),
   ]);
@@ -212,62 +178,42 @@ export async function fetchItems(options: FetchItemsOptions) {
 
 export async function fetchStats(userId: string) {
   const prisma = await getClient();
-  const dbType = getDatabaseType();
 
   const [total, tweets, rawThreads, articles, rss, art] = await Promise.all([
     prisma.contentItem.count({ where: { user_id: userId } }),
     prisma.contentItem.count({ where: { source_type: "tweet", user_id: userId } }),
     // Deduplicated thread count: one per conversation, then one per author,
     // plus thread captures that cannot be deduplicated safely.
-    dbType === "sqlite"
-      ? prisma.contentItem.findMany({
-          where: { source_type: "thread", conversation_id: { not: null }, author_handle: { not: null }, user_id: userId },
-          select: { conversation_id: true, author_handle: true, posted_at: true, created_at: true },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        }).then((rows: any[]) => {
-          // Pick earliest per conversation
-          const byConv = new Map<string, { author_handle: string | null }>();
-          for (const row of rows) {
-            if (!row.conversation_id) continue;
-            if (!byConv.has(row.conversation_id)) {
-              byConv.set(row.conversation_id, row);
-            }
-          }
-          // Unique authors
-          const authors = new Set<string>();
-          for (const row of Array.from(byConv.values())) {
-            authors.add((row.author_handle || "").toLowerCase());
-          }
-          return prisma.contentItem.count({
-            where: {
-              source_type: "thread",
-              user_id: userId,
-              OR: [{ conversation_id: null }, { author_handle: null }],
-            },
-          }).then((orphanCount: number) => authors.size + orphanCount);
-        })
-      : (prisma.$queryRawUnsafe(
-          `SELECT COUNT(*) as count FROM (
-             SELECT DISTINCT ON (author_handle) author_handle FROM (
-               SELECT DISTINCT ON (conversation_id) author_handle
-               FROM content_items
-               WHERE source_type = 'thread' AND conversation_id IS NOT NULL AND author_handle IS NOT NULL AND user_id = $1::uuid
-               ORDER BY conversation_id, COALESCE(posted_at, created_at) ASC
-             ) roots
-             ORDER BY author_handle
-           ) deduped`,
-          userId
-        ) as Promise<Array<{ count: bigint }>>).then(async (rows) => {
-          const deduped = Number(rows[0]?.count ?? 0);
-          const orphanCount = await prisma.contentItem.count({
-            where: {
-              source_type: "thread",
-              user_id: userId,
-              OR: [{ conversation_id: null }, { author_handle: null }],
-            },
-          });
-          return deduped + orphanCount;
-        }),
+    prisma.contentItem.findMany({
+      where: { source_type: "thread", conversation_id: { not: null }, author_handle: { not: null }, user_id: userId },
+      select: { conversation_id: true, author_handle: true, posted_at: true, created_at: true },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }).then(async (rows: any[]) => {
+      const byConv = new Map<string, { author_handle: string | null; posted_at: Date | string | null; created_at: Date | string }>();
+      for (const row of rows) {
+        if (!row.conversation_id) continue;
+        const existing = byConv.get(row.conversation_id);
+        const rowTime = new Date(row.posted_at ?? row.created_at).getTime();
+        const existingTime = existing
+          ? new Date(existing.posted_at ?? existing.created_at).getTime()
+          : Number.POSITIVE_INFINITY;
+        if (!existing || rowTime < existingTime) {
+          byConv.set(row.conversation_id, row);
+        }
+      }
+      const authors = new Set<string>();
+      for (const row of Array.from(byConv.values())) {
+        authors.add((row.author_handle || "").toLowerCase());
+      }
+      const orphanCount = await prisma.contentItem.count({
+        where: {
+          source_type: "thread",
+          user_id: userId,
+          OR: [{ conversation_id: null }, { author_handle: null }],
+        },
+      });
+      return authors.size + orphanCount;
+    }),
     prisma.contentItem.count({ where: { source_type: "article", source_platform: { not: "rss" }, user_id: userId } }),
     prisma.contentItem.count({ where: { source_platform: "rss", user_id: userId } }),
     prisma.contentItem.count({
