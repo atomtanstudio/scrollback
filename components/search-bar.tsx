@@ -5,13 +5,18 @@ import { useState, useCallback, useEffect, useRef } from "react";
 interface SearchBarProps {
   onSearch: (query: string, options?: { scroll?: boolean }) => void;
   onClear: () => void;
+  initialQuery?: string;
 }
 
-export function SearchBar({ onSearch, onClear }: SearchBarProps) {
-  const [query, setQuery] = useState("");
+export function SearchBar({ onSearch, onClear, initialQuery = "" }: SearchBarProps) {
+  const [query, setQuery] = useState(initialQuery);
   const [isMacLike, setIsMacLike] = useState(true);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const hotkeyLabel = isMacLike ? "⌘K" : "Ctrl K";
+
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
 
   useEffect(() => {
     if (typeof navigator === "undefined") return;
@@ -31,14 +36,12 @@ export function SearchBar({ onSearch, onClear }: SearchBarProps) {
       debounceRef.current = setTimeout(() => {
         onSearch(query.trim(), { scroll: false });
       }, 300);
-    } else if (query.trim().length === 0) {
-      onClear();
     }
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, onSearch, onClear]);
+  }, [query, onSearch]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {

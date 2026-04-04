@@ -363,7 +363,11 @@ export function HomePage({
                   ))}
                 </div>
               </div>
-              <SearchBar onSearch={handleSearch} onClear={handleClearSearch} />
+              <SearchBar
+                onSearch={handleSearch}
+                onClear={handleClearSearch}
+                initialQuery={searchQuery}
+              />
             </div>
 
             {/* Feed */}
