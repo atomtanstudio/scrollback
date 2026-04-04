@@ -56,15 +56,35 @@ export async function POST(
         }
       }
 
-      const text = `${item.title || ""} ${item.body_text || ""}`.trim();
+      let language: string | null = null;
+      let translatedTitle: string | null = null;
+      let translatedBodyText: string | null = null;
+      let englishTitle = item.title || "";
+      let englishBody = item.body_text || "";
+
+      if (process.env.GEMINI_API_KEY) {
+        try {
+          const { translateToEnglish } = await import("@/lib/embeddings/gemini");
+          const translation = await translateToEnglish(item.title || "", item.body_text || "");
+          language = translation.language;
+          translatedTitle = translation.translated_title;
+          translatedBodyText = translation.translated_body_text;
+          if (translatedTitle) englishTitle = translatedTitle;
+          if (translatedBodyText) englishBody = translatedBodyText;
+        } catch (translationErr) {
+          console.warn(`Reprocess translation failed for ${id}:`, translationErr);
+        }
+      }
+
+      const text = `${englishTitle} ${englishBody}`.trim();
       const allCategories = await db.category.findMany({ select: { slug: true } });
       const categorySlugs = allCategories.map((c: { slug: string }) => c.slug);
 
       // 1. Re-classify via Gemini (summary, tags, categories)
       const { classifyContent } = await import("@/lib/embeddings/gemini");
       const result = await classifyContent(
-        item.title || "",
-        item.body_text || "",
+        englishTitle,
+        englishBody,
         resolvedSourceType,
         categorySlugs,
         item.author_handle
@@ -78,6 +98,9 @@ export async function POST(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const updateData: Record<string, any> = {
           ai_summary: result.ai_summary,
+          language,
+          translated_title: translatedTitle,
+          translated_body_text: translatedBodyText,
         };
         if (result.has_prompt) {
           updateData.has_prompt = true;
@@ -126,7 +149,11 @@ export async function POST(
 
       // 2. Regenerate search vector
       await db.$queryRawUnsafe(
-        `UPDATE content_items SET search_vector = to_tsvector('english', coalesce(title,'') || ' ' || coalesce(body_text,'') || ' ' || coalesce(author_handle,'')) WHERE id = $1::uuid`,
+        `UPDATE content_items
+         SET search_vector = to_tsvector('english', coalesce($1,'') || ' ' || coalesce($2,'') || ' ' || coalesce(author_handle,''))
+         WHERE id = $3::uuid`,
+        englishTitle,
+        englishBody,
         id
       );
 
