@@ -1296,6 +1296,9 @@ function injectSaveButtons() {
     const actionBar = tweet.querySelector('div[role="group"]');
     if (!actionBar || actionBar.querySelector(`[${BUTTON_ATTR}]`)) return;
 
+    const btnSlot = document.createElement('div');
+    btnSlot.className = 'feedsilo-save-btn-slot';
+
     const btn = document.createElement('button');
     btn.setAttribute(BUTTON_ATTR, 'true');
     btn.className = 'feedsilo-save-btn';
@@ -1568,7 +1571,8 @@ function injectSaveButtons() {
       }
     });
 
-    actionBar.appendChild(btn);
+    btnSlot.appendChild(btn);
+    actionBar.appendChild(btnSlot);
   });
 }
 

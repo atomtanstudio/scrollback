@@ -42,6 +42,12 @@
   text-transform: uppercase;
 }
 
+.feedsilo-save-btn-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .feedsilo-save-btn:hover {
   color: var(--feedsilo-text);
   border-color: var(--feedsilo-border);
