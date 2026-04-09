@@ -13,7 +13,6 @@ const filters = [
   { label: "Threads", value: "thread" },
   { label: "Articles", value: "article" },
   { label: "RSS", value: "rss" },
-  { label: "Art", value: "art" },
 ];
 
 export function FilterPills({ activeType, onTypeChange }: FilterPillsProps) {

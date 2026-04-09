@@ -1,4 +1,5 @@
 import { getClient, getDatabaseType } from "./client";
+import { parsePinnedFilters } from "@/lib/pinned-filters";
 
 export type SortMode = "recent" | "most_liked" | "most_viewed";
 
@@ -224,6 +225,16 @@ export async function fetchStats(userId: string) {
   const threads = typeof rawThreads === "number" ? rawThreads : 0;
 
   return { total, tweets, threads, articles, rss, art };
+}
+
+export async function fetchPinnedFilters(userId: string) {
+  const prisma = await getClient();
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { pinned_filters: true },
+  });
+
+  return parsePinnedFilters(user?.pinned_filters);
 }
 
 export async function fetchItemById(id: string, userId: string) {

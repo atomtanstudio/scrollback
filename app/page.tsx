@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { HomePage } from "@/components/home-page";
 import { DemoBanner } from "@/components/demo-banner";
-import { fetchItems, fetchStats, type SortMode } from "@/lib/db/queries";
+import { fetchItems, fetchPinnedFilters, fetchStats, type SortMode } from "@/lib/db/queries";
 import { auth } from "@/lib/auth/auth";
 
 export const dynamic = "force-dynamic";
@@ -32,9 +32,10 @@ export default async function Home({
     redirect(`/tag/${encodeURIComponent(rawTag)}${qs ? `?${qs}` : ""}`);
   }
 
-  const [{ items, totalCount, hasMore }, stats] = await Promise.all([
+  const [{ items, totalCount, hasMore }, stats, pinnedFilters] = await Promise.all([
     fetchItems({ limit: 50, userId, type: rawType || undefined, tag: rawTag || undefined, sort }),
     fetchStats(userId),
+    fetchPinnedFilters(userId),
   ]);
 
   return (
@@ -46,6 +47,7 @@ export default async function Home({
           totalCount={totalCount}
           initialHasMore={hasMore}
           stats={stats}
+          initialPinnedFilters={pinnedFilters}
           isAuthed={true}
           isAdmin={session.user.role === "admin"}
         />

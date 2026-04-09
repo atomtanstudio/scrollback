@@ -160,6 +160,8 @@ model User {
   email         String   @unique
   password_hash String
   role          String   @default("admin")
+  capture_token String?  @unique
+  pinned_filters String?
   created_at    DateTime @default(now())
 
   @@map("users")

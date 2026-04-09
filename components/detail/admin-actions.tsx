@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Trash2, RefreshCw } from "lucide-react";
+import { Pencil, Trash2, RefreshCw, HardDriveDownload } from "lucide-react";
 import { ItemEditDialog } from "@/components/admin/item-edit-dialog";
 import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog";
 import type { AdminItem } from "@/components/admin/columns";
@@ -17,6 +17,10 @@ interface AdminActionsProps {
     author_display_name: string | null;
     original_url: string | null;
     posted_at: Date | string | null;
+    media_items?: Array<{
+      id: string;
+      stored_path: string | null;
+    }>;
   };
 }
 
@@ -29,6 +33,8 @@ export function AdminActions({ item }: AdminActionsProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
   const [reprocessStatus, setReprocessStatus] = useState<string | null>(null);
+  const [backfillingMedia, setBackfillingMedia] = useState(false);
+  const [mediaStatus, setMediaStatus] = useState<string | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const adminItem: AdminItem = {
@@ -46,12 +52,19 @@ export function AdminActions({ item }: AdminActionsProps) {
     created_at: "",
     thumbnail: null,
   };
+  const mediaCount = item.media_items?.length ?? 0;
 
   const clearStatusAfter = (ms: number) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       setReprocessStatus(null);
       timeoutRef.current = null;
+    }, ms);
+  };
+
+  const clearMediaStatusAfter = (ms: number) => {
+    setTimeout(() => {
+      setMediaStatus(null);
     }, ms);
   };
 
@@ -88,6 +101,31 @@ export function AdminActions({ item }: AdminActionsProps) {
     }
   };
 
+  const handleMediaBackfill = async () => {
+    setBackfillingMedia(true);
+    setMediaStatus(null);
+    try {
+      const res = await fetch(`/api/admin/items/${item.id}/media-backfill`, {
+        method: "POST",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMediaStatus(data.message || "Done");
+        router.refresh();
+        clearMediaStatusAfter(3000);
+      } else {
+        setMediaStatus(data.error || "Failed");
+        clearMediaStatusAfter(4000);
+      }
+    } catch (err) {
+      console.error("Failed to backfill media:", err);
+      setMediaStatus("Failed");
+      clearMediaStatusAfter(4000);
+    } finally {
+      setBackfillingMedia(false);
+    }
+  };
+
   return (
     <>
       <div className="rounded-[24px] border border-[#d6c9b214] bg-[#ffffff08] p-5">
@@ -115,6 +153,17 @@ export function AdminActions({ item }: AdminActionsProps) {
               className={`h-3.5 w-3.5 ${reprocessing ? "animate-spin" : ""}`}
             />
             {reprocessStatus || "Reprocess"}
+          </button>
+          <button
+            className={btnClass}
+            onClick={handleMediaBackfill}
+            disabled={backfillingMedia || mediaCount === 0}
+            title={mediaCount === 0 ? "This item has no media" : undefined}
+          >
+            <HardDriveDownload
+              className={`h-3.5 w-3.5 ${backfillingMedia ? "animate-pulse" : ""}`}
+            />
+            {mediaStatus || "Backfill Media"}
           </button>
         </div>
       </div>

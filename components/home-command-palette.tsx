@@ -14,10 +14,12 @@ import {
   Sparkles,
   PanelTop,
   CircleDot,
+  Pin,
 } from "lucide-react";
 import { getAttributionName, getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
 import { formatTimeAgo } from "@/lib/format";
 import type { ContentItemWithMedia } from "@/lib/db/types";
+import type { PinnedFilter } from "@/lib/pinned-filters";
 
 interface HomeCommandPaletteProps {
   open: boolean;
@@ -25,6 +27,8 @@ interface HomeCommandPaletteProps {
   isAuthed: boolean;
   recentItems: ContentItemWithMedia[];
   currentFilter: string;
+  currentTag: string;
+  pinnedFilters: PinnedFilter[];
   currentSearch: string;
   onApplyFilter: (type: string) => void;
   onApplySearch: (query: string) => Promise<void>;
@@ -41,7 +45,7 @@ interface PaletteAction {
   label: string;
   detail?: string;
   meta?: string;
-  icon: "filter" | "search" | "jump" | "recent";
+  icon: "filter" | "search" | "jump" | "recent" | "pin";
   tone?: "all" | "tweet" | "thread" | "article" | "rss" | "art";
   run: () => void;
 }
@@ -71,6 +75,8 @@ export function HomeCommandPalette({
   isAuthed,
   recentItems,
   currentFilter,
+  currentTag,
+  pinnedFilters,
   currentSearch,
   onApplyFilter,
   onApplySearch,
@@ -221,7 +227,7 @@ export function HomeCommandPalette({
       {
         id: "filter-art",
         section: "Quick actions",
-        label: "Filter to art",
+        label: "Open art saves",
         detail: "Image and video prompt saves",
         meta: currentFilter === "art" ? "Current" : undefined,
         icon: "filter",
@@ -232,6 +238,33 @@ export function HomeCommandPalette({
         },
       }
     );
+
+    for (const filter of pinnedFilters) {
+      const isCurrent =
+        (filter.kind === "type" && currentFilter === filter.value) ||
+        (filter.kind === "tag" && currentTag === filter.value);
+
+      items.push({
+        id: `pin-${filter.kind}-${filter.value}`,
+        section: "Pinned",
+        label: filter.label,
+        detail:
+          filter.kind === "tag"
+            ? "Open this pinned tag view"
+            : "Jump to this pinned filter",
+        meta: isCurrent ? "Current" : undefined,
+        icon: "pin",
+        tone: filter.kind === "type" && filter.value === "art" ? "art" : undefined,
+        run: () => {
+          onOpenChange(false);
+          if (filter.kind === "type") {
+            onApplyFilter(filter.value);
+          } else {
+            router.push(`/tag/${encodeURIComponent(filter.value)}`);
+          }
+        },
+      });
+    }
 
     if (trimmed) {
       items.unshift({
@@ -312,6 +345,8 @@ export function HomeCommandPalette({
   }, [
     query,
     currentFilter,
+    currentTag,
+    pinnedFilters,
     currentSearch,
     onClearSearch,
     onApplyFilter,
@@ -491,6 +526,8 @@ export function HomeCommandPalette({
                             <Sparkles size={15} />
                           ) : action.icon === "jump" ? (
                             <PanelTop size={15} />
+                          ) : action.icon === "pin" ? (
+                            <Pin size={15} />
                           ) : (
                             <ArrowRight size={15} />
                           )}

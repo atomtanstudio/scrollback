@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { Pin, PinOff } from "lucide-react";
 import { Header } from "@/components/header";
 import { SearchBar } from "@/components/search-bar";
 import { HomeCommandPalette } from "@/components/home-command-palette";
 import { MasonryFeed } from "@/components/masonry-feed";
 import { CardSkeletonGrid } from "@/components/card-skeleton";
-
+import type { PinnedFilter } from "@/lib/pinned-filters";
 
 import type { ContentItemWithMedia } from "@/lib/db/types";
 
@@ -16,6 +17,7 @@ interface HomePageProps {
   totalCount: number;
   initialHasMore: boolean;
   stats: { total: number; tweets: number; threads: number; articles: number; rss: number; art: number };
+  initialPinnedFilters: PinnedFilter[];
   isAuthed: boolean;
   isAdmin?: boolean;
   initialType?: string;
@@ -35,11 +37,29 @@ function buildUrl(params: Record<string, string>) {
   return qs ? `/?${qs}` : "/";
 }
 
+function buildTagUrl(tag: string, params: Record<string, string>) {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v) sp.set(k, v);
+  }
+  const qs = sp.toString();
+  return `/tag/${encodeURIComponent(tag)}${qs ? `?${qs}` : ""}`;
+}
+
+function humanizeSlug(value: string) {
+  return value
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 export function HomePage({
   initialItems,
   totalCount,
   initialHasMore,
   stats,
+  initialPinnedFilters,
   isAuthed,
   isAdmin = false,
   initialType = "",
@@ -62,6 +82,7 @@ export function HomePage({
   const [searchResults, setSearchResults] = useState<ContentItemWithMedia[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState(urlQ);
+  const [pinnedFilters, setPinnedFilters] = useState(initialPinnedFilters);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const feedSectionRef = useRef<HTMLElement | null>(null);
   const feedHeadingRef = useRef<HTMLHeadingElement | null>(null);
@@ -79,12 +100,15 @@ export function HomePage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    setPinnedFilters(initialPinnedFilters);
+  }, [initialPinnedFilters]);
+
   const statEntries = [
     { label: "Tweets", count: stats.tweets, dot: "bg-[var(--accent-tweet)]" },
     { label: "Threads", count: stats.threads, dot: "bg-[var(--accent-thread)]" },
     { label: "Articles", count: stats.articles, dot: "bg-[var(--accent-article)]" },
     { label: "RSS", count: stats.rss, dot: "bg-[var(--accent-article)]" },
-    { label: "Art", count: stats.art, dot: "bg-[var(--accent-art)]" },
   ];
 
   const filters = [
@@ -93,7 +117,6 @@ export function HomePage({
     { label: "Threads", value: "thread" },
     { label: "Articles", value: "article" },
     { label: "RSS", value: "rss" },
-    { label: "Art", value: "art" },
   ];
 
   const recentItems = initialItems.slice(0, 3);
@@ -135,6 +158,26 @@ export function HomePage({
       }
     },
     [paletteOpen, scheduleScrollToFeed, activeSort, router]
+  );
+
+  const openPinnedFilter = useCallback(
+    (filter: PinnedFilter) => {
+      setSearchResults(null);
+      setSearchQuery("");
+
+      if (filter.kind === "type") {
+        router.push(buildUrl({ type: filter.value, sort: activeSort, tag: "" }), { scroll: false });
+      } else {
+        router.push(buildTagUrl(filter.value, { sort: activeSort }), { scroll: false });
+      }
+
+      if (paletteOpen) {
+        pendingPaletteScrollRef.current = true;
+      } else {
+        scheduleScrollToFeed();
+      }
+    },
+    [activeSort, paletteOpen, router, scheduleScrollToFeed]
   );
 
   const applySort = useCallback(
@@ -221,6 +264,39 @@ export function HomePage({
     scheduleScrollToFeed(240);
   }, [paletteOpen, scheduleScrollToFeed]);
 
+  const currentPinCandidate = useMemo<PinnedFilter | null>(() => {
+    if (activeTag) {
+      return { kind: "tag", value: activeTag, label: humanizeSlug(activeTag) };
+    }
+    if (activeType === "art") {
+      return { kind: "type", value: "art", label: "Art" };
+    }
+    return null;
+  }, [activeTag, activeType]);
+
+  const currentPinActive = currentPinCandidate
+    ? pinnedFilters.some(
+        (filter) =>
+          filter.kind === currentPinCandidate.kind && filter.value === currentPinCandidate.value
+      )
+    : false;
+
+  const toggleCurrentPin = useCallback(async () => {
+    if (!currentPinCandidate) return;
+
+    const res = await fetch("/api/pinned-filters", {
+      method: currentPinActive ? "DELETE" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(currentPinCandidate),
+    });
+
+    if (!res.ok) return;
+    const data = await res.json().catch(() => null);
+    if (data?.filters) {
+      setPinnedFilters(data.filters);
+    }
+  }, [currentPinActive, currentPinCandidate]);
+
   const feedTitle = searchResults
     ? isSearching
       ? "Searching..."
@@ -292,6 +368,43 @@ export function HomePage({
                 })}
               </div>
             </div>
+
+            {pinnedFilters.length > 0 && (
+              <div className="rounded-[16px] border border-[#d6c9b214] bg-[#ffffff08] p-4">
+                <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[#a49b8b]">Pinned</p>
+                <div className="grid gap-1.5">
+                  {pinnedFilters.map((filter) => {
+                    const isActive =
+                      (filter.kind === "type" && activeType === filter.value) ||
+                      (filter.kind === "tag" && activeTag === filter.value);
+
+                    return (
+                      <button
+                        key={`${filter.kind}:${filter.value}`}
+                        type="button"
+                        onClick={() => openPinnedFilter(filter)}
+                        aria-pressed={isActive}
+                        className={`flex items-center justify-between rounded-[12px] border px-3.5 py-2.5 text-left text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462] ${
+                          isActive
+                            ? "border-[#d6c9b242] bg-[#f2ede50a] text-[#f2ede5]"
+                            : "border-transparent bg-transparent text-[#a49b8b] hover:bg-[#ffffff05] hover:text-[#f2ede5]"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent-art)]" />
+                          {filter.label}
+                        </span>
+                        {filter.kind === "type" && filter.value === "art" ? (
+                          <span className="text-[12px] text-[#b89462]">{stats.art.toLocaleString()}</span>
+                        ) : (
+                          <Pin className="h-3.5 w-3.5 text-[#b89462]" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="rounded-[16px] border border-[#b8946222] bg-gradient-to-b from-[#b894620a] to-transparent p-4">
               <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#b89462]">Support our projects</p>
@@ -380,13 +493,32 @@ export function HomePage({
                   {feedTitle}
                 </h2>
                 <div className="flex flex-wrap items-center gap-3 text-[13px] text-[#8a8174]">
+                  {currentPinCandidate && (
+                    <button
+                      type="button"
+                      onClick={() => void toggleCurrentPin()}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[#b8946233] bg-[#b894620a] px-3 py-1 text-[12px] text-[#b89462] transition-colors hover:bg-[#b8946218]"
+                    >
+                      {currentPinActive ? (
+                        <>
+                          <PinOff className="h-3.5 w-3.5" />
+                          Unpin
+                        </>
+                      ) : (
+                        <>
+                          <Pin className="h-3.5 w-3.5" />
+                          Pin
+                        </>
+                      )}
+                    </button>
+                  )}
                   {searchQuery && searchResults && (
                     <span>for &ldquo;{searchQuery}&rdquo;</span>
                   )}
                   {activeTag && (
                     <button
                       type="button"
-                      onClick={() => router.push("/", { scroll: false })}
+                      onClick={() => router.push(buildUrl({ type: activeType, sort: activeSort }), { scroll: false })}
                       className="inline-flex items-center gap-1.5 rounded-full border border-[#b8946233] bg-[#b894620a] px-3 py-1 text-[12px] text-[#b89462] transition-colors hover:bg-[#b8946218]"
                     >
                       {activeTag.replace(/-/g, " ")}
@@ -435,6 +567,8 @@ export function HomePage({
         isAuthed={isAuthed}
         recentItems={recentItems}
         currentFilter={activeType}
+        currentTag={activeTag}
+        pinnedFilters={pinnedFilters}
         currentSearch={searchQuery}
         onApplyFilter={applyFilter}
         onApplySearch={handleSearch}

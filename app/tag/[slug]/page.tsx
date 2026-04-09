@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { HomePage } from "@/components/home-page";
 import { DemoBanner } from "@/components/demo-banner";
-import { fetchItems, fetchStats, type SortMode } from "@/lib/db/queries";
+import { fetchItems, fetchPinnedFilters, fetchStats, type SortMode } from "@/lib/db/queries";
 import { auth } from "@/lib/auth/auth";
 
 export const dynamic = "force-dynamic";
@@ -28,9 +28,10 @@ export default async function TaggedHomePage({
   const rawSort = Array.isArray(resolvedSearchParams.sort) ? resolvedSearchParams.sort[0] : resolvedSearchParams.sort;
   const sort: SortMode = rawSort && VALID_SORTS.has(rawSort as SortMode) ? (rawSort as SortMode) : "recent";
 
-  const [{ items, totalCount, hasMore }, stats] = await Promise.all([
+  const [{ items, totalCount, hasMore }, stats, pinnedFilters] = await Promise.all([
     fetchItems({ limit: 50, userId, type: rawType || undefined, tag: slug, sort }),
     fetchStats(userId),
+    fetchPinnedFilters(userId),
   ]);
 
   return (
@@ -42,6 +43,7 @@ export default async function TaggedHomePage({
           totalCount={totalCount}
           initialHasMore={hasMore}
           stats={stats}
+          initialPinnedFilters={pinnedFilters}
           isAuthed={true}
           isAdmin={session.user.role === "admin"}
           initialType={rawType || ""}

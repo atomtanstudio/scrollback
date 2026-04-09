@@ -68,15 +68,15 @@ export function DataSection({ stats, settings, isAdmin = true }: DataSectionProp
         {/* Media Storage (R2) — admin only */}
         {isAdmin && r2?.configured && (
           <div className="flex flex-col gap-2">
-            <h4 className="text-sm font-medium text-[#f2ede5]">Media Storage (R2)</h4>
+            <h4 className="text-sm font-medium text-[#f2ede5]">Media Backfill (R2)</h4>
             {r2.mediaWithoutStored > 0 ? (
               <>
                 <p className="text-xs text-[#a49b8b]">
-                  {r2.mediaWithoutStored} of {r2.mediaWithStored + r2.mediaWithoutStored} media items pending download
+                  {r2.mediaWithoutStored} of {r2.mediaWithStored + r2.mediaWithoutStored} media items are not stored yet
                 </p>
                 <ProgressBar
                   endpoint="/api/media/backfill"
-                  buttonLabel="Download Media to R2"
+                  buttonLabel="Backfill All Media to R2"
                 />
               </>
             ) : (
