@@ -8,7 +8,7 @@ import { SearchBar } from "@/components/search-bar";
 import { HomeCommandPalette } from "@/components/home-command-palette";
 import { MasonryFeed } from "@/components/masonry-feed";
 import { CardSkeletonGrid } from "@/components/card-skeleton";
-import type { PinnedFilter } from "@/lib/pinned-filters";
+import type { PinnedFilter, SuggestedPinnedFilter } from "@/lib/pinned-filters";
 
 import type { ContentItemWithMedia } from "@/lib/db/types";
 
@@ -18,6 +18,7 @@ interface HomePageProps {
   initialHasMore: boolean;
   stats: { total: number; tweets: number; threads: number; articles: number; rss: number; art: number };
   initialPinnedFilters: PinnedFilter[];
+  initialSuggestedFilters: SuggestedPinnedFilter[];
   isAuthed: boolean;
   isAdmin?: boolean;
   initialType?: string;
@@ -60,6 +61,7 @@ export function HomePage({
   initialHasMore,
   stats,
   initialPinnedFilters,
+  initialSuggestedFilters,
   isAuthed,
   isAdmin = false,
   initialType = "",
@@ -83,6 +85,7 @@ export function HomePage({
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState(urlQ);
   const [pinnedFilters, setPinnedFilters] = useState(initialPinnedFilters);
+  const [suggestedFilters, setSuggestedFilters] = useState(initialSuggestedFilters);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const feedSectionRef = useRef<HTMLElement | null>(null);
   const feedHeadingRef = useRef<HTMLHeadingElement | null>(null);
@@ -103,6 +106,10 @@ export function HomePage({
   useEffect(() => {
     setPinnedFilters(initialPinnedFilters);
   }, [initialPinnedFilters]);
+
+  useEffect(() => {
+    setSuggestedFilters(initialSuggestedFilters);
+  }, [initialSuggestedFilters]);
 
   const statEntries = [
     { label: "Tweets", count: stats.tweets, dot: "bg-[var(--accent-tweet)]" },
@@ -297,6 +304,23 @@ export function HomePage({
     }
   }, [currentPinActive, currentPinCandidate]);
 
+  const addSuggestedPin = useCallback(async (filter: SuggestedPinnedFilter) => {
+    const res = await fetch("/api/pinned-filters", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(filter),
+    });
+
+    if (!res.ok) return;
+    const data = await res.json().catch(() => null);
+    if (data?.filters) {
+      setPinnedFilters(data.filters);
+      setSuggestedFilters((current) =>
+        current.filter((candidate) => candidate.value !== filter.value)
+      );
+    }
+  }, []);
+
   const feedTitle = searchResults
     ? isSearching
       ? "Searching..."
@@ -402,6 +426,48 @@ export function HomePage({
                       </button>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {suggestedFilters.length > 0 && (
+              <div className="rounded-[16px] border border-[#b8946218] bg-[linear-gradient(180deg,rgba(184,148,98,0.08),rgba(255,255,255,0.02))] p-4">
+                <p className="mb-1 text-[11px] uppercase tracking-[0.14em] text-[#b89462]">Suggested</p>
+                <p className="mb-3 text-[11px] leading-4 text-[#8a8174]">
+                  Topics you keep saving enough that they probably deserve a home.
+                </p>
+                <div className="grid gap-1.5">
+                  {suggestedFilters.map((filter) => (
+                    <div
+                      key={`suggested:${filter.value}`}
+                      className="flex items-center gap-2 rounded-[12px] border border-transparent bg-transparent px-1 py-1.5 text-left text-[13px] text-[#a49b8b] transition-colors hover:bg-[#ffffff05] hover:text-[#f2ede5]"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => openPinnedFilter(filter)}
+                        className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-[10px] px-2.5 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-[#f2ede5]">{filter.label}</span>
+                          <span className="block text-[11px] text-[#8a8174]">
+                            Saved {filter.count} times
+                          </span>
+                        </span>
+                        <span className="text-[11px] uppercase tracking-[0.08em] text-[#b89462]">
+                          {filter.source}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void addSuggestedPin(filter)}
+                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#b8946233] bg-[#b894620f] text-[#b89462] transition-colors hover:bg-[#b894621d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+                        aria-label={`Pin ${filter.label}`}
+                        title={`Pin ${filter.label}`}
+                      >
+                        <Pin className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -569,6 +635,7 @@ export function HomePage({
         currentFilter={activeType}
         currentTag={activeTag}
         pinnedFilters={pinnedFilters}
+        suggestedFilters={suggestedFilters}
         currentSearch={searchQuery}
         onApplyFilter={applyFilter}
         onApplySearch={handleSearch}

@@ -6,11 +6,42 @@ export interface PinnedFilter {
   label: string;
 }
 
+export interface SuggestedPinnedFilter extends PinnedFilter {
+  count: number;
+  source: "tag" | "category";
+}
+
+interface TopicSignal {
+  slug: string;
+  label: string;
+  source: "tag" | "category";
+}
+
 const DEFAULT_PINNED_FILTERS: PinnedFilter[] = [
   { kind: "type", value: "art", label: "Art" },
 ];
 
 const VALID_TYPE_FILTERS = new Set(["art", "tweet", "thread", "article", "rss"]);
+const NOISY_TOPIC_SLUGS = new Set([
+  "art",
+  "article",
+  "articles",
+  "image",
+  "image-prompt",
+  "images",
+  "prompt",
+  "prompts",
+  "rss",
+  "thread",
+  "threads",
+  "tweet",
+  "tweets",
+  "video",
+  "video-prompt",
+  "videos",
+  "x",
+  "twitter",
+]);
 
 function humanizeSlug(value: string): string {
   return value
@@ -93,4 +124,57 @@ export function removePinnedFilter(
   filterToRemove: PinnedFilter
 ): PinnedFilter[] {
   return currentFilters.filter((filter) => !samePinnedFilter(filter, filterToRemove));
+}
+
+export function rankSuggestedPinnedFilters(
+  items: TopicSignal[][],
+  currentFilters: PinnedFilter[],
+  options?: { minCount?: number; limit?: number }
+): SuggestedPinnedFilter[] {
+  const pinnedValues = new Set(
+    currentFilters
+      .filter((filter) => filter.kind === "tag")
+      .map((filter) => filter.value.toLowerCase())
+  );
+  const counts = new Map<string, SuggestedPinnedFilter>();
+
+  for (const itemSignals of items) {
+    const seenInItem = new Set<string>();
+    for (const signal of itemSignals) {
+      const slug = signal.slug.trim().toLowerCase();
+      if (!slug || NOISY_TOPIC_SLUGS.has(slug) || pinnedValues.has(slug) || seenInItem.has(slug)) {
+        continue;
+      }
+      seenInItem.add(slug);
+
+      const existing = counts.get(slug);
+      if (existing) {
+        existing.count += 1;
+        if (signal.source === "category" && existing.source !== "category") {
+          existing.label = signal.label;
+          existing.source = "category";
+        }
+      } else {
+        counts.set(slug, {
+          kind: "tag",
+          value: slug,
+          label: signal.label || humanizeSlug(slug),
+          count: 1,
+          source: signal.source,
+        });
+      }
+    }
+  }
+
+  const minCount = options?.minCount ?? (items.length >= 15 ? 3 : 2);
+  const limit = options?.limit ?? 6;
+
+  return Array.from(counts.values())
+    .filter((filter) => filter.count >= minCount)
+    .sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      if (a.source !== b.source) return a.source === "category" ? -1 : 1;
+      return a.label.localeCompare(b.label);
+    })
+    .slice(0, limit);
 }

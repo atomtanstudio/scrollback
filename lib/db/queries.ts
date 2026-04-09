@@ -1,5 +1,9 @@
 import { getClient, getDatabaseType } from "./client";
-import { parsePinnedFilters } from "@/lib/pinned-filters";
+import {
+  parsePinnedFilters,
+  rankSuggestedPinnedFilters,
+  type SuggestedPinnedFilter,
+} from "@/lib/pinned-filters";
 
 export type SortMode = "recent" | "most_liked" | "most_viewed";
 
@@ -235,6 +239,43 @@ export async function fetchPinnedFilters(userId: string) {
   });
 
   return parsePinnedFilters(user?.pinned_filters);
+}
+
+export async function fetchSuggestedPinnedFilters(userId: string): Promise<SuggestedPinnedFilter[]> {
+  const prisma = await getClient();
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { pinned_filters: true },
+  });
+  const currentFilters = parsePinnedFilters(user?.pinned_filters);
+
+  const items = await prisma.contentItem.findMany({
+    where: { user_id: userId },
+    select: {
+      tags: { select: { tag: { select: { slug: true, name: true } } } },
+      categories: { select: { category: { select: { slug: true, name: true } } } },
+    },
+  });
+
+  return rankSuggestedPinnedFilters(
+    items.map((item: (typeof items)[number]) => [
+      ...item.categories.map(
+        ({ category }: (typeof item.categories)[number]) => ({
+          slug: category.slug,
+          label: category.name,
+          source: "category" as const,
+        })
+      ),
+      ...item.tags.map(
+        ({ tag }: (typeof item.tags)[number]) => ({
+          slug: tag.slug,
+          label: tag.name,
+          source: "tag" as const,
+        })
+      ),
+    ]),
+    currentFilters
+  );
 }
 
 export async function fetchItemById(id: string, userId: string) {

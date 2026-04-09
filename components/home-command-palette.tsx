@@ -19,7 +19,7 @@ import {
 import { getAttributionName, getDisplayBodyText, getDisplayTitle } from "@/lib/content-display";
 import { formatTimeAgo } from "@/lib/format";
 import type { ContentItemWithMedia } from "@/lib/db/types";
-import type { PinnedFilter } from "@/lib/pinned-filters";
+import type { PinnedFilter, SuggestedPinnedFilter } from "@/lib/pinned-filters";
 
 interface HomeCommandPaletteProps {
   open: boolean;
@@ -29,6 +29,7 @@ interface HomeCommandPaletteProps {
   currentFilter: string;
   currentTag: string;
   pinnedFilters: PinnedFilter[];
+  suggestedFilters: SuggestedPinnedFilter[];
   currentSearch: string;
   onApplyFilter: (type: string) => void;
   onApplySearch: (query: string) => Promise<void>;
@@ -77,6 +78,7 @@ export function HomeCommandPalette({
   currentFilter,
   currentTag,
   pinnedFilters,
+  suggestedFilters,
   currentSearch,
   onApplyFilter,
   onApplySearch,
@@ -266,6 +268,20 @@ export function HomeCommandPalette({
       });
     }
 
+    for (const filter of suggestedFilters) {
+      items.push({
+        id: `suggested-${filter.value}`,
+        section: "Suggested topics",
+        label: filter.label,
+        detail: `Saved ${filter.count} times${filter.source === "category" ? " across a category" : ""}`,
+        icon: "pin",
+        run: () => {
+          onOpenChange(false);
+          router.push(`/tag/${encodeURIComponent(filter.value)}`);
+        },
+      });
+    }
+
     if (trimmed) {
       items.unshift({
         id: "search-current-query",
@@ -347,6 +363,7 @@ export function HomeCommandPalette({
     currentFilter,
     currentTag,
     pinnedFilters,
+    suggestedFilters,
     currentSearch,
     onClearSearch,
     onApplyFilter,
