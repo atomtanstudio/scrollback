@@ -21,15 +21,20 @@ jobs:
         run: |
           set -euo pipefail
           install -m 700 -d ~/.ssh
-          printf '%s\n' "${{ secrets.FEEDSILO_DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          printf '%s' "${{ secrets.FEEDSILO_DEPLOY_SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "${{ secrets.FEEDSILO_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keygen -y -f ~/.ssh/id_ed25519 >/dev/null
 
       - name: Deploy to Hetzner
         shell: bash
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/id_ed25519 "${{ secrets.FEEDSILO_USER }}@${{ secrets.FEEDSILO_HOST }}" <<'EOF'
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "${{ secrets.FEEDSILO_USER }}@${{ secrets.FEEDSILO_HOST }}" <<'EOF'
             set -euo pipefail
             cd /srv/feedsilo
             git fetch origin
