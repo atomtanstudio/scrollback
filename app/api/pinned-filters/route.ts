@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/session";
 import { getClient } from "@/lib/db/client";
+import { fetchSuggestedPinnedFilters } from "@/lib/db/queries";
 import {
   addPinnedFilter,
   normalizePinnedFilter,
@@ -19,9 +20,10 @@ export async function GET() {
     select: { pinned_filters: true },
   });
 
-  return NextResponse.json({
-    filters: parsePinnedFilters(user?.pinned_filters),
-  });
+  const filters = parsePinnedFilters(user?.pinned_filters);
+  const suggestions = await fetchSuggestedPinnedFilters(session.user.id);
+
+  return NextResponse.json({ filters, suggestions });
 }
 
 export async function POST(request: NextRequest) {
@@ -46,12 +48,18 @@ export async function POST(request: NextRequest) {
     nextFilter
   );
 
-  await prisma.user.update({
+  const updatedUser = await prisma.user.update({
     where: { id: session.user.id },
     data: { pinned_filters: serializePinnedFilters(updatedFilters) },
+    select: { pinned_filters: true },
   });
 
-  return NextResponse.json({ success: true, filters: updatedFilters });
+  const suggestions = await fetchSuggestedPinnedFilters(session.user.id);
+  return NextResponse.json({
+    success: true,
+    filters: parsePinnedFilters(updatedUser.pinned_filters),
+    suggestions,
+  });
 }
 
 export async function DELETE(request: NextRequest) {
@@ -76,10 +84,16 @@ export async function DELETE(request: NextRequest) {
     targetFilter
   );
 
-  await prisma.user.update({
+  const updatedUser = await prisma.user.update({
     where: { id: session.user.id },
     data: { pinned_filters: serializePinnedFilters(updatedFilters) },
+    select: { pinned_filters: true },
   });
 
-  return NextResponse.json({ success: true, filters: updatedFilters });
+  const suggestions = await fetchSuggestedPinnedFilters(session.user.id);
+  return NextResponse.json({
+    success: true,
+    filters: parsePinnedFilters(updatedUser.pinned_filters),
+    suggestions,
+  });
 }

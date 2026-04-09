@@ -1,6 +1,9 @@
 "use client";
+import { useEffect, useMemo, useState } from "react";
+import { Pin, PinOff } from "lucide-react";
 import { formatFullDate } from "@/lib/format";
 import type { DetailItem } from "@/lib/db/types";
+import type { PinnedFilter } from "@/lib/pinned-filters";
 import { EngagementBento } from "./engagement-bento";
 import { AuthorCard } from "./author-card";
 import { AdminActions } from "@/components/detail/admin-actions";
@@ -96,47 +99,129 @@ function TagsAndCategories({
   tags,
   categories,
   cardType,
+  isAuthed,
 }: {
   tags: DetailItem["tags"];
   categories: DetailItem["categories"];
   cardType: CardType;
+  isAuthed: boolean;
 }) {
   const hasTags = tags && tags.length > 0;
   const hasCategories = categories && categories.length > 0;
-  if (!hasTags && !hasCategories) return null;
   const accent = accentColors[cardType];
+  const [pinnedFilters, setPinnedFilters] = useState<PinnedFilter[]>([]);
+  const [pendingValue, setPendingValue] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isAuthed) return;
+    let cancelled = false;
+    void fetch("/api/pinned-filters")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.filters) {
+          setPinnedFilters(data.filters);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthed]);
+
+  const pinnedValues = useMemo(
+    () => new Set(pinnedFilters.filter((filter) => filter.kind === "tag").map((filter) => filter.value)),
+    [pinnedFilters]
+  );
+
+  const togglePinnedTopic = async (filter: PinnedFilter) => {
+    if (!isAuthed) return;
+    const method = pinnedValues.has(filter.value) ? "DELETE" : "POST";
+    setPendingValue(filter.value);
+    try {
+      const res = await fetch("/api/pinned-filters", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(filter),
+      });
+      if (!res.ok) return;
+      const data = await res.json().catch(() => null);
+      if (data?.filters) {
+        setPinnedFilters(data.filters);
+      }
+    } finally {
+      setPendingValue(null);
+    }
+  };
+
+  const renderTopicChip = (
+    filter: PinnedFilter,
+    href: string,
+    style: { backgroundColor: string; color: string; borderColor: string },
+    key: string
+  ) => {
+    const isPinned = pinnedValues.has(filter.value);
+    const isPending = pendingValue === filter.value;
+
+    return (
+      <div
+        key={key}
+        className="inline-flex items-center gap-1.5 rounded-full border pr-1"
+        style={style}
+      >
+        <a
+          href={href}
+          className="rounded-full px-3 py-1 text-[11px] transition-opacity hover:opacity-80"
+        >
+          {filter.label}
+        </a>
+        {isAuthed && (
+          <button
+            type="button"
+            onClick={() => void togglePinnedTopic(filter)}
+            disabled={isPending}
+            className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#0f141b33] text-current transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label={`${isPinned ? "Unpin" : "Pin"} ${filter.label}`}
+            title={`${isPinned ? "Unpin" : "Pin"} ${filter.label}`}
+          >
+            {isPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  if (!hasTags && !hasCategories) return null;
 
   return (
     <SidebarSection title="Tags">
       <div className="flex flex-wrap gap-2">
-        {hasCategories && categories.map(({ category }) => (
-          <a
-            key={`cat-${category.id}`}
-            href={`/tag/${encodeURIComponent(category.slug)}`}
-            className="rounded-full border px-3 py-1 text-[11px] font-medium transition-opacity hover:opacity-80"
-            style={{
-              backgroundColor: `${accent}18`,
-              color: accent,
-              borderColor: `${accent}28`,
-            }}
-          >
-            {category.name}
-          </a>
-        ))}
-        {hasTags && tags.map(({ tag }) => (
-          <a
-            key={`tag-${tag.id}`}
-            href={`/tag/${encodeURIComponent(tag.slug)}`}
-            className="rounded-full border px-3 py-1 text-[11px] transition-opacity hover:opacity-80"
-            style={{
-              backgroundColor: `${accent}0a`,
-              color: accent,
-              borderColor: `${accent}18`,
-            }}
-          >
-            {tag.name}
-          </a>
-        ))}
+        {hasCategories &&
+          categories.map(({ category }) =>
+            renderTopicChip(
+              { kind: "tag", value: category.slug, label: category.name },
+              `/tag/${encodeURIComponent(category.slug)}`,
+              {
+                backgroundColor: `${accent}18`,
+                color: accent,
+                borderColor: `${accent}28`,
+              },
+              `cat-${category.id}`
+            )
+          )}
+        {hasTags &&
+          tags.map(({ tag }) =>
+            renderTopicChip(
+              { kind: "tag", value: tag.slug, label: tag.name },
+              `/tag/${encodeURIComponent(tag.slug)}`,
+              {
+                backgroundColor: `${accent}0a`,
+                color: accent,
+                borderColor: `${accent}18`,
+              },
+              `tag-${tag.id}`
+            )
+          )}
       </div>
     </SidebarSection>
   );
@@ -171,7 +256,7 @@ export function DetailSidebar({ item, cardType, isAuthed = false }: DetailSideba
 
       {isAuthed && <AdminActions item={item} />}
 
-      <TagsAndCategories tags={item.tags} categories={item.categories} cardType={cardType} />
+      <TagsAndCategories tags={item.tags} categories={item.categories} cardType={cardType} isAuthed={isAuthed} />
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 text-[11px] text-[#7d7569]">
         {item.source_platform === "rss" && item.source_label && (

@@ -7,6 +7,7 @@ import { ExtensionSection } from "./sections/extension-section";
 import { SearchSection } from "./sections/search-section";
 import { EmbeddingsSection } from "./sections/embeddings-section";
 import { DataSection } from "./sections/data-section";
+import { PinnedTopicsSection } from "./sections/pinned-topics-section";
 import { XApiSection } from "./sections/xapi-section";
 import { RssSection } from "./sections/rss-section";
 import { AccountSection } from "./sections/account-section";
@@ -110,6 +111,8 @@ export function SettingsPage({ stats, isAuthed, isAdmin = true, isReadOnly = fal
                 )}
 
                 <AccountSection />
+
+                <PinnedTopicsSection />
 
                 <DataSection stats={stats} settings={settings} isAdmin={isAdmin} />
               </div>

@@ -301,6 +301,9 @@ export function HomePage({
     const data = await res.json().catch(() => null);
     if (data?.filters) {
       setPinnedFilters(data.filters);
+      if (data?.suggestions) {
+        setSuggestedFilters(data.suggestions);
+      }
     }
   }, [currentPinActive, currentPinCandidate]);
 
@@ -315,9 +318,13 @@ export function HomePage({
     const data = await res.json().catch(() => null);
     if (data?.filters) {
       setPinnedFilters(data.filters);
-      setSuggestedFilters((current) =>
-        current.filter((candidate) => candidate.value !== filter.value)
-      );
+      if (data?.suggestions) {
+        setSuggestedFilters(data.suggestions);
+      } else {
+        setSuggestedFilters((current) =>
+          current.filter((candidate) => candidate.value !== filter.value)
+        );
+      }
     }
   }, []);
 
