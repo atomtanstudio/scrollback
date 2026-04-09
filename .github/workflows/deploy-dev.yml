@@ -1,0 +1,43 @@
+name: Deploy Dev
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+concurrency:
+  group: feedsilo-dev-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Configure SSH key
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.FEEDSILO_DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.FEEDSILO_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy to Hetzner
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/id_ed25519 "${{ secrets.FEEDSILO_USER }}@${{ secrets.FEEDSILO_HOST }}" <<'EOF'
+            set -euo pipefail
+            cd /srv/feedsilo
+            git fetch origin
+            git checkout dev
+            git pull --ff-only origin dev
+            npm ci
+            npm run build
+            sudo systemctl restart feedsilo
+            sleep 5
+            curl -I --fail http://127.0.0.1:3000
+          EOF
