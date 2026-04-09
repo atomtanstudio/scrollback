@@ -20,6 +20,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          umask 077
           install -m 700 -d ~/.ssh
           FEEDSILO_HOST_CLEAN="$(printf '%s' "${{ secrets.FEEDSILO_HOST }}" | tr -d '\r' | xargs)"
           KEY_CONTENT="${{ secrets.FEEDSILO_DEPLOY_SSH_KEY }}"
@@ -28,11 +29,15 @@ jobs:
 
           # Try the secret as a raw private key first.
           printf '%s\n' "$CLEAN_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
           if ssh-keygen -y -f ~/.ssh/id_ed25519 >/dev/null 2>&1; then
             KEY_OK=1
           else
             # Fall back to base64-decoding the secret.
             printf '%s' "$CLEAN_KEY" | tr -d '\n ' | base64 -d > ~/.ssh/id_ed25519.decoded 2>/dev/null || true
+            if [ -f ~/.ssh/id_ed25519.decoded ]; then
+              chmod 600 ~/.ssh/id_ed25519.decoded
+            fi
             if [ -f ~/.ssh/id_ed25519.decoded ] && ssh-keygen -y -f ~/.ssh/id_ed25519.decoded >/dev/null 2>&1; then
               mv ~/.ssh/id_ed25519.decoded ~/.ssh/id_ed25519
               KEY_OK=1
