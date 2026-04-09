@@ -42,15 +42,19 @@ jobs:
             -i ~/.ssh/id_ed25519 \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
-            "$FEEDSILO_USER_CLEAN@$FEEDSILO_HOST_CLEAN" <<'EOF'
-            set -euo pipefail
-            cd /srv/feedsilo
-            git fetch origin
-            git checkout dev
-            git pull --ff-only origin dev
-            npm ci
-            npm run build
-            sudo systemctl restart feedsilo
-            sleep 5
-            curl -I --fail http://127.0.0.1:3000
-          EOF
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
+            -o TCPKeepAlive=yes \
+            "$FEEDSILO_USER_CLEAN@$FEEDSILO_HOST_CLEAN" \
+            "bash -lc '
+              set -euo pipefail
+              cd /srv/feedsilo
+              git fetch origin
+              git checkout dev
+              git pull --ff-only origin dev
+              npm ci --no-audit --no-fund
+              npm run build
+              sudo systemctl restart feedsilo
+              sleep 5
+              curl -I --fail http://127.0.0.1:3000
+            '"
