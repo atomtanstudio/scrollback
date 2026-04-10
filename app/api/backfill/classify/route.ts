@@ -7,6 +7,7 @@ import { isR2Configured } from "@/lib/storage/r2";
 import { downloadAndStoreMedia } from "@/lib/storage/download";
 import { qualifiesAsArtCapture } from "@/lib/art-detection";
 import { needsRetranslation, originalLooksLikeForeignText } from "@/lib/translation-backfill";
+import { getCategoryOptions } from "@/lib/default-categories";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 min max for serverless
@@ -84,8 +85,7 @@ export async function GET(request: Request) {
           const total = items.length;
           send({ phase: "classify", total, status: `Processing ${total} items...` });
 
-          const allCategories = await prisma.category.findMany({ select: { slug: true } });
-          const categorySlugs = allCategories.map((c: { slug: string }) => c.slug);
+          const categoryOptions = await getCategoryOptions(prisma);
 
           for (let i = 0; i < items.length; i++) {
             if (cancelled) break;
@@ -95,7 +95,7 @@ export async function GET(request: Request) {
                 item.title || "",
                 item.body_text || "",
                 item.source_type,
-                categorySlugs,
+                categoryOptions,
                 item.author_handle
               );
 
@@ -213,8 +213,7 @@ export async function GET(request: Request) {
           const total = items.length;
           send({ phase: "reclassify", total, status: `Reclassifying ${total} items...` });
 
-          const allCategories = await prisma.category.findMany({ select: { slug: true } });
-          const categorySlugs = allCategories.map((c: { slug: string }) => c.slug);
+          const categoryOptions = await getCategoryOptions(prisma);
 
           for (let i = 0; i < items.length; i++) {
             if (cancelled) break;
@@ -228,7 +227,7 @@ export async function GET(request: Request) {
                 item.title || "",
                 item.body_text || "",
                 item.source_type,
-                categorySlugs,
+                categoryOptions,
                 item.author_handle
               );
 

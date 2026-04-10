@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/auth";
 import { getClient } from "@/lib/db/client";
 import { classifyContent } from "@/lib/embeddings/gemini";
 import { qualifiesAsArtCapture } from "@/lib/art-detection";
+import { getCategoryOptions } from "@/lib/default-categories";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -69,8 +70,7 @@ export async function GET(request: Request) {
         const total = items.length;
         send({ status: `Re-evaluating ${total} art items${dryRun ? " (DRY RUN)" : ""}...`, total });
 
-        const allCategories = await prisma.category.findMany({ select: { slug: true } });
-        const categorySlugs = allCategories.map((c: { slug: string }) => c.slug);
+        const categoryOptions = await getCategoryOptions(prisma);
 
         let downgraded = 0;
         let kept = 0;
@@ -85,7 +85,7 @@ export async function GET(request: Request) {
               item.title || "",
               item.body_text || "",
               item.source_type,
-              categorySlugs,
+              categoryOptions,
               item.author_handle
             );
 

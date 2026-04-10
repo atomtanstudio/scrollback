@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/session";
 import { getClient } from "@/lib/db/client";
+import { getCategoryOptions } from "@/lib/default-categories";
 
 export async function POST(
   request: NextRequest,
@@ -77,8 +78,7 @@ export async function POST(
       }
 
       const text = `${englishTitle} ${englishBody}`.trim();
-      const allCategories = await db.category.findMany({ select: { slug: true } });
-      const categorySlugs = allCategories.map((c: { slug: string }) => c.slug);
+      const categoryOptions = await getCategoryOptions(db);
 
       // 1. Re-classify via Gemini (summary, tags, categories)
       const { classifyContent } = await import("@/lib/embeddings/gemini");
@@ -86,7 +86,7 @@ export async function POST(
         englishTitle,
         englishBody,
         resolvedSourceType,
-        categorySlugs,
+        categoryOptions,
         item.author_handle
       );
       if (result) {

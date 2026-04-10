@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { createHash } from "crypto";
 import { getClient } from "@/lib/db/client";
+import { getCategoryOptions } from "@/lib/default-categories";
 import { getSearchProvider } from "@/lib/db/search-provider";
 import { generateEmbedding, classifyContent, describeImage, translateToEnglish } from "@/lib/embeddings/gemini";
 import { getMediaDisplayUrl } from "@/lib/media-url";
@@ -301,11 +302,14 @@ async function indexAndClassifyInBackground(
 
       // Unified Gemini classification: summary + tags + categories + prompt detection
       try {
-        const allCategories = await prisma.category.findMany({ select: { slug: true } });
-        const categorySlugs = allCategories.map((c: { slug: string }) => c.slug);
+        const categoryOptions = await getCategoryOptions(prisma);
 
         const classification = await classifyContent(
-          englishTitle, englishBody, sourceType, categorySlugs, authorHandle
+          englishTitle,
+          englishBody,
+          sourceType,
+          categoryOptions,
+          authorHandle
         );
 
         // Update content item with AI results

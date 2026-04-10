@@ -12,6 +12,7 @@ Built with Next.js 14, Prisma, and PostgreSQL (pgvector).
 - **Detail Pages** — Newspaper-style content view with engagement stats, thread chains, and related items
 - **Multi-Database** — PostgreSQL, Supabase, or SQLite
 - **Embeddings** — Google Gemini for vector embeddings (optional)
+- **Auto-Seeded Categories** — Built-in categories are created automatically for classification and filtering
 - **Media Storage** — Cloudflare R2 for persistent media storage (optional)
 - **Export** — JSON (NDJSON) and CSV export
 
@@ -85,6 +86,7 @@ npm run db:push && npm run start
 ```
 
 This applies the schema and launches the app. With env vars set, onboarding is skipped.
+Default categories are also seeded automatically so AI classification has a stable category catalog on first boot.
 
 ### 4. Create admin account
 

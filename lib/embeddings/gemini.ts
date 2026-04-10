@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import type { CategoryOption } from "@/lib/default-categories";
 
 const EMBEDDING_MODEL = "gemini-embedding-001";
 const CLASSIFY_MODEL = "gemini-3.1-flash-lite-preview";
@@ -231,12 +232,18 @@ export async function classifyContent(
   title: string,
   bodyText: string,
   sourceType: string,
-  categorySlugs: string[],
+  categoryOptions: CategoryOption[],
   authorHandle?: string | null
 ): Promise<ClassificationResult> {
   const genai = getClient();
   const truncatedBody = bodyText.slice(0, 2000);
-  const categoriesText = categorySlugs.join(", ");
+  const categorySlugs = categoryOptions.map((category) => category.slug);
+  const categoriesText = categoryOptions
+    .map((category) => {
+      const details = [category.name, category.description].filter(Boolean).join(" — ");
+      return details ? `- ${category.slug}: ${details}` : `- ${category.slug}`;
+    })
+    .join("\n");
 
   const prompt = `Analyze this Twitter/X content and classify it.
 
@@ -245,7 +252,7 @@ Author: ${authorHandle || "unknown"}
 Title: ${title}
 Body: ${truncatedBody}
 
-Available categories (assign 1-3 from this list ONLY):
+Available categories (assign 1-3 category slugs from this list ONLY):
 ${categoriesText}
 
 Instructions:
