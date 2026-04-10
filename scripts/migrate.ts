@@ -104,6 +104,14 @@ async function main() {
     await client.query(`CREATE INDEX IF NOT EXISTS ix_content_items_posted_at ON content_items(posted_at)`);
     await client.query(`CREATE INDEX IF NOT EXISTS ix_content_items_created_at ON content_items(created_at)`);
     console.log("[migrate] Performance indexes done.");
+
+    // The embedding column uses pgvector. A plain btree index on vector values is invalid
+    // for realistic row sizes and causes every embedding write to fail with
+    // "index row size exceeds btree maximum". Semantic search still works without
+    // this index at our current scale, so proactively remove the broken index.
+    console.log("[migrate] Dropping invalid vector btree index if present...");
+    await client.query(`DROP INDEX IF EXISTS idx_content_items_embedding`);
+    console.log("[migrate] Vector index cleanup done.");
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
     console.error("[migrate] Migration failed:", error);

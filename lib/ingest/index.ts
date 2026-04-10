@@ -282,12 +282,22 @@ async function indexAndClassifyInBackground(
     });
 
     if (process.env.GEMINI_API_KEY) {
+      let embeddingError: string | null = null;
+
       // Generate embedding
-      const embeddingText = [englishTitle, englishBody, authorHandle, authorDisplayName]
-        .filter(Boolean)
-        .join(" ");
-      const embedding = await generateEmbedding(embeddingText);
-      await provider.writeEmbedding(itemId, embedding);
+      try {
+        const embeddingText = [englishTitle, englishBody, authorHandle, authorDisplayName]
+          .filter(Boolean)
+          .join(" ");
+        const embedding = await generateEmbedding(embeddingText);
+        await provider.writeEmbedding(itemId, embedding);
+      } catch (embeddingWriteError) {
+        embeddingError =
+          embeddingWriteError instanceof Error
+            ? embeddingWriteError.message
+            : "Unknown embedding error";
+        console.warn(`Embedding write failed for ${itemId}:`, embeddingWriteError);
+      }
 
       // Unified Gemini classification: summary + tags + categories + prompt detection
       try {
@@ -303,6 +313,7 @@ async function indexAndClassifyInBackground(
         const updateData: Record<string, any> = {
           ai_summary: classification.ai_summary || null,
           processing_status: "indexed",
+          processing_error: embeddingError,
           language,
           translated_title: translatedTitle,
           translated_body_text: translatedBodyText,
@@ -357,6 +368,7 @@ async function indexAndClassifyInBackground(
           where: { id: itemId },
           data: {
             processing_status: "indexed",
+            processing_error: embeddingError,
             language,
             translated_title: translatedTitle,
             translated_body_text: translatedBodyText,

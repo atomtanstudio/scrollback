@@ -111,7 +111,6 @@ model ContentItem {
   @@index([processing_status], map: "ix_content_items_processing_status")
   @@index([posted_at], map: "ix_content_items_posted_at")
   @@index([created_at], map: "ix_content_items_created_at")
-  @@index([embedding], map: "idx_content_items_embedding")
   @@index([search_vector], map: "idx_content_items_search_vector", type: Gin)
   @@map("content_items")
 }
