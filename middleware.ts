@@ -11,6 +11,7 @@ const ADMIN_ONLY_PAGES = ["/admin"];
 const EXTENSION_API_PATHS = [
   "/api/extension/",
   "/api/ingest",
+  "/api/remote/",
 ];
 
 // API routes that are always public (any method)
