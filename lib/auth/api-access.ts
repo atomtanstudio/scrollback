@@ -7,14 +7,14 @@ export type ApiAccess =
   | { ok: false; response: NextResponse };
 
 export async function requireApiAccess(request: NextRequest): Promise<ApiAccess> {
-  const session = await auth();
-  if (session?.user?.id) {
-    return { ok: true, userId: session.user.id, authMethod: "session" };
-  }
-
   const tokenAuth = await validateCaptureSecret(request);
   if (tokenAuth.valid && tokenAuth.userId) {
     return { ok: true, userId: tokenAuth.userId, authMethod: "token" };
+  }
+
+  const session = await auth();
+  if (session?.user?.id) {
+    return { ok: true, userId: session.user.id, authMethod: "session" };
   }
 
   return {
@@ -25,4 +25,3 @@ export async function requireApiAccess(request: NextRequest): Promise<ApiAccess>
     ),
   };
 }
-
