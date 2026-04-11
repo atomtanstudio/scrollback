@@ -108,6 +108,44 @@ After the app starts, open `/login`. If no admin exists, you'll see a "Create ad
 | `npm run test` | Run tests |
 | `npm run lint` | Run ESLint |
 
+## Remote Query API
+
+FeedSilo includes a read-only remote query endpoint for pulling content into tools like Obsidian or OpenClaw without exposing raw PostgreSQL.
+
+### Auth
+
+Use your per-user capture token as a Bearer token:
+
+```bash
+curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
+  "https://your-feedsilo-domain/api/remote/items?per_page=100"
+```
+
+You can reveal or regenerate the token from FeedSilo settings.
+
+### Supported query params
+
+- `id` — fetch a single item by ID
+- `q` — text filter across title/body/translation/summary
+- `type` — `tweet`, `thread`, `article`, `rss`, or `art`
+- `tag` — tag or category slug
+- `author` — matches `author_handle` or `author_display_name`
+- `has_prompt` — `true` / `false`
+- `since` — ISO date/time lower bound on `created_at`
+- `until` — ISO date/time upper bound on `created_at`
+- `page` — page number (default `1`)
+- `per_page` — page size (default `100`, max `1000`)
+- `format=ndjson` — stream newline-delimited JSON instead of a JSON envelope
+
+### Example
+
+```bash
+curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
+  "https://your-feedsilo-domain/api/remote/items?type=art&tag=midjourney&since=2026-01-01T00:00:00Z&per_page=50"
+```
+
+Each item includes summary, tags, categories, prompt fields, and media URLs suitable for downstream ingestion.
+
 ## Tech Stack
 
 - **Framework** — Next.js 14 (App Router)
