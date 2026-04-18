@@ -55,3 +55,4 @@ feedsilo.config.json
 *.db-journal
 *.db-wal
 .gstack/
+.superpowers/
