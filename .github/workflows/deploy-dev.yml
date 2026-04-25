@@ -68,37 +68,37 @@ jobs:
             -o ServerAliveCountMax=10 \
             -o TCPKeepAlive=yes \
             "$FEEDSILO_USER_CLEAN@$FEEDSILO_HOST_CLEAN" \
-            "bash -lc '
+            "GITHUB_SHA_VALUE='${{ github.sha }}' bash -s" <<'REMOTE_SCRIPT'
               set -euo pipefail
               APP_DIR=/srv/feedsilo
               RELEASES_DIR=/srv/feedsilo-releases
-              RELEASE_DIR=\"$RELEASES_DIR/${{ github.sha }}\"
+              RELEASE_DIR="$RELEASES_DIR/$GITHUB_SHA_VALUE"
 
-              mkdir -p \"$RELEASES_DIR\"
-              cd \"$APP_DIR\"
+              mkdir -p "$RELEASES_DIR"
+              cd "$APP_DIR"
               git fetch origin
               git checkout dev
               git pull --ff-only origin dev
               command -v rsync >/dev/null
 
-              git worktree remove --force \"$RELEASE_DIR\" >/dev/null 2>&1 || true
-              rm -rf \"$RELEASE_DIR\"
-              git worktree add --force --detach \"$RELEASE_DIR\" origin/dev
+              git worktree remove --force "$RELEASE_DIR" >/dev/null 2>&1 || true
+              rm -rf "$RELEASE_DIR"
+              git worktree add --force --detach "$RELEASE_DIR" "$GITHUB_SHA_VALUE"
 
               cleanup() {
-                git -C \"$APP_DIR\" worktree remove --force \"$RELEASE_DIR\" >/dev/null 2>&1 || rm -rf \"$RELEASE_DIR\"
+                git -C "$APP_DIR" worktree remove --force "$RELEASE_DIR" >/dev/null 2>&1 || rm -rf "$RELEASE_DIR"
               }
               trap cleanup EXIT
 
-              if [ -f \"$APP_DIR/.env.local\" ]; then
-                cp -p \"$APP_DIR/.env.local\" \"$RELEASE_DIR/.env.local\"
+              if [ -f "$APP_DIR/.env.local" ]; then
+                cp -p "$APP_DIR/.env.local" "$RELEASE_DIR/.env.local"
               fi
 
-              if [ -f \"$APP_DIR/feedsilo.config.json\" ]; then
-                cp -p \"$APP_DIR/feedsilo.config.json\" \"$RELEASE_DIR/feedsilo.config.json\"
+              if [ -f "$APP_DIR/feedsilo.config.json" ]; then
+                cp -p "$APP_DIR/feedsilo.config.json" "$RELEASE_DIR/feedsilo.config.json"
               fi
 
-              cd \"$RELEASE_DIR\"
+              cd "$RELEASE_DIR"
               npm ci --no-audit --no-fund
               npm run build
 
@@ -106,7 +106,7 @@ jobs:
               rsync -a --delete \
                 --exclude .git \
                 --exclude .env.local \
-                \"$RELEASE_DIR/\" \"$APP_DIR/\"
+                "$RELEASE_DIR/" "$APP_DIR/"
               sudo systemctl start feedsilo
 
               for _ in 1 2 3 4 5 6; do
@@ -116,7 +116,7 @@ jobs:
                 sleep 2
               done
 
-              echo \"FeedSilo failed health check after deploy\"
+              echo "FeedSilo failed health check after deploy"
               sudo systemctl status feedsilo --no-pager || true
               exit 1
-            '"
+          REMOTE_SCRIPT
