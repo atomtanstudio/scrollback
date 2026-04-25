@@ -74,7 +74,8 @@ jobs:
               RELEASES_DIR=/srv/feedsilo-releases
               RELEASE_DIR="$RELEASES_DIR/$GITHUB_SHA_VALUE"
 
-              mkdir -p "$RELEASES_DIR"
+              sudo mkdir -p "$RELEASES_DIR"
+              sudo chown "$(id -un):$(id -gn)" "$RELEASES_DIR"
               cd "$APP_DIR"
               git fetch origin
               git checkout dev
