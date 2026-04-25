@@ -35,6 +35,29 @@ const feedXml = `<?xml version="1.0" encoding="UTF-8" ?>
   </channel>
 </rss>`;
 
+function buildFeedXml(itemCount: number): string {
+  const items = Array.from({ length: itemCount }, (_, index) => {
+    const n = index + 1;
+    return `<item>
+      <title>RSS Item ${n}</title>
+      <link>https://example.com/post-${n}</link>
+      <guid>post-${n}</guid>
+      <pubDate>Sat, 25 Apr 2026 10:${String(index).padStart(2, "0")}:00 GMT</pubDate>
+      <description>${"A useful feed body. ".repeat(12)}</description>
+    </item>`;
+  }).join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+  <channel>
+    <title>Example Feed</title>
+    <link>https://example.com</link>
+    <description>Feed for testing</description>
+    ${items}
+  </channel>
+</rss>`;
+}
+
 function hasHeader(headers: HeadersInit | undefined, name: string): boolean {
   if (!headers) return false;
   if (headers instanceof Headers) return headers.has(name);
@@ -147,5 +170,52 @@ describe("syncRssFeed", () => {
         }),
       })
     );
+  });
+
+  it("treats a zero-item feed with an old sync timestamp as an initial import", async () => {
+    mockFindUnique.mockResolvedValue({
+      id: "feed-1",
+      feed_url: "https://example.com/feed.xml",
+      site_url: "https://example.com",
+      title: "Example Feed",
+      description: "Feed for testing",
+      language: null,
+      user_id: "user-1",
+      etag: '"already-seen-at-add-time"',
+      last_modified: "Sat, 25 Apr 2026 09:00:00 GMT",
+      last_synced_at: new Date("2026-04-25T10:56:00Z"),
+      _count: { items: 0 },
+    });
+    mockUpdate.mockResolvedValue({});
+    mockIngestItem.mockResolvedValue({ success: true, already_exists: false, item_id: "item-1" });
+    vi.stubGlobal("setTimeout", ((callback: () => void) => {
+      callback();
+      return 0;
+    }) as typeof setTimeout);
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string | URL | Request) => {
+        const href = typeof url === "string" ? url : url instanceof URL ? url.href : url.url;
+        if (href === "https://example.com/feed.xml") {
+          return new Response(buildFeedXml(25), {
+            status: 200,
+            headers: { "content-type": "application/rss+xml" },
+          });
+        }
+
+        return new Response("<html><body><article><p>Full article body.</p></article></body></html>", {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        });
+      })
+    );
+
+    const { syncRssFeed } = await import("@/lib/rss/service");
+
+    const result = await syncRssFeed("feed-1");
+
+    expect(result).toMatchObject({ synced: 24, skipped: 0, errors: 0, notModified: false });
+    expect(mockIngestItem).toHaveBeenCalledTimes(24);
   });
 });

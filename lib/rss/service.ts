@@ -436,7 +436,8 @@ export async function syncRssFeed(feedId: string) {
   }
 
   const entries = parsed.items || [];
-  const entriesToProcess = !feed.last_synced_at ? entries.slice(0, INITIAL_SYNC_ITEM_LIMIT) : entries;
+  const isInitialImport = feed._count.items === 0;
+  const entriesToProcess = isInitialImport ? entries.slice(0, INITIAL_SYNC_ITEM_LIMIT) : entries;
   let synced = 0;
   let skipped = 0;
   let errors = 0;
