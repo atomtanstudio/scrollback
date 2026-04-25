@@ -83,7 +83,8 @@ Run it yourself, own your archive, and help shape what comes next.
 
 ## Remotion Notes
 
-- Use the existing `demo-video` Remotion project as the likely implementation base.
+- Build the promo intro as a fresh Remotion project/composition rather than reusing the existing `demo-video` files.
+- Keep the existing `demo-video` folder untouched except as optional reference for available product screenshots or prior timing ideas.
 - Favor real FeedSilo UI screenshots or recordings over fake UI.
 - Keep motion calm: slow pans, small zooms, soft transitions, and concise type overlays.
 - Avoid promising automated discovery as a current feature. Refer to it only as direction if it appears at all.
