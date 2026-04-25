@@ -71,11 +71,10 @@ jobs:
             "GITHUB_SHA_VALUE='${{ github.sha }}' bash -s" <<'REMOTE_SCRIPT'
               set -euo pipefail
               APP_DIR=/srv/feedsilo
-              RELEASES_DIR=/srv/feedsilo-releases
+              RELEASES_DIR="/tmp/feedsilo-releases-$(id -un)"
               RELEASE_DIR="$RELEASES_DIR/$GITHUB_SHA_VALUE"
 
-              sudo mkdir -p "$RELEASES_DIR"
-              sudo chown "$(id -un):$(id -gn)" "$RELEASES_DIR"
+              mkdir -p "$RELEASES_DIR"
               cd "$APP_DIR"
               git fetch origin
               git checkout dev
@@ -103,12 +102,63 @@ jobs:
               npm ci --no-audit --no-fund
               npm run build
 
-              sudo systemctl stop feedsilo
               rsync -a --delete \
                 --exclude .git \
                 --exclude .env.local \
                 "$RELEASE_DIR/" "$APP_DIR/"
-              sudo systemctl start feedsilo
+
+              restart_feedsilo() {
+                cd "$APP_DIR"
+
+                if command -v pm2 >/dev/null 2>&1 && pm2 describe feedsilo >/dev/null 2>&1; then
+                  pm2 restart feedsilo
+                  return 0
+                fi
+
+                if systemctl --user status feedsilo >/dev/null 2>&1; then
+                  systemctl --user restart feedsilo
+                  return 0
+                fi
+
+                if sudo -n true >/dev/null 2>&1; then
+                  sudo systemctl restart feedsilo
+                  return 0
+                fi
+
+                local listen_pid=""
+                if command -v lsof >/dev/null 2>&1; then
+                  listen_pid="$(lsof -nP -tiTCP:3000 -sTCP:LISTEN -a -u "$(id -un)" | head -n 1 || true)"
+                fi
+
+                if [ -z "$listen_pid" ] && command -v fuser >/dev/null 2>&1; then
+                  for candidate_pid in $(fuser 3000/tcp 2>/dev/null || true); do
+                    if [ "$(ps -o user= -p "$candidate_pid" | xargs || true)" = "$(id -un)" ]; then
+                      listen_pid="$candidate_pid"
+                      break
+                    fi
+                  done
+                fi
+
+                if [ -n "$listen_pid" ]; then
+                  kill "$listen_pid"
+                  for _ in 1 2 3 4 5; do
+                    if ! kill -0 "$listen_pid" >/dev/null 2>&1; then
+                      break
+                    fi
+                    sleep 1
+                  done
+                fi
+
+                if curl --silent --show-error --fail http://127.0.0.1:3000/login >/dev/null 2>&1; then
+                  echo "Port 3000 is still served by a process this deploy user cannot restart"
+                  return 1
+                fi
+
+                nohup npm run start >> "$APP_DIR/.feedsilo.log" 2>&1 &
+                echo "$!" > "$APP_DIR/.feedsilo.pid"
+              }
+
+              restart_feedsilo
 
               for _ in 1 2 3 4 5 6; do
                 if curl --silent --show-error --fail http://127.0.0.1:3000/login >/dev/null; then
@@ -118,6 +168,8 @@ jobs:
               done
 
               echo "FeedSilo failed health check after deploy"
-              sudo systemctl status feedsilo --no-pager || true
+              systemctl --user status feedsilo --no-pager || true
+              sudo -n systemctl status feedsilo --no-pager || true
+              tail -n 80 "$APP_DIR/.feedsilo.log" || true
               exit 1
           REMOTE_SCRIPT
