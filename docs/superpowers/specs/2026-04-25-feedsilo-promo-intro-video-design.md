@@ -8,13 +8,13 @@ Create a 30-60 second Remotion intro video script for FeedSilo. The video should
 
 ## Audience
 
-The primary audience is creators, researchers, AI builders, founders, and other power users who save high-signal material from feeds and want to find it again later. The secondary audience is developers and self-hosters who care about open source, data ownership, and extensibility.
+The primary audience is creators, researchers, AI builders, founders, and other power users who save useful material from feeds and want to find it again later. The secondary audience is developers and self-hosters who care about open source, data ownership, and extensibility.
 
 ## Positioning
 
-FeedSilo is an open-source, self-hosted signal archive for the internet worth keeping.
+FeedSilo is an open-source, self-hosted archive for the parts of the internet worth keeping.
 
-The emotional hook is that feeds can contain excellent information, but they are also noisy, negative, and designed to keep people scrolling. FeedSilo pulls useful material out of that environment and stores it in a private, searchable library.
+The emotional hook is that feeds can contain excellent information, but they are also noisy, negative, and designed to keep people scrolling. FeedSilo pulls the good stuff out of that environment and stores it in a private, searchable library.
 
 ## Tone
 
@@ -33,9 +33,9 @@ Target 45-55 seconds. This is long enough to include the origin story and the pr
 
 I built FeedSilo because I was tired of losing the good parts of the internet inside noisy feeds.
 
-Twitter especially has an incredible signal-to-noise problem: great ideas, useful threads, research, prompts, and articles, all mixed in with arguments, negativity, and the pressure to keep scrolling.
+Twitter especially can be exhausting: great ideas, useful threads, research, prompts, and articles, all mixed in with arguments, negativity, and the pressure to keep scrolling.
 
-FeedSilo is my way of separating the signal from the scroll.
+FeedSilo is my way of saving the useful parts before they disappear back into the scroll.
 
 It lets you capture posts, threads, articles, RSS items, prompts, and media into a private library you control.
 
@@ -49,25 +49,25 @@ Run it yourself, own your archive, and help shape where it goes next.
 
 I built FeedSilo because I was tired of losing useful ideas inside noisy feeds.
 
-It is an open-source, self-hosted signal archive for the internet you actually want to keep.
+It is an open-source, self-hosted archive for the internet you actually want to keep.
 
 Capture posts, threads, articles, RSS items, prompts, and media into one private library.
 
 Then search by keyword or meaning, filter by topic, and find the context again when you need it.
 
-FeedSilo helps you keep the signal without living inside the scroll.
+FeedSilo helps you save the good stuff without living inside the scroll.
 
 Run it yourself, own your archive, and help shape what comes next.
 
 ## Visual Structure
 
 1. 0-7 seconds: Problem and origin
-   - Show a quick, abstract noise-to-signal opening or a subdued feed/search visual.
-   - On-screen text: "Keep the signal."
+   - Show a quick, abstract chaotic-feed-to-calm-library opening or a subdued feed/search visual.
+   - On-screen text: "Save the good stuff."
 
 2. 7-15 seconds: Product reveal
    - Show the FeedSilo home/dashboard with saved items.
-   - On-screen text: "A self-hosted signal archive."
+   - On-screen text: "A self-hosted archive for the internet worth keeping."
 
 3. 15-25 seconds: Capture
    - Show browser capture, saved posts, threads, articles, RSS, prompts, and media.
