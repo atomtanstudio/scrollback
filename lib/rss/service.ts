@@ -264,8 +264,6 @@ export async function createRssFeed(feedUrl: string, userId: string) {
       description: parsed.description || null,
       language: parsed.language || null,
       site_url: parsed.link || null,
-      etag: fetched.etag || null,
-      last_modified: fetched.lastModified || null,
       last_error: null,
       active: true,
     },
@@ -276,8 +274,6 @@ export async function createRssFeed(feedUrl: string, userId: string) {
       description: parsed.description || null,
       language: parsed.language || null,
       site_url: parsed.link || null,
-      etag: fetched.etag || null,
-      last_modified: fetched.lastModified || null,
     },
   });
 }
@@ -406,15 +402,19 @@ async function mapFeedItemToPayload(
 
 export async function syncRssFeed(feedId: string) {
   const prisma = await getClient();
-  const feed = await prisma.rssFeed.findUnique({ where: { id: feedId } });
+  const feed = await prisma.rssFeed.findUnique({
+    where: { id: feedId },
+    include: { _count: { select: { items: true } } },
+  });
 
   if (!feed) {
     throw new Error("Feed not found");
   }
 
+  const canUseValidators = Boolean(feed.last_synced_at && feed._count.items > 0);
   const fetched = await fetchParsedFeed(feed.feed_url, {
-    etag: feed.etag,
-    lastModified: feed.last_modified,
+    etag: canUseValidators ? feed.etag : null,
+    lastModified: canUseValidators ? feed.last_modified : null,
   });
 
   if (fetched.status === 304) {
