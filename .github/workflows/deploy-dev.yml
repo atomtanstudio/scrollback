@@ -71,6 +71,8 @@ jobs:
             "RICH_PUBLIC_KEY_B64='$RICH_PUBLIC_KEY_B64' bash -s" <<'REMOTE_AUTH_SCRIPT'
               set -euo pipefail
               RICH_PUBLIC_KEY="$(printf '%s' "$RICH_PUBLIC_KEY_B64" | base64 -d)"
+              echo "remote_user_b64=$(whoami | base64 -w0)"
+              echo "remote_home_b64=$(printf '%s' "$HOME" | base64 -w0)"
               install -m 700 -d ~/.ssh
               touch ~/.ssh/authorized_keys
               chmod 600 ~/.ssh/authorized_keys
