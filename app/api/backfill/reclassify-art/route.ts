@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { getClient } from "@/lib/db/client";
-import { classifyContent } from "@/lib/embeddings/gemini";
+import { classifyContent, isAiConfigured, getAiProviderLabel } from "@/lib/embeddings";
 import { qualifiesAsArtCapture } from "@/lib/art-detection";
 import { getCategoryOptions } from "@/lib/default-categories";
 
@@ -10,7 +10,7 @@ export const maxDuration = 300;
 
 /**
  * Reclassify art items to fix false positives.
- * Re-evaluates all image_prompt/video_prompt items using the improved Gemini prompt.
+ * Re-evaluates all image_prompt/video_prompt items using the configured AI provider.
  * Items that aren't actually art prompts get downgraded back to "tweet".
  *
  * Query params:
@@ -45,8 +45,8 @@ export async function GET(request: Request) {
       };
 
       try {
-        if (!process.env.GEMINI_API_KEY) {
-          send({ error: "GEMINI_API_KEY not configured", done: true });
+        if (!isAiConfigured()) {
+          send({ error: `${getAiProviderLabel()} API key not configured`, done: true });
           controller.close();
           return;
         }

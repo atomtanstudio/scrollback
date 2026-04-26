@@ -14,6 +14,15 @@ describe('configSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('validates an OpenAI embeddings config', () => {
+    const config = {
+      database: { type: 'postgresql', url: 'postgresql://user:pass@localhost:5432/db' },
+      embeddings: { provider: 'openai', apiKey: 'test-key' },
+    };
+    const result = configSchema.safeParse(config);
+    expect(result.success).toBe(true);
+  });
+
   it('validates a minimal sqlite config', () => {
     const config = {
       database: { type: 'sqlite', url: 'file:./feedsilo.db' },
@@ -125,6 +134,23 @@ describe('writeConfig', () => {
     expect(envContent).toContain('DATABASE_TYPE=postgresql');
     expect(envContent).toContain('GEMINI_API_KEY=key123');
     expect(envContent).toContain('CAPTURE_SECRET=token456');
+  });
+
+  it('writes OpenAI keys when OpenAI is selected', () => {
+    const config = {
+      database: { type: 'postgresql' as const, url: 'postgresql://localhost/db' },
+      embeddings: { provider: 'openai' as const, apiKey: 'key123' },
+      extension: {},
+      xapi: {},
+      search: { keywordWeight: 0.4, semanticWeight: 0.6 },
+      localMedia: {},
+    };
+    const envPath = path.join(tmpDir, '.env.local');
+    writeConfig(config, configPath, envPath);
+
+    const envContent = fs.readFileSync(envPath, 'utf-8');
+    expect(envContent).toContain('OPENAI_API_KEY=key123');
+    expect(envContent).not.toContain('GEMINI_API_KEY=key123');
   });
 });
 

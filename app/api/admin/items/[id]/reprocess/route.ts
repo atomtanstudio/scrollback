@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { getClient } from "@/lib/db/client";
 import { getCategoryOptions } from "@/lib/default-categories";
 
@@ -7,7 +7,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await requireAuth();
+  const session = await requireAdmin();
   if (session instanceof NextResponse) return session;
 
   const { id } = await params;
@@ -63,9 +63,12 @@ export async function POST(
       let englishTitle = item.title || "";
       let englishBody = item.body_text || "";
 
-      if (process.env.GEMINI_API_KEY) {
+      const { isAiConfigured } = await import("@/lib/embeddings");
+      const aiConfigured = isAiConfigured();
+
+      if (aiConfigured) {
         try {
-          const { translateToEnglish } = await import("@/lib/embeddings/gemini");
+          const { translateToEnglish } = await import("@/lib/embeddings");
           const translation = await translateToEnglish(item.title || "", item.body_text || "");
           language = translation.language;
           translatedTitle = translation.translated_title;
@@ -80,16 +83,16 @@ export async function POST(
       const text = `${englishTitle} ${englishBody}`.trim();
       const categoryOptions = await getCategoryOptions(db);
 
-      // 1. Re-classify via Gemini (summary, tags, categories)
-      const { classifyContent } = await import("@/lib/embeddings/gemini");
-      const result = await classifyContent(
-        englishTitle,
-        englishBody,
-        resolvedSourceType,
-        categoryOptions,
-        item.author_handle
-      );
-      if (result) {
+      // 1. Re-classify via the configured AI provider (summary, tags, categories)
+      if (aiConfigured) {
+        const { classifyContent } = await import("@/lib/embeddings");
+        const result = await classifyContent(
+          englishTitle,
+          englishBody,
+          resolvedSourceType,
+          categoryOptions,
+          item.author_handle
+        );
         // Clear old tags and categories
         await db.contentTag.deleteMany({ where: { content_item_id: id } });
         await db.contentCategory.deleteMany({ where: { content_item_id: id } });
@@ -158,15 +161,17 @@ export async function POST(
       );
 
       // 3. Regenerate embedding
-      const { generateEmbedding } = await import("@/lib/embeddings/gemini");
-      const embedding = await generateEmbedding(text);
-      if (embedding) {
-        const vectorStr = `[${embedding.join(",")}]`;
-        await db.$queryRawUnsafe(
-          `UPDATE content_items SET embedding = $1::vector WHERE id = $2::uuid`,
-          vectorStr,
-          id
-        );
+      if (aiConfigured) {
+        const { generateEmbedding } = await import("@/lib/embeddings");
+        const embedding = await generateEmbedding(text);
+        if (embedding) {
+          const vectorStr = `[${embedding.join(",")}]`;
+          await db.$queryRawUnsafe(
+            `UPDATE content_items SET embedding = $1::vector WHERE id = $2::uuid`,
+            vectorStr,
+            id
+          );
+        }
       }
 
       console.log(`Reprocessed item ${id}`);

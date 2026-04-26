@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { getClient } from "@/lib/db/client";
 import { getSearchProvider } from "@/lib/db/search-provider";
-import { generateEmbedding, classifyContent, describeImage, translateToEnglish } from "@/lib/embeddings/gemini";
+import { generateEmbedding, classifyContent, describeImage, translateToEnglish, isAiConfigured } from "@/lib/embeddings";
 import { isR2Configured } from "@/lib/storage/r2";
 import { downloadAndStoreMedia } from "@/lib/storage/download";
 import { qualifiesAsArtCapture } from "@/lib/art-detection";
@@ -55,8 +55,8 @@ export async function GET(request: Request) {
       };
 
       try {
-        if (!process.env.GEMINI_API_KEY) {
-          send({ error: "GEMINI_API_KEY not configured", done: true });
+        if (!isAiConfigured()) {
+          send({ error: "AI provider API key not configured", done: true });
           controller.close();
           return;
         }

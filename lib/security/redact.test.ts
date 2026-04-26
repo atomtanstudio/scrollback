@@ -19,9 +19,9 @@ describe("redactSensitiveText", () => {
   it("redacts labelled secrets and env assignments", () => {
     expect(
       redactSensitiveText(
-        "GEMINI_API_KEY=abc token: xyz password=\"hunter2\""
+        "GEMINI_API_KEY=abc OPENAI_API_KEY=sk-test token: xyz password=\"hunter2\""
       )
-    ).toBe("GEMINI_API_KEY=[redacted] token: [redacted] password=\"[redacted]\"");
+    ).toBe("GEMINI_API_KEY=[redacted] OPENAI_API_KEY=[redacted] token: [redacted] password=\"[redacted]\"");
   });
 
   it("leaves non-sensitive text untouched", () => {

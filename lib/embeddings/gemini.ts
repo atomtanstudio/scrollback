@@ -1,17 +1,25 @@
 import { GoogleGenAI } from "@google/genai";
 import type { CategoryOption } from "@/lib/default-categories";
+import { safeFetch } from "@/lib/security/safe-fetch";
+import { getConfig } from "@/lib/config";
 
 const EMBEDDING_MODEL = "gemini-embedding-001";
 const CLASSIFY_MODEL = "gemini-3.1-flash-lite-preview";
 const OUTPUT_DIMENSIONALITY = 768;
 
 let client: GoogleGenAI | null = null;
+let clientApiKey: string | null = null;
 
 function getClient(): GoogleGenAI {
-  if (!client) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
+  const config = getConfig();
+  const apiKey =
+    process.env.GEMINI_API_KEY ||
+    (config?.embeddings?.provider === "gemini" ? config.embeddings.apiKey : undefined);
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
+
+  if (!client || clientApiKey !== apiKey) {
     client = new GoogleGenAI({ apiKey });
+    clientApiKey = apiKey;
   }
   return client;
 }
@@ -446,7 +454,7 @@ export async function describeImage(imageUrl: string): Promise<ImageDescription>
   const genai = getClient();
 
   // Fetch image as base64
-  const response = await fetch(imageUrl);
+  const response = await safeFetch(imageUrl);
   if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
 
   const buffer = await response.arrayBuffer();

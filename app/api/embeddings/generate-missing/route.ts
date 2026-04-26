@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { getClient } from "@/lib/db/client";
 import { getSearchProvider } from "@/lib/db/search-provider";
-import { generateEmbedding } from "@/lib/embeddings/gemini";
+import { generateEmbedding, isAiConfigured, getAiProviderLabel, supportsEmbeddings } from "@/lib/embeddings";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -31,8 +31,13 @@ export async function GET(request: Request) {
       };
 
       try {
-        if (!process.env.GEMINI_API_KEY) {
-          send({ error: "GEMINI_API_KEY not configured", done: true });
+        if (!isAiConfigured()) {
+          send({ error: `${getAiProviderLabel()} API key not configured`, done: true });
+          controller.close();
+          return;
+        }
+        if (!supportsEmbeddings()) {
+          send({ error: `${getAiProviderLabel()} does not support embeddings`, done: true });
           controller.close();
           return;
         }

@@ -3,10 +3,14 @@ import { getConfig, writeConfig, readConfig, invalidateConfigCache } from "@/lib
 import { getClient, disconnectClient } from "@/lib/db/client";
 import { invalidateSearchProvider } from "@/lib/db/search-provider";
 import { isR2Configured } from "@/lib/storage/r2";
-import { isLocalStorageConfigured, getLocalMediaDir } from "@/lib/storage/local";
+import {
+  getConfiguredLocalMediaPath,
+  isLocalStorageConfigured,
+} from "@/lib/storage/local-config";
 import type { FeedsiloConfig } from "@/lib/config";
 import { sanitizeErrorMessage } from "@/lib/security/redact";
-import { auth } from "@/lib/auth/auth";
+import { requireAuth } from "@/lib/auth/session";
+import { requireSetupUnlocked } from "@/lib/setup/guard";
 
 const NO_STORE_HEADERS = {
   "Cache-Control": "no-store, max-age=0",
@@ -26,8 +30,10 @@ function maskUrl(url: string): string {
 }
 
 export async function GET() {
-  const session = await auth();
-  const role = session?.user?.role ?? "admin";
+  const session = await requireAuth();
+  if (session instanceof NextResponse) return session;
+
+  const role = session.user.role ?? "admin";
   const isAdmin = role === "admin";
 
   const config = getConfig();
@@ -68,6 +74,10 @@ export async function GET() {
     } catch {}
   }
 
+  const embeddingsProvider = config.embeddings?.provider || "gemini";
+  const hasAiKey =
+    embeddingsProvider === "openai-codex" ? true : !!config.embeddings?.apiKey;
+
   return NextResponse.json({
     configured: true,
     database: {
@@ -75,9 +85,9 @@ export async function GET() {
       url: isAdmin ? maskUrl(config.database.url) : "Hidden in demo mode",
     },
     embeddings: {
-      provider: config.embeddings?.provider || "gemini",
+      provider: embeddingsProvider,
       apiKey: config.embeddings?.apiKey ? "••••••••" : null,
-      hasKey: !!config.embeddings?.apiKey,
+      hasKey: hasAiKey,
     },
     extension: {
       hasPairingToken,
@@ -94,12 +104,24 @@ export async function GET() {
     r2,
     localMedia: {
       configured: isLocalStorageConfigured(),
-      path: isAdmin ? (getLocalMediaDir() ?? config.localMedia?.path ?? null) : "Hidden in demo mode",
+      path: isAdmin
+        ? (getConfiguredLocalMediaPath() ?? config.localMedia?.path ?? null)
+        : "Hidden in demo mode",
     },
   }, { headers: NO_STORE_HEADERS });
 }
 
 export async function POST(request: Request) {
+  const session = await requireAuth();
+  const isInitialSetupWrite = session instanceof NextResponse
+    ? !(await requireSetupUnlocked())
+    : false;
+
+  if (session instanceof NextResponse && !isInitialSetupWrite) return session;
+  if (!(session instanceof NextResponse) && session.user.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
     const current = readConfig() || getConfig();

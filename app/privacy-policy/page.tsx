@@ -11,7 +11,7 @@ export default function PrivacyPolicyPage() {
       <h1 className="font-heading text-3xl font-semibold tracking-tight text-[#f2ede5] mb-2">
         Privacy Policy
       </h1>
-      <p className="text-sm text-[#7d7569] mb-10">Last updated: March 27, 2026</p>
+      <p className="text-sm text-[#7d7569] mb-10">Last updated: April 26, 2026</p>
 
       <div className="space-y-8 text-[15px] leading-relaxed">
         <section>
@@ -64,12 +64,21 @@ export default function PrivacyPolicyPage() {
           <h2 className="font-heading text-lg font-semibold text-[#f2ede5] mb-3">
             Third-Party Services
           </h2>
-          <p>
-            The extension makes requests to{" "}
-            <code className="text-[#b89462]">cdn.syndication.twimg.com</code> (Twitter/X
-            syndication API) to resolve media URLs, article content, and video variants for
-            captured tweets. No personal data is sent in these requests beyond the tweet ID.
-          </p>
+          <div className="space-y-3">
+            <p>
+              The extension makes requests to{" "}
+              <code className="text-[#b89462]">cdn.syndication.twimg.com</code> (Twitter/X
+              syndication API) to resolve media URLs, article content, and video variants for
+              captured tweets. No personal data is sent in these requests beyond the tweet ID.
+            </p>
+            <p>
+              Your FeedSilo server may also contact optional services that you configure, such
+              as OpenAI or Google Gemini for summaries, tags, embeddings, translations, or image
+              descriptions; Cloudflare R2 for media storage; or the X API for tweet, bookmark,
+              and like sync. These integrations are controlled by your own API keys and server
+              settings.
+            </p>
+          </div>
         </section>
 
         <section>

@@ -6,6 +6,7 @@ import { promisify } from "util";
 import path from "path";
 import fs from "fs/promises";
 import { redactSensitiveText, sanitizeErrorMessage } from "@/lib/security/redact";
+import { requireSetupUnlocked } from "@/lib/setup/guard";
 
 const execAsync = promisify(exec);
 
@@ -13,7 +14,9 @@ function resolveSqliteFilePath(databaseUrl: string): string | null {
   if (!databaseUrl.startsWith("file:")) return null;
   const filePath = databaseUrl.slice("file:".length);
   if (!filePath) return null;
-  return path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
+  return path.isAbsolute(filePath)
+    ? filePath
+    : path.resolve(/* turbopackIgnore: true */ process.cwd(), filePath);
 }
 
 function normalizeSqliteDatabaseUrl(databaseUrl: string): string {
@@ -94,7 +97,7 @@ const requestSchema = z.object({
     url: z.string().min(1),
   }),
   embeddings: z.object({
-    provider: z.enum(["gemini"]).default("gemini"),
+    provider: z.enum(["gemini", "openai", "openai-codex"]).default("gemini"),
     apiKey: z.string().optional(),
   }).optional(),
   extension: z.object({
@@ -104,6 +107,9 @@ const requestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const locked = await requireSetupUnlocked();
+    if (locked) return locked;
+
     const body = await request.json();
     const parsed = requestSchema.safeParse(body);
     if (!parsed.success) {

@@ -4,7 +4,7 @@ import path from "path";
 import { randomBytes } from "crypto";
 import { configSchema, type FeedsiloConfig, type DatabaseType } from "./schema";
 
-const PROJECT_ROOT = process.cwd();
+const PROJECT_ROOT = /* turbopackIgnore: true */ process.cwd();
 const DEFAULT_CONFIG_PATH = path.join(PROJECT_ROOT, "feedsilo.config.json");
 const DEFAULT_ENV_PATH = path.join(PROJECT_ROOT, ".env.local");
 
@@ -40,10 +40,18 @@ const MANAGED_ENV_KEYS = new Set([
   "DATABASE_URL",
   "DATABASE_TYPE",
   "GEMINI_API_KEY",
+  "OPENAI_API_KEY",
   "CAPTURE_SECRET",
   "SEARCH_KEYWORD_WEIGHT",
   "SEARCH_VECTOR_WEIGHT",
 ]);
+
+function getEnvApiKey(provider: FeedsiloConfig["embeddings"]["provider"]): string | undefined {
+  if (provider === "openai-codex") return undefined;
+  return provider === "openai"
+    ? process.env.OPENAI_API_KEY || undefined
+    : process.env.GEMINI_API_KEY || undefined;
+}
 
 export function writeConfig(
   config: FeedsiloConfig,
@@ -78,7 +86,9 @@ export function writeConfig(
     `DATABASE_URL=${config.database.url}`,
     `DATABASE_TYPE=${config.database.type}`,
   ];
-  if (config.embeddings?.apiKey) {
+  if (config.embeddings?.provider === "openai" && config.embeddings?.apiKey) {
+    lines.push(`OPENAI_API_KEY=${config.embeddings.apiKey}`);
+  } else if (config.embeddings?.provider === "gemini" && config.embeddings?.apiKey) {
     lines.push(`GEMINI_API_KEY=${config.embeddings.apiKey}`);
   }
   if (config.extension?.pairingToken) {
@@ -113,11 +123,12 @@ export function resolveConfig(
     const dbUrl = process.env.DATABASE_URL;
     const dbType = process.env.DATABASE_TYPE as DatabaseType | undefined;
     if (dbUrl && dbType) {
+      const provider = process.env.OPENAI_API_KEY ? "openai" : "gemini";
       return configSchema.parse({
         database: { type: dbType, url: dbUrl },
         embeddings: {
-          provider: "gemini",
-          apiKey: process.env.GEMINI_API_KEY || undefined,
+          provider,
+          apiKey: getEnvApiKey(provider),
         },
         extension: {
           pairingToken: process.env.CAPTURE_SECRET || undefined,
@@ -143,7 +154,9 @@ export function resolveConfig(
     },
     embeddings: {
       ...fileConfig.embeddings,
-      apiKey: process.env.GEMINI_API_KEY || fileConfig.embeddings?.apiKey,
+      apiKey:
+        getEnvApiKey(fileConfig.embeddings.provider) ||
+        fileConfig.embeddings?.apiKey,
     },
     extension: {
       ...fileConfig.extension,
@@ -193,4 +206,4 @@ export function invalidateConfigCache(): void {
   _resolvedConfigPromise = undefined;
 }
 
-export { configSchema, type FeedsiloConfig, type DatabaseType } from "./schema";
+export { configSchema, type FeedsiloConfig, type DatabaseType, type AiProvider } from "./schema";

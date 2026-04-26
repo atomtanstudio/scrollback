@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSearchProvider } from "@/lib/db/search-provider";
 import { mergeAndRankResults } from "@/lib/search/hybrid";
-import { generateEmbedding } from "@/lib/embeddings/gemini";
+import { generateEmbedding, supportsEmbeddings } from "@/lib/embeddings";
 import { getClient } from "@/lib/db/client";
 import type { SearchFilters, SearchOptions } from "@/lib/db/types";
 import { requireAuth } from "@/lib/auth/session";
@@ -52,8 +52,9 @@ export async function GET(request: NextRequest) {
         ? provider.keywordSearch(query, filters, opts)
         : Promise.resolve([]);
 
+    const canUseSemantic = supportsEmbeddings();
     const semanticPromise =
-      mode === "semantic" || mode === "hybrid"
+      canUseSemantic && (mode === "semantic" || mode === "hybrid")
         ? generateEmbedding(query).then((emb) =>
             provider.semanticSearch(emb, filters, opts)
           )

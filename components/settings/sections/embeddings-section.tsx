@@ -7,19 +7,26 @@ import { ProgressBar } from "@/components/shared/progress-bar";
 interface EmbeddingsSectionProps { settings: any; onRefresh: () => void }
 
 export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProps) {
+  const [provider, setProvider] = useState<"openai-codex" | "openai" | "gemini">(
+    settings?.embeddings?.provider === "openai-codex"
+      ? "openai-codex"
+      : settings?.embeddings?.provider === "openai"
+        ? "openai"
+        : "gemini"
+  );
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const hasKey = settings?.embeddings?.hasKey;
 
   const handleSave = async () => {
-    if (!apiKey) return;
+    if (provider !== "openai-codex" && !apiKey) return;
     setSaving(true);
     try {
       await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ embeddings: { apiKey } }),
+        body: JSON.stringify({ embeddings: { provider, apiKey: provider === "openai-codex" ? undefined : apiKey } }),
       });
       setApiKey("");
       onRefresh();
@@ -44,10 +51,10 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
           </div>
           <div>
             <h3 className="font-heading text-[15px] font-semibold text-[#f2ede5]">
-              Gemini AI
+              AI Provider
             </h3>
             <p className="text-xs text-[#a49b8b]">
-              Summaries, tags, image descriptions, semantic search
+              {settings?.embeddings?.provider === "openai-codex" ? "OpenAI Codex" : settings?.embeddings?.provider === "openai" ? "OpenAI" : "Gemini"} for summaries, tags, image descriptions, semantic search
             </p>
           </div>
         </div>
@@ -62,6 +69,29 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
+          <label className="text-xs text-[#8a8174]">Provider</label>
+          <div className="grid grid-cols-2 gap-2">
+            {(["openai-codex", "openai", "gemini"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  setProvider(option);
+                  setApiKey("");
+                }}
+                className={`h-10 rounded-[12px] border text-xs font-medium transition-colors ${
+                  provider === option
+                    ? "border-[var(--accent-article)] bg-[#b894621f] text-[#f2ede5]"
+                    : "border-[#d6c9b214] bg-[#ffffff05] text-[#a49b8b] hover:border-[#d6c9b233]"
+                }`}
+              >
+                {option === "openai-codex" ? "Codex" : option === "openai" ? "OpenAI" : "Gemini"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
               <label className="text-xs text-[#8a8174]">API Key</label>
               {hasKey && (
@@ -73,7 +103,8 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
               type={showKey ? "text" : "password"}
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder={hasKey ? "••••••••" : "AIza..."}
+              placeholder={hasKey ? "••••••••" : provider === "openai-codex" ? "Uses local Codex login" : provider === "openai" ? "sk-..." : "AIza..."}
+              disabled={provider === "openai-codex"}
               className="flex-1 h-10 rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#6f695f] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
             />
             <button
@@ -85,20 +116,22 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
           </div>
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-[#8a8174]">
-              Model: <code className="text-[var(--accent-tweet)]">gemini-embedding-001</code>
+              Embeddings: <code className="text-[var(--accent-tweet)]">{provider === "openai-codex" ? "not supported" : provider === "openai" ? "text-embedding-3-small" : "gemini-embedding-001"}</code>
             </p>
-            <a
-              href="https://aistudio.google.com/apikey"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[10px] text-[var(--accent-article)] hover:underline"
-            >
-              Get a free key &rarr;
-            </a>
+            {provider !== "openai-codex" && (
+              <a
+                href={provider === "openai" ? "https://platform.openai.com/api-keys" : "https://aistudio.google.com/apikey"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-[var(--accent-article)] hover:underline"
+              >
+                {provider === "openai" ? "Create key" : "Get a free key"} &rarr;
+              </a>
+            )}
           </div>
         </div>
 
-        {apiKey && (
+        {(apiKey || provider === "openai-codex") && (
           <button
             onClick={handleSave}
             disabled={saving}

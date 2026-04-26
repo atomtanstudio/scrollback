@@ -6,7 +6,7 @@ export const databaseConfigSchema = z.object({
 });
 
 export const embeddingsConfigSchema = z.object({
-  provider: z.enum(["gemini"]).default("gemini"),
+  provider: z.enum(["gemini", "openai", "openai-codex"]).default("gemini"),
   apiKey: z.string().optional(),
 });
 
@@ -38,3 +38,4 @@ export const configSchema = z.object({
 
 export type FeedsiloConfig = z.infer<typeof configSchema>;
 export type DatabaseType = FeedsiloConfig["database"]["type"];
+export type AiProvider = FeedsiloConfig["embeddings"]["provider"];
