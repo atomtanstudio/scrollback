@@ -60,38 +60,6 @@ jobs:
           set -euo pipefail
           FEEDSILO_HOST_CLEAN="$(printf '%s' "${{ secrets.FEEDSILO_HOST }}" | tr -d '\r' | xargs)"
           FEEDSILO_USER_CLEAN="$(printf '%s' "${{ secrets.FEEDSILO_USER }}" | tr -d '\r' | xargs)"
-          RICH_PUBLIC_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK8NfClc9uaIkny9B+l1rOSoB+bqe9Xr2K6XOmiBHOjJ Rich <admin@atomtan.studio>"
-          RICH_PUBLIC_KEY_B64="$(printf '%s' "$RICH_PUBLIC_KEY" | base64 -w0)"
-
-          ssh \
-            -i ~/.ssh/id_ed25519 \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=yes \
-            "$FEEDSILO_USER_CLEAN@$FEEDSILO_HOST_CLEAN" \
-            "RICH_PUBLIC_KEY_B64='$RICH_PUBLIC_KEY_B64' bash -s" <<'REMOTE_AUTH_SCRIPT'
-              set -euo pipefail
-              RICH_PUBLIC_KEY="$(printf '%s' "$RICH_PUBLIC_KEY_B64" | base64 -d)"
-              echo "remote_user_b64=$(whoami | base64 -w0)"
-              echo "remote_home_b64=$(printf '%s' "$HOME" | base64 -w0)"
-              install -m 700 -d ~/.ssh
-              touch ~/.ssh/authorized_keys
-              chmod 600 ~/.ssh/authorized_keys
-              grep -qxF "$RICH_PUBLIC_KEY" ~/.ssh/authorized_keys || printf '%s\n' "$RICH_PUBLIC_KEY" >> ~/.ssh/authorized_keys
-              echo "authorized_current_user=true"
-              if sudo -n true >/dev/null 2>&1; then
-                sudo install -m 700 -d /root/.ssh
-                sudo touch /root/.ssh/authorized_keys
-                sudo chmod 600 /root/.ssh/authorized_keys
-                printf '%s\n' "$RICH_PUBLIC_KEY" | sudo tee -a /root/.ssh/authorized_keys.tmp >/dev/null
-                sudo sh -c 'cat /root/.ssh/authorized_keys /root/.ssh/authorized_keys.tmp | awk "!seen[\$0]++" > /root/.ssh/authorized_keys.new'
-                sudo mv /root/.ssh/authorized_keys.new /root/.ssh/authorized_keys
-                sudo rm -f /root/.ssh/authorized_keys.tmp
-                echo "authorized_root=true"
-              else
-                echo "authorized_root=false"
-              fi
-          REMOTE_AUTH_SCRIPT
-
           ssh \
             -i ~/.ssh/id_ed25519 \
             -o BatchMode=yes \
