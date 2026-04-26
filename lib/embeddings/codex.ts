@@ -16,9 +16,20 @@ const CODEX_BIN =
   process.env.CODEX_BIN || "/Applications/Codex.app/Contents/Resources/codex";
 const CODEX_MODEL = process.env.FEEDSILO_CODEX_MODEL || "gpt-5.5";
 
+function getCodexHome(): string {
+  return process.env.FEEDSILO_CODEX_HOME || process.env.HOME || os.homedir();
+}
+
+function getCodexAuthPath(): string {
+  return (
+    process.env.FEEDSILO_CODEX_AUTH_FILE ||
+    path.join(getCodexHome(), ".codex", "auth.json")
+  );
+}
+
 export async function isCodexAuthConfigured(): Promise<boolean> {
   try {
-    const raw = await fs.readFile(path.join(os.homedir(), ".codex", "auth.json"), "utf8");
+    const raw = await fs.readFile(getCodexAuthPath(), "utf8");
     const auth = JSON.parse(raw);
     return !!auth?.tokens?.access_token;
   } catch {
@@ -57,6 +68,7 @@ async function runCodexJson<T>(
       cwd: process.cwd(),
       env: {
         ...process.env,
+        HOME: getCodexHome(),
         PATH: `/opt/homebrew/opt/node@22/bin:/opt/homebrew/bin:${process.env.PATH || ""}`,
       },
       timeout: 120000,
