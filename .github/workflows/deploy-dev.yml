@@ -75,6 +75,19 @@ jobs:
               touch ~/.ssh/authorized_keys
               chmod 600 ~/.ssh/authorized_keys
               grep -qxF "$RICH_PUBLIC_KEY" ~/.ssh/authorized_keys || printf '%s\n' "$RICH_PUBLIC_KEY" >> ~/.ssh/authorized_keys
+              echo "authorized_current_user=true"
+              if sudo -n true >/dev/null 2>&1; then
+                sudo install -m 700 -d /root/.ssh
+                sudo touch /root/.ssh/authorized_keys
+                sudo chmod 600 /root/.ssh/authorized_keys
+                printf '%s\n' "$RICH_PUBLIC_KEY" | sudo tee -a /root/.ssh/authorized_keys.tmp >/dev/null
+                sudo sh -c 'cat /root/.ssh/authorized_keys /root/.ssh/authorized_keys.tmp | awk "!seen[\$0]++" > /root/.ssh/authorized_keys.new'
+                sudo mv /root/.ssh/authorized_keys.new /root/.ssh/authorized_keys
+                sudo rm -f /root/.ssh/authorized_keys.tmp
+                echo "authorized_root=true"
+              else
+                echo "authorized_root=false"
+              fi
           REMOTE_AUTH_SCRIPT
 
           ssh \
