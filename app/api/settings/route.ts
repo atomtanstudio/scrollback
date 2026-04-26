@@ -75,8 +75,11 @@ export async function GET() {
   }
 
   const embeddingsProvider = config.embeddings?.provider || "gemini";
-  const hasAiKey =
-    embeddingsProvider === "openai-codex" ? true : !!config.embeddings?.apiKey;
+  let hasAiKey = !!config.embeddings?.apiKey;
+  if (embeddingsProvider === "openai-codex") {
+    const { isCodexAuthConfigured } = await import("@/lib/embeddings/codex");
+    hasAiKey = await isCodexAuthConfigured();
+  }
 
   return NextResponse.json({
     configured: true,

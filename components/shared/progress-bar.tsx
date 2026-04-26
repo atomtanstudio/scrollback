@@ -18,6 +18,7 @@ interface ProgressData {
   current?: string;
   done?: boolean;
   error?: string;
+  warning?: string;
   summary?: string;
 }
 
@@ -113,6 +114,11 @@ export function ProgressBar({ endpoint, buttonLabel, className }: ProgressBarPro
           {state === "done" && (
             <p className="text-xs text-emerald-300">
               {data?.summary || `Done: ${data?.processed ?? 0} items processed`}
+            </p>
+          )}
+          {data?.warning && (
+            <p className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
+              {data.warning}
             </p>
           )}
         </div>

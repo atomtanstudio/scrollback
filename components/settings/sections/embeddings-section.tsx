@@ -17,7 +17,32 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const hasKey = settings?.embeddings?.hasKey;
+
+  const handleTest = async () => {
+    if (provider !== "openai-codex" && !apiKey) return;
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch("/api/setup/test-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, apiKey }),
+      });
+      const data = await res.json().catch(() => ({}));
+      setTestResult(
+        res.ok && data.success
+          ? { success: true, message: `${provider === "openai-codex" ? "Codex" : provider === "openai" ? "OpenAI" : "Gemini"} connection is valid` }
+          : { success: false, message: data.error || "Connection failed" }
+      );
+    } catch {
+      setTestResult({ success: false, message: "Connection failed" });
+    } finally {
+      setTesting(false);
+    }
+  };
 
   const handleSave = async () => {
     if (provider !== "openai-codex" && !apiKey) return;
@@ -78,6 +103,7 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
                 onClick={() => {
                   setProvider(option);
                   setApiKey("");
+                  setTestResult(null);
                 }}
                 className={`h-10 rounded-[12px] border text-xs font-medium transition-colors ${
                   provider === option
@@ -109,6 +135,7 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
             />
             <button
               onClick={() => setShowKey(!showKey)}
+              disabled={provider === "openai-codex"}
               className="h-10 rounded-[12px] border border-[#d6c9b214] px-3 text-xs text-[#a49b8b] transition-colors cursor-pointer hover:border-[#d6c9b233]"
             >
               {showKey ? "Hide" : "Show"}
@@ -132,13 +159,27 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
         </div>
 
         {(apiKey || provider === "openai-codex") && (
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="h-9 self-start rounded-[12px] bg-[var(--accent-article)] px-4 text-sm font-medium text-[#090c11] transition-all duration-200 cursor-pointer hover:brightness-110 disabled:opacity-50"
-          >
-            {saving ? "Saving..." : "Save API Key"}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleTest}
+              disabled={(provider !== "openai-codex" && !apiKey) || testing}
+              className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233] disabled:cursor-default disabled:opacity-40"
+            >
+              {testing ? "Testing..." : "Test"}
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || !testResult?.success}
+              className="h-9 rounded-[12px] bg-[var(--accent-article)] px-4 text-sm font-medium text-[#090c11] transition-all duration-200 cursor-pointer hover:brightness-110 disabled:cursor-default disabled:opacity-50"
+            >
+              {saving ? "Saving..." : provider === "openai-codex" ? "Save Provider" : "Save API Key"}
+            </button>
+            {testResult && (
+              <span className={`text-xs ${testResult.success ? "text-emerald-300" : "text-red-300"}`}>
+                {testResult.message}
+              </span>
+            )}
+          </div>
         )}
 
         <div className="border-t border-[#d6c9b214] pt-4">

@@ -162,15 +162,19 @@ export async function POST(
 
       // 3. Regenerate embedding
       if (aiConfigured) {
-        const { generateEmbedding } = await import("@/lib/embeddings");
-        const embedding = await generateEmbedding(text);
-        if (embedding) {
-          const vectorStr = `[${embedding.join(",")}]`;
-          await db.$queryRawUnsafe(
-            `UPDATE content_items SET embedding = $1::vector WHERE id = $2::uuid`,
-            vectorStr,
-            id
-          );
+        const { generateEmbedding, supportsEmbeddings } = await import("@/lib/embeddings");
+        if (!supportsEmbeddings()) {
+          console.log(`Skipped embedding regeneration for ${id}: provider does not support embeddings`);
+        } else {
+          const embedding = await generateEmbedding(text);
+          if (embedding) {
+            const vectorStr = `[${embedding.join(",")}]`;
+            await db.$queryRawUnsafe(
+              `UPDATE content_items SET embedding = $1::vector WHERE id = $2::uuid`,
+              vectorStr,
+              id
+            );
+          }
         }
       }
 

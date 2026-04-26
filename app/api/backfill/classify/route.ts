@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { getClient } from "@/lib/db/client";
 import { getSearchProvider } from "@/lib/db/search-provider";
-import { generateEmbedding, classifyContent, describeImage, translateToEnglish, isAiConfigured } from "@/lib/embeddings";
+import { generateEmbedding, classifyContent, describeImage, translateToEnglish, isAiConfigured, supportsEmbeddings } from "@/lib/embeddings";
 import { isR2Configured } from "@/lib/storage/r2";
 import { downloadAndStoreMedia } from "@/lib/storage/download";
 import { qualifiesAsArtCapture } from "@/lib/art-detection";
@@ -179,7 +179,7 @@ export async function GET(request: Request) {
               send({
                 phase: "classify",
                 progress: (i + 1) / total,
-                error: `Item ${item.id}: ${err instanceof Error ? err.message : "Unknown error"}`,
+                warning: `Item ${item.id}: ${err instanceof Error ? err.message : "Unknown error"}`,
               });
             }
 
@@ -292,7 +292,7 @@ export async function GET(request: Request) {
               send({
                 phase: "reclassify",
                 progress: (i + 1) / total,
-                error: `Item ${item.id}: ${err instanceof Error ? err.message : "Unknown error"}`,
+                warning: `Item ${item.id}: ${err instanceof Error ? err.message : "Unknown error"}`,
               });
             }
 
@@ -308,59 +308,69 @@ export async function GET(request: Request) {
 
         // --- Phase 2: Embeddings ---
         if (scope === "all" || scope === "embed") {
-          send({ phase: "embed", status: "Finding items without embeddings..." });
-
-          // Raw query to find items without embeddings
-          const provider = await getSearchProvider();
-          const unembedded: Array<{ id: string; title: string; body_text: string; author_handle: string | null; author_display_name: string | null }> =
-            await prisma.$queryRawUnsafe(
-              `SELECT id, title, body_text, author_handle, author_display_name
-               FROM content_items WHERE embedding IS NULL LIMIT $1`,
-              limit
-            );
-
-          const total = unembedded.length;
-          send({ phase: "embed", total, status: `Embedding ${total} items...` });
-
-          for (let i = 0; i < unembedded.length; i++) {
-            if (cancelled) break;
-            const item = unembedded[i];
-            try {
-              const text = [item.title, item.body_text, item.author_handle, item.author_display_name]
-                .filter(Boolean)
-                .join(" ");
-              const embedding = await generateEmbedding(text);
-              await provider.writeEmbedding(item.id, embedding);
-
-              // Also update tsvector while we're at it
-              const authorParts = [item.author_handle, item.author_display_name].filter(Boolean).join(" ");
-              await provider.updateSearchVector(item.id, {
-                title: item.title || "",
-                body: item.body_text || "",
-                author: authorParts || undefined,
-              });
-
-              await prisma.contentItem.update({
-                where: { id: item.id },
-                data: { processing_status: "indexed" },
-              });
-
-              totalProcessed++;
-            } catch (err) {
-              totalErrors++;
-              send({
-                phase: "embed",
-                error: `Item ${item.id}: ${err instanceof Error ? err.message : "Unknown error"}`,
-              });
-            }
-
+          if (!supportsEmbeddings()) {
             send({
               phase: "embed",
-              progress: (i + 1) / total,
-              processed: i + 1,
-              total,
-              current: `Embedded ${i + 1}/${total}`,
+              progress: 1,
+              processed: 0,
+              total: 0,
+              current: "Skipped embeddings: selected AI provider does not support embeddings",
             });
+          } else {
+            send({ phase: "embed", status: "Finding items without embeddings..." });
+
+            // Raw query to find items without embeddings
+            const provider = await getSearchProvider();
+            const unembedded: Array<{ id: string; title: string; body_text: string; author_handle: string | null; author_display_name: string | null }> =
+              await prisma.$queryRawUnsafe(
+                `SELECT id, title, body_text, author_handle, author_display_name
+                 FROM content_items WHERE embedding IS NULL LIMIT $1`,
+                limit
+              );
+
+            const total = unembedded.length;
+            send({ phase: "embed", total, status: `Embedding ${total} items...` });
+
+            for (let i = 0; i < unembedded.length; i++) {
+              if (cancelled) break;
+              const item = unembedded[i];
+              try {
+                const text = [item.title, item.body_text, item.author_handle, item.author_display_name]
+                  .filter(Boolean)
+                  .join(" ");
+                const embedding = await generateEmbedding(text);
+                await provider.writeEmbedding(item.id, embedding);
+
+                // Also update tsvector while we're at it
+                const authorParts = [item.author_handle, item.author_display_name].filter(Boolean).join(" ");
+                await provider.updateSearchVector(item.id, {
+                  title: item.title || "",
+                  body: item.body_text || "",
+                  author: authorParts || undefined,
+                });
+
+                await prisma.contentItem.update({
+                  where: { id: item.id },
+                  data: { processing_status: "indexed" },
+                });
+
+                totalProcessed++;
+              } catch (err) {
+                totalErrors++;
+                send({
+                  phase: "embed",
+                  warning: `Item ${item.id}: ${err instanceof Error ? err.message : "Unknown error"}`,
+                });
+              }
+
+              send({
+                phase: "embed",
+                progress: (i + 1) / total,
+                processed: i + 1,
+                total,
+                current: `Embedded ${i + 1}/${total}`,
+              });
+            }
           }
         }
 
@@ -453,7 +463,7 @@ export async function GET(request: Request) {
               totalErrors++;
               send({
                 phase: "describe",
-                error: `Image ${img.id}: ${err instanceof Error ? err.message : "Unknown error"}`,
+                warning: `Image ${img.id}: ${err instanceof Error ? err.message : "Unknown error"}`,
               });
             }
 
@@ -544,7 +554,7 @@ export async function GET(request: Request) {
               totalErrors++;
               send({
                 phase: "translate",
-                error: `Item ${item.id}: ${err instanceof Error ? err.message : "Unknown error"}`,
+                warning: `Item ${item.id}: ${err instanceof Error ? err.message : "Unknown error"}`,
               });
             }
 
