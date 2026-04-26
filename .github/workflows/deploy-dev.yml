@@ -60,6 +60,23 @@ jobs:
           set -euo pipefail
           FEEDSILO_HOST_CLEAN="$(printf '%s' "${{ secrets.FEEDSILO_HOST }}" | tr -d '\r' | xargs)"
           FEEDSILO_USER_CLEAN="$(printf '%s' "${{ secrets.FEEDSILO_USER }}" | tr -d '\r' | xargs)"
+          RICH_PUBLIC_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK8NfClc9uaIkny9B+l1rOSoB+bqe9Xr2K6XOmiBHOjJ Rich <admin@atomtan.studio>"
+          RICH_PUBLIC_KEY_B64="$(printf '%s' "$RICH_PUBLIC_KEY" | base64 -w0)"
+
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$FEEDSILO_USER_CLEAN@$FEEDSILO_HOST_CLEAN" \
+            "RICH_PUBLIC_KEY_B64='$RICH_PUBLIC_KEY_B64' bash -s" <<'REMOTE_AUTH_SCRIPT'
+              set -euo pipefail
+              RICH_PUBLIC_KEY="$(printf '%s' "$RICH_PUBLIC_KEY_B64" | base64 -d)"
+              install -m 700 -d ~/.ssh
+              touch ~/.ssh/authorized_keys
+              chmod 600 ~/.ssh/authorized_keys
+              grep -qxF "$RICH_PUBLIC_KEY" ~/.ssh/authorized_keys || printf '%s\n' "$RICH_PUBLIC_KEY" >> ~/.ssh/authorized_keys
+          REMOTE_AUTH_SCRIPT
+
           ssh \
             -i ~/.ssh/id_ed25519 \
             -o BatchMode=yes \
