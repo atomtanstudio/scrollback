@@ -13,6 +13,17 @@ export async function requireAuth() {
   return session;
 }
 
+export async function requireAdmin() {
+  const session = await requireAuth();
+  if (session instanceof NextResponse) return session;
+
+  if (session.user.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  return session;
+}
+
 /**
  * Get the current user's ID from the session. Returns null if not authenticated.
  */
