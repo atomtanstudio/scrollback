@@ -12,23 +12,20 @@ function getProvider() {
 
 export function isAiConfigured(): boolean {
   const config = getConfig();
-  if (config?.embeddings?.provider === "openai-codex") return true;
   return !!config?.embeddings?.apiKey;
 }
 
 export function getAiProviderLabel(): string {
-  if (getProvider() === "openai-codex") return "OpenAI Codex";
   return getProvider() === "openai" ? "OpenAI" : "Gemini";
 }
 
 export function supportsEmbeddings(): boolean {
-  return getProvider() !== "openai-codex";
+  return true;
 }
 
 async function loadProvider() {
   const provider = getProvider();
   if (provider === "openai") return import("./openai");
-  if (provider === "openai-codex") return import("./codex");
   return import("./gemini");
 }
 

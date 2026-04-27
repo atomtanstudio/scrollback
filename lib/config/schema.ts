@@ -6,7 +6,7 @@ export const databaseConfigSchema = z.object({
 });
 
 export const embeddingsConfigSchema = z.object({
-  provider: z.enum(["gemini", "openai", "openai-codex"]).default("gemini"),
+  provider: z.enum(["gemini", "openai"]).default("gemini"),
   apiKey: z.string().optional(),
 });
 

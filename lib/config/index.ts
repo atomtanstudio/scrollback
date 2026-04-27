@@ -47,7 +47,6 @@ const MANAGED_ENV_KEYS = new Set([
 ]);
 
 function getEnvApiKey(provider: FeedsiloConfig["embeddings"]["provider"]): string | undefined {
-  if (provider === "openai-codex") return undefined;
   return provider === "openai"
     ? process.env.OPENAI_API_KEY || undefined
     : process.env.GEMINI_API_KEY || undefined;

@@ -19,7 +19,7 @@ interface GeminiStepProps {
 }
 
 export function GeminiStep({ onContinue }: GeminiStepProps) {
-  const [provider, setProvider] = useState<"openai-codex" | "openai" | "gemini">("openai-codex");
+  const [provider, setProvider] = useState<"openai" | "gemini">("gemini");
   const [apiKey, setApiKey] = useState("");
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -30,7 +30,7 @@ export function GeminiStep({ onContinue }: GeminiStepProps) {
   const [saveError, setSaveError] = useState("");
 
   const handleTest = async () => {
-    if (provider !== "openai-codex" && !apiKey) return;
+    if (!apiKey) return;
     setTesting(true);
     setTestResult(null);
     try {
@@ -42,7 +42,7 @@ export function GeminiStep({ onContinue }: GeminiStepProps) {
       const data = await res.json();
       setTestResult(
         data.success
-          ? { success: true, message: `${provider === "openai-codex" ? "OpenAI Codex" : provider === "openai" ? "OpenAI" : "Gemini"} connection is valid` }
+          ? { success: true, message: `${provider === "openai" ? "OpenAI" : "Gemini"} connection is valid` }
           : { success: false, message: data.error || "Invalid key" }
       );
     } catch {
@@ -59,7 +59,7 @@ export function GeminiStep({ onContinue }: GeminiStepProps) {
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ embeddings: { provider, apiKey: provider === "openai-codex" ? undefined : apiKey } }),
+        body: JSON.stringify({ embeddings: { provider, apiKey } }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -129,8 +129,8 @@ export function GeminiStep({ onContinue }: GeminiStepProps) {
 
       <div className="mb-4 w-full max-w-[480px]">
         <label className={onboardingLabelClass}>AI Provider</label>
-        <div className="mb-3 grid grid-cols-3 gap-2">
-          {(["openai-codex", "openai", "gemini"] as const).map((option) => (
+        <div className="mb-3 grid grid-cols-2 gap-2">
+          {(["gemini", "openai"] as const).map((option) => (
             <button
               key={option}
               type="button"
@@ -146,37 +146,28 @@ export function GeminiStep({ onContinue }: GeminiStepProps) {
                   : "border-[#d6c9b214] bg-[#ffffff05] text-[#a49b8b] hover:border-[#d6c9b233]"
               }`}
             >
-              {option === "openai-codex" ? "Codex" : option === "openai" ? "OpenAI" : "Gemini"}
+              {option === "openai" ? "OpenAI" : "Gemini"}
             </button>
           ))}
         </div>
-        {provider === "openai-codex" ? (
-          <p className={`${onboardingNoteClass} mb-3 text-left`}>
-            Uses your local Codex/ChatGPT login from <code>~/.codex/auth.json</code>.
-            No API key is needed. Semantic embeddings are not available with this provider.
-          </p>
-        ) : (
-          <label className={onboardingLabelClass}>
-            {provider === "openai" ? "OpenAI API Key" : "Gemini API Key"}
-          </label>
-        )}
+        <label className={onboardingLabelClass}>
+          {provider === "openai" ? "OpenAI API Key" : "Gemini API Key"}
+        </label>
         <div className="flex gap-2">
-          {provider !== "openai-codex" && (
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => {
-                setApiKey(e.target.value);
-                setTestResult(null);
-                setSaveError("");
-              }}
-              placeholder={provider === "openai" ? "sk-..." : "AIza..."}
-              className={`${onboardingInputClass} flex-1`}
-            />
-          )}
+          <input
+            type="password"
+            value={apiKey}
+            onChange={(e) => {
+              setApiKey(e.target.value);
+              setTestResult(null);
+              setSaveError("");
+            }}
+            placeholder={provider === "openai" ? "sk-..." : "AIza..."}
+            className={`${onboardingInputClass} flex-1`}
+          />
           <button
             onClick={handleTest}
-            disabled={(provider !== "openai-codex" && !apiKey) || testing}
+            disabled={!apiKey || testing}
             className={`${onboardingSecondaryButtonClass} h-11 px-4 disabled:cursor-default disabled:opacity-30`}
           >
             {testing ? "Testing..." : "Test"}
@@ -197,16 +188,14 @@ export function GeminiStep({ onContinue }: GeminiStepProps) {
         )}
       </div>
 
-      {provider !== "openai-codex" && (
-        <a
-          href={provider === "openai" ? "https://platform.openai.com/api-keys" : "https://aistudio.google.com/apikey"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${onboardingTextButtonClass} mb-6`}
-        >
-          {provider === "openai" ? "Create an OpenAI API key" : "Get a free Gemini API key"} &rarr;
-        </a>
-      )}
+      <a
+        href={provider === "openai" ? "https://platform.openai.com/api-keys" : "https://aistudio.google.com/apikey"}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${onboardingTextButtonClass} mb-6`}
+      >
+        {provider === "openai" ? "Create an OpenAI API key" : "Get a free Gemini API key"} &rarr;
+      </a>
 
       <p className={`${onboardingNoteClass} mb-6 max-w-[400px]`}>
         Your key is stored locally in .env.local. Content is sent to the selected
@@ -216,7 +205,7 @@ export function GeminiStep({ onContinue }: GeminiStepProps) {
       <div className="flex flex-col items-center gap-3">
         <button
           onClick={handleSave}
-          disabled={(provider !== "openai-codex" && !apiKey) || !testResult?.success || saving}
+          disabled={!apiKey || !testResult?.success || saving}
           className={onboardingPrimaryButtonClass}
         >
           {saving ? "Saving..." : "Save & Continue"}

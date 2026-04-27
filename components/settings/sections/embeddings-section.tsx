@@ -7,10 +7,8 @@ import { ProgressBar } from "@/components/shared/progress-bar";
 interface EmbeddingsSectionProps { settings: any; onRefresh: () => void }
 
 export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProps) {
-  const [provider, setProvider] = useState<"openai-codex" | "openai" | "gemini">(
-    settings?.embeddings?.provider === "openai-codex"
-      ? "openai-codex"
-      : settings?.embeddings?.provider === "openai"
+  const [provider, setProvider] = useState<"openai" | "gemini">(
+    settings?.embeddings?.provider === "openai"
         ? "openai"
         : "gemini"
   );
@@ -22,7 +20,7 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
   const hasKey = settings?.embeddings?.hasKey;
 
   const handleTest = async () => {
-    if (provider !== "openai-codex" && !apiKey) return;
+    if (!apiKey) return;
     setTesting(true);
     setTestResult(null);
     try {
@@ -34,7 +32,7 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
       const data = await res.json().catch(() => ({}));
       setTestResult(
         res.ok && data.success
-          ? { success: true, message: `${provider === "openai-codex" ? "Codex" : provider === "openai" ? "OpenAI" : "Gemini"} connection is valid` }
+          ? { success: true, message: `${provider === "openai" ? "OpenAI" : "Gemini"} connection is valid` }
           : { success: false, message: data.error || "Connection failed" }
       );
     } catch {
@@ -45,13 +43,13 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
   };
 
   const handleSave = async () => {
-    if (provider !== "openai-codex" && !apiKey) return;
+    if (!apiKey) return;
     setSaving(true);
     try {
       await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ embeddings: { provider, apiKey: provider === "openai-codex" ? undefined : apiKey } }),
+        body: JSON.stringify({ embeddings: { provider, apiKey } }),
       });
       setApiKey("");
       onRefresh();
@@ -79,7 +77,7 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
               AI Provider
             </h3>
             <p className="text-xs text-[#a49b8b]">
-              {settings?.embeddings?.provider === "openai-codex" ? "OpenAI Codex" : settings?.embeddings?.provider === "openai" ? "OpenAI" : "Gemini"} for summaries, tags, image descriptions, semantic search
+              {settings?.embeddings?.provider === "openai" ? "OpenAI" : "Gemini"} for summaries, tags, image descriptions, semantic search
             </p>
           </div>
         </div>
@@ -96,7 +94,7 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
         <div className="flex flex-col gap-1.5">
           <label className="text-xs text-[#8a8174]">Provider</label>
           <div className="grid grid-cols-2 gap-2">
-            {(["openai-codex", "openai", "gemini"] as const).map((option) => (
+            {(["gemini", "openai"] as const).map((option) => (
               <button
                 key={option}
                 type="button"
@@ -111,7 +109,7 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
                     : "border-[#d6c9b214] bg-[#ffffff05] text-[#a49b8b] hover:border-[#d6c9b233]"
                 }`}
               >
-                {option === "openai-codex" ? "Codex" : option === "openai" ? "OpenAI" : "Gemini"}
+                {option === "openai" ? "OpenAI" : "Gemini"}
               </button>
             ))}
           </div>
@@ -129,13 +127,11 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
               type={showKey ? "text" : "password"}
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder={hasKey ? "••••••••" : provider === "openai-codex" ? "Uses local Codex login" : provider === "openai" ? "sk-..." : "AIza..."}
-              disabled={provider === "openai-codex"}
+              placeholder={hasKey ? "••••••••" : provider === "openai" ? "sk-..." : "AIza..."}
               className="flex-1 h-10 rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#6f695f] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
             />
             <button
               onClick={() => setShowKey(!showKey)}
-              disabled={provider === "openai-codex"}
               className="h-10 rounded-[12px] border border-[#d6c9b214] px-3 text-xs text-[#a49b8b] transition-colors cursor-pointer hover:border-[#d6c9b233]"
             >
               {showKey ? "Hide" : "Show"}
@@ -143,26 +139,24 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
           </div>
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-[#8a8174]">
-              Embeddings: <code className="text-[var(--accent-tweet)]">{provider === "openai-codex" ? "not supported" : provider === "openai" ? "text-embedding-3-small" : "gemini-embedding-001"}</code>
+              Embeddings: <code className="text-[var(--accent-tweet)]">{provider === "openai" ? "text-embedding-3-small" : "gemini-embedding-001"}</code>
             </p>
-            {provider !== "openai-codex" && (
-              <a
-                href={provider === "openai" ? "https://platform.openai.com/api-keys" : "https://aistudio.google.com/apikey"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10px] text-[var(--accent-article)] hover:underline"
-              >
-                {provider === "openai" ? "Create key" : "Get a free key"} &rarr;
-              </a>
-            )}
+            <a
+              href={provider === "openai" ? "https://platform.openai.com/api-keys" : "https://aistudio.google.com/apikey"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] text-[var(--accent-article)] hover:underline"
+            >
+              {provider === "openai" ? "Create key" : "Get a free key"} &rarr;
+            </a>
           </div>
         </div>
 
-        {(apiKey || provider === "openai-codex") && (
+        {apiKey && (
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleTest}
-              disabled={(provider !== "openai-codex" && !apiKey) || testing}
+              disabled={!apiKey || testing}
               className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#ffffff05] px-4 text-sm font-medium text-[#f2ede5] transition-all duration-200 cursor-pointer hover:border-[#d6c9b233] disabled:cursor-default disabled:opacity-40"
             >
               {testing ? "Testing..." : "Test"}
@@ -172,7 +166,7 @@ export function EmbeddingsSection({ settings, onRefresh }: EmbeddingsSectionProp
               disabled={saving || !testResult?.success}
               className="h-9 rounded-[12px] bg-[var(--accent-article)] px-4 text-sm font-medium text-[#090c11] transition-all duration-200 cursor-pointer hover:brightness-110 disabled:cursor-default disabled:opacity-50"
             >
-              {saving ? "Saving..." : provider === "openai-codex" ? "Save Provider" : "Save API Key"}
+              {saving ? "Saving..." : "Save API Key"}
             </button>
             {testResult && (
               <span className={`text-xs ${testResult.success ? "text-emerald-300" : "text-red-300"}`}>

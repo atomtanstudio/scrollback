@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sanitizeErrorMessage } from "@/lib/security/redact";
 import { requireSetupUnlocked } from "@/lib/setup/guard";
 
-type Provider = "gemini" | "openai" | "openai-codex";
+type Provider = "gemini" | "openai";
 
 async function testGemini(apiKey: string): Promise<void> {
   const res = await fetch(
@@ -53,19 +53,7 @@ export async function POST(request: NextRequest) {
 
     const { apiKey, provider } = await request.json();
     const selectedProvider: Provider =
-      provider === "openai-codex" ? "openai-codex" : provider === "openai" ? "openai" : "gemini";
-
-    if (selectedProvider === "openai-codex") {
-      const { isCodexAuthConfigured } = await import("@/lib/embeddings/codex");
-      const configured = await isCodexAuthConfigured();
-      if (!configured) {
-        return NextResponse.json(
-          { success: false, error: "Codex login not found. Run codex login first." },
-          { status: 400 }
-        );
-      }
-      return NextResponse.json({ success: true });
-    }
+      provider === "openai" ? "openai" : "gemini";
 
     if (!apiKey || typeof apiKey !== "string") {
       return NextResponse.json(

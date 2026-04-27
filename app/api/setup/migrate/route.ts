@@ -97,7 +97,7 @@ const requestSchema = z.object({
     url: z.string().min(1),
   }),
   embeddings: z.object({
-    provider: z.enum(["gemini", "openai", "openai-codex"]).default("gemini"),
+    provider: z.enum(["gemini", "openai"]).default("gemini"),
     apiKey: z.string().optional(),
   }).optional(),
   extension: z.object({
