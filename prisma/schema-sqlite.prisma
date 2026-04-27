@@ -8,46 +8,50 @@ datasource db {
 }
 
 model ContentItem {
-  id                  String    @id @default(uuid())
-  source_type         String
-  external_id         String?
-  author_handle       String?
-  author_display_name String?
-  author_avatar_url   String?
-  title               String
-  body_text           String
-  body_html           String?
-  conversation_id     String?
-  original_url        String?
-  source_platform     String    @default("x")
-  source_label        String?
-  source_domain       String?
-  rss_feed_id         String?
-  posted_at           DateTime?
-  likes               Int?
-  retweets            Int?
-  replies             Int?
-  views               Int?
-  has_prompt          Boolean   @default(false)
-  prompt_text         String?
-  prompt_type         String?
-  language            String?
-  translated_title    String?
+  id                   String    @id @default(uuid())
+  user_id              String
+  source_type          String
+  external_id          String?
+  author_handle        String?
+  author_display_name  String?
+  author_avatar_url    String?
+  title                String
+  body_text            String
+  body_html            String?
+  conversation_id      String?
+  original_url         String?
+  source_platform      String    @default("x")
+  source_label         String?
+  source_domain        String?
+  rss_feed_id          String?
+  posted_at            DateTime?
+  likes                Int?
+  retweets             Int?
+  replies              Int?
+  views                Int?
+  has_prompt           Boolean   @default(false)
+  prompt_text          String?
+  prompt_type          String?
+  language             String?
+  translated_title     String?
   translated_body_text String?
-  ai_summary          String?
-  raw_markdown        String
-  source_file_path    String    @unique
-  content_hash        String
-  processing_status   String    @default("parsed")
-  processing_error    String?
-  created_at          DateTime  @default(now())
-  updated_at          DateTime  @default(now()) @updatedAt
+  ai_summary           String?
+  raw_markdown         String
+  source_file_path     String
+  content_hash         String
+  processing_status    String    @default("parsed")
+  processing_error     String?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @default(now()) @updatedAt
 
   media_items Media[]
   categories  ContentCategory[]
   tags        ContentTag[]
-  rss_feed    RssFeed? @relation(fields: [rss_feed_id], references: [id], onDelete: SetNull)
+  user        User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  rss_feed    RssFeed?          @relation(fields: [rss_feed_id], references: [id], onDelete: SetNull)
 
+  @@unique([user_id, source_file_path])
+  @@index([user_id])
   @@index([external_id])
   @@index([conversation_id])
   @@index([content_hash])
@@ -61,29 +65,33 @@ model ContentItem {
 }
 
 model RssFeed {
-  id             String       @id @default(uuid())
-  feed_url       String       @unique
+  id             String    @id @default(uuid())
+  user_id        String
+  feed_url       String
   site_url       String?
   title          String
   description    String?
   language       String?
-  active         Boolean      @default(true)
+  active         Boolean   @default(true)
   etag           String?
   last_modified  String?
   last_synced_at DateTime?
   last_error     String?
-  created_at     DateTime     @default(now())
-  updated_at     DateTime     @default(now()) @updatedAt
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @default(now()) @updatedAt
 
   items ContentItem[]
+  user  User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
+  @@unique([user_id, feed_url])
+  @@index([user_id])
   @@map("rss_feeds")
 }
 
 model Category {
-  id          String  @id @default(uuid())
+  id          String     @id @default(uuid())
   name        String
-  slug        String  @unique
+  slug        String     @unique
   description String?
   parent_id   String?
   parent      Category?  @relation("CategoryHierarchy", fields: [parent_id], references: [id])
@@ -105,7 +113,7 @@ model Tag {
 }
 
 model Media {
-  id                  String  @id @default(uuid())
+  id                  String      @id @default(uuid())
   content_item_id     String
   content_item        ContentItem @relation(fields: [content_item_id], references: [id], onDelete: Cascade)
   media_type          String
@@ -156,13 +164,16 @@ model XApiConnection {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  password_hash String
-  role          String   @default("admin")
-  capture_token String?  @unique
+  id             String   @id @default(uuid())
+  email          String   @unique
+  password_hash  String
+  role           String   @default("admin")
+  capture_token  String?  @unique
   pinned_filters String?
-  created_at    DateTime @default(now())
+  created_at     DateTime @default(now())
+
+  content_items ContentItem[]
+  rss_feeds     RssFeed[]
 
   @@map("users")
 }

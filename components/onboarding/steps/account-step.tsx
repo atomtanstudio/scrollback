@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
 import {
   onboardingHeadingClass,
   onboardingInputClass,
@@ -8,7 +9,6 @@ import {
   onboardingNoteClass,
   onboardingPrimaryButtonClass,
   onboardingSubheadingClass,
-  onboardingTextButtonClass,
   StepBadge,
 } from "../ui";
 
@@ -42,6 +42,17 @@ export function AccountStep({ onContinue }: AccountStepProps) {
       const data = await res.json();
 
       if (res.ok && data.success) {
+        const signInResult = await signIn("credentials", {
+          email,
+          password,
+          redirect: false,
+        });
+
+        if (signInResult?.error) {
+          setError("Account created, but automatic sign-in failed. Please sign in from the login page.");
+          return;
+        }
+
         onContinue();
       } else {
         setError(data.error || "Failed to create account");
@@ -55,11 +66,12 @@ export function AccountStep({ onContinue }: AccountStepProps) {
 
   return (
     <div className="flex flex-col items-center text-center">
-      <StepBadge tone="optional">Optional</StepBadge>
+      <StepBadge tone="recommended">Required</StepBadge>
 
       <h2 className={onboardingHeadingClass}>Create Admin Account</h2>
       <p className={`${onboardingSubheadingClass} mb-8 mt-4 max-w-[480px]`}>
-        Set up your login credentials to protect settings and admin features.
+        Set up your login credentials before continuing. FeedSilo protects your
+        archive, settings, and extension token behind this account.
       </p>
 
       <div className="mb-4 flex w-full max-w-[480px] flex-col gap-4">
@@ -123,18 +135,13 @@ export function AccountStep({ onContinue }: AccountStepProps) {
         hashed with bcrypt and never stored in plain text.
       </p>
 
-      <div className="flex flex-col items-center gap-3">
-        <button
-          onClick={handleSubmit}
-          disabled={!canSubmit || saving}
-          className={onboardingPrimaryButtonClass}
-        >
-          {saving ? "Creating..." : "Create Account & Continue"}
-        </button>
-        <button onClick={onContinue} className={onboardingTextButtonClass}>
-          Skip for now
-        </button>
-      </div>
+      <button
+        onClick={handleSubmit}
+        disabled={!canSubmit || saving}
+        className={onboardingPrimaryButtonClass}
+      >
+        {saving ? "Creating..." : "Create Account & Continue"}
+      </button>
     </div>
   );
 }
