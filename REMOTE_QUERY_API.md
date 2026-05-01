@@ -14,7 +14,7 @@ This API is designed to be:
 Production:
 
 ```bash
-https://feedsilo.app/api/remote/items
+https://your-feedsilo-domain/api/remote/items
 ```
 
 Local example:
@@ -29,7 +29,7 @@ Use your FeedSilo capture token as a Bearer token.
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://feedsilo.app/api/remote/items?per_page=10"
+  "https://your-feedsilo-domain/api/remote/items?per_page=10"
 ```
 
 You can reveal or regenerate the token from FeedSilo settings.
@@ -129,7 +129,7 @@ Use NDJSON when you want to stream items line-by-line into another tool:
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://feedsilo.app/api/remote/items?format=ndjson&per_page=100"
+  "https://your-feedsilo-domain/api/remote/items?format=ndjson&per_page=100"
 ```
 
 Each line is one JSON object.
@@ -140,63 +140,63 @@ Each line is one JSON object.
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://feedsilo.app/api/remote/items?per_page=100"
+  "https://your-feedsilo-domain/api/remote/items?per_page=100"
 ```
 
 ### 2. Pull only art-related items
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://feedsilo.app/api/remote/items?type=art&per_page=100"
+  "https://your-feedsilo-domain/api/remote/items?type=art&per_page=100"
 ```
 
 ### 3. Pull items by tag or category slug
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://feedsilo.app/api/remote/items?tag=performance-optimization"
+  "https://your-feedsilo-domain/api/remote/items?tag=performance-optimization"
 ```
 
 ### 4. Search by text
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://feedsilo.app/api/remote/items?q=vector%20search"
+  "https://your-feedsilo-domain/api/remote/items?q=vector%20search"
 ```
 
 ### 5. Pull content from a given author
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://feedsilo.app/api/remote/items?author=karpathy"
+  "https://your-feedsilo-domain/api/remote/items?author=karpathy"
 ```
 
 ### 6. Pull only items with prompts
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://feedsilo.app/api/remote/items?has_prompt=true"
+  "https://your-feedsilo-domain/api/remote/items?has_prompt=true"
 ```
 
 ### 7. Pull items created in a date range
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://feedsilo.app/api/remote/items?since=2026-01-01T00:00:00Z&until=2026-04-01T00:00:00Z"
+  "https://your-feedsilo-domain/api/remote/items?since=2026-01-01T00:00:00Z&until=2026-04-01T00:00:00Z"
 ```
 
 ### 8. Fetch a single item by ID
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://feedsilo.app/api/remote/items?id=YOUR_ITEM_ID"
+  "https://your-feedsilo-domain/api/remote/items?id=YOUR_ITEM_ID"
 ```
 
 ### 9. Stream NDJSON into a file
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://feedsilo.app/api/remote/items?format=ndjson&per_page=500" \
+  "https://your-feedsilo-domain/api/remote/items?format=ndjson&per_page=500" \
   > feedsilo-export.ndjson
 ```
 
