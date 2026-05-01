@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
 import { isLocalStorageConfigured, readLocalMedia } from "@/lib/storage/local";
+import { requireAuth } from "@/lib/auth/session";
+import { canAccessMediaStorageKey } from "@/lib/storage/media-access";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +11,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ key: string[] }> }
 ) {
+  const session = await requireAuth();
+  if (session instanceof Response) return session;
+
   if (!isLocalStorageConfigured()) {
     return new Response("Local media storage not configured", { status: 503 });
   }
@@ -18,6 +23,11 @@ export async function GET(
 
   if (!ALLOWED_PREFIXES.some((prefix) => key.startsWith(prefix))) {
     return new Response("Forbidden", { status: 403 });
+  }
+
+  const canAccess = await canAccessMediaStorageKey(key, session.user.id, session.user.role);
+  if (!canAccess) {
+    return new Response("Not found", { status: 404 });
   }
 
   const file = await readLocalMedia(key);
@@ -43,7 +53,7 @@ export async function GET(
           "Content-Range": `bytes ${start}-${end}/${totalSize}`,
           "Accept-Ranges": "bytes",
           "Content-Length": String(chunk.byteLength),
-          "Cache-Control": "public, max-age=31536000, immutable",
+          "Cache-Control": "private, max-age=31536000, immutable",
         },
       });
     }
@@ -54,7 +64,7 @@ export async function GET(
       "Content-Type": contentType,
       "Content-Length": String(buffer.byteLength),
       "Accept-Ranges": "bytes",
-      "Cache-Control": "public, max-age=31536000, immutable",
+      "Cache-Control": "private, max-age=31536000, immutable",
     },
   });
 }

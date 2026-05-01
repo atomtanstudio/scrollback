@@ -1,5 +1,6 @@
 import { uploadMedia, uploadMediaStream, isR2Configured } from "./r2";
 import { isLocalStorageConfigured, saveMediaLocally, saveMediaLocallyStream } from "./local";
+import { safeFetch } from "@/lib/security/safe-fetch";
 
 const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB (videos can be large)
 const DOWNLOAD_TIMEOUT = 300_000; // 5 minutes (large video downloads)
@@ -28,36 +29,46 @@ function extractExtension(url: string, contentType: string): string {
   return CONTENT_TYPE_TO_EXT[contentType] || "bin";
 }
 
+export function limitReadableStreamBytes(
+  body: ReadableStream<Uint8Array>,
+  maxBytes: number = MAX_FILE_SIZE
+): ReadableStream<Uint8Array> {
+  const reader = body.getReader();
+  let bytesRead = 0;
+
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      const { done, value } = await reader.read();
+      if (done) {
+        controller.close();
+        return;
+      }
+
+      bytesRead += value.byteLength;
+      if (bytesRead > maxBytes) {
+        await reader.cancel("media file exceeded size limit").catch(() => undefined);
+        controller.error(new Error(`Media exceeds maximum size of ${maxBytes} bytes`));
+        return;
+      }
+
+      controller.enqueue(value);
+    },
+    async cancel(reason) {
+      await reader.cancel(reason).catch(() => undefined);
+    },
+  });
+}
+
 export async function downloadAndStoreMedia(
   mediaId: string,
   contentItemId: string,
   originalUrl: string
 ): Promise<string | null> {
   try {
-    // Validate URL before fetching
-    let parsed: URL;
-    try {
-      parsed = new URL(originalUrl);
-    } catch {
-      console.warn(`Invalid URL, skipping: ${originalUrl}`);
-      return null;
-    }
-
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      console.warn(`Disallowed protocol "${parsed.protocol}", skipping: ${originalUrl}`);
-      return null;
-    }
-
-    const forbiddenHosts = ["localhost", "127.0.0.1", "::1"];
-    if (forbiddenHosts.includes(parsed.hostname)) {
-      console.warn(`SSRF blocked for host "${parsed.hostname}", skipping: ${originalUrl}`);
-      return null;
-    }
-
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT);
 
-    const response = await fetch(originalUrl, {
+    const response = await safeFetch(originalUrl, {
       signal: controller.signal,
       headers: { "User-Agent": "FeedSilo/1.0" },
     });
@@ -69,8 +80,10 @@ export async function downloadAndStoreMedia(
     }
 
     // Check file size
-    const contentLength = parseInt(response.headers.get("content-length") || "0", 10);
-    if (contentLength > MAX_FILE_SIZE) {
+    const contentLengthHeader = response.headers.get("content-length");
+    const contentLength = contentLengthHeader ? parseInt(contentLengthHeader, 10) : null;
+    const hasKnownContentLength = typeof contentLength === "number" && Number.isFinite(contentLength);
+    if (hasKnownContentLength && contentLength > MAX_FILE_SIZE) {
       console.warn(`Media too large (${contentLength} bytes), skipping: ${originalUrl}`);
       return null;
     }
@@ -78,7 +91,10 @@ export async function downloadAndStoreMedia(
     const contentType = response.headers.get("content-type") || "application/octet-stream";
     const ext = extractExtension(originalUrl, contentType);
     const key = `media/${contentItemId}/${mediaId}.${ext}`;
-    const useStreaming = contentLength > STREAM_THRESHOLD || (contentLength === 0 && contentType.startsWith("video/"));
+    const useStreaming =
+      !hasKnownContentLength ||
+      contentLength > STREAM_THRESHOLD ||
+      (contentLength === 0 && contentType.startsWith("video/"));
 
     if (isR2Configured()) {
       // Use streaming upload for large files to avoid OOM
@@ -87,17 +103,25 @@ export async function downloadAndStoreMedia(
           console.warn(`No response body for streaming: ${originalUrl}`);
           return null;
         }
-        return await uploadMediaStream(key, response.body, contentType);
+        return await uploadMediaStream(key, limitReadableStreamBytes(response.body), contentType);
       }
       const arrayBuffer = await response.arrayBuffer();
+      if (arrayBuffer.byteLength > MAX_FILE_SIZE) {
+        console.warn(`Media too large (${arrayBuffer.byteLength} bytes), skipping: ${originalUrl}`);
+        return null;
+      }
       return await uploadMedia(key, Buffer.from(arrayBuffer), contentType);
     }
 
     if (isLocalStorageConfigured()) {
       if (useStreaming && response.body) {
-        return await saveMediaLocallyStream(key, response.body);
+        return await saveMediaLocallyStream(key, limitReadableStreamBytes(response.body));
       }
       const arrayBuffer = await response.arrayBuffer();
+      if (arrayBuffer.byteLength > MAX_FILE_SIZE) {
+        console.warn(`Media too large (${arrayBuffer.byteLength} bytes), skipping: ${originalUrl}`);
+        return null;
+      }
       return await saveMediaLocally(key, Buffer.from(arrayBuffer));
     }
 

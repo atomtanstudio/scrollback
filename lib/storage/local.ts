@@ -1,6 +1,13 @@
-import { promises as fs } from "fs";
+import { createWriteStream, promises as fs } from "fs";
 import path from "path";
-import { getConfig } from "@/lib/config";
+import { Readable } from "stream";
+import { pipeline } from "stream/promises";
+import {
+  getConfiguredLocalMediaPath,
+  isLocalStorageConfigured,
+} from "@/lib/storage/local-config";
+
+export { isLocalStorageConfigured };
 
 const EXT_TO_CONTENT_TYPE: Record<string, string> = {
   jpg: "image/jpeg",
@@ -13,22 +20,22 @@ const EXT_TO_CONTENT_TYPE: Record<string, string> = {
   bin: "application/octet-stream",
 };
 
-export function getLocalMediaDir(): string | null {
-  const fromEnv = process.env.LOCAL_MEDIA_PATH;
-  if (fromEnv) return path.resolve(fromEnv);
-  const fromConfig = getConfig()?.localMedia?.path;
-  if (fromConfig) return path.resolve(fromConfig);
-  return null;
+function resolveConfiguredPath(configuredPath: string): string {
+  return path.isAbsolute(configuredPath)
+    ? configuredPath
+    : path.resolve(/* turbopackIgnore: true */ process.cwd(), configuredPath);
 }
 
-export function isLocalStorageConfigured(): boolean {
-  return !!getLocalMediaDir();
+export function getLocalMediaDir(): string | null {
+  const configuredPath = getConfiguredLocalMediaPath();
+  return configuredPath ? resolveConfiguredPath(configuredPath) : null;
 }
 
 export async function saveMediaLocally(key: string, body: Buffer): Promise<string> {
   const baseDir = getLocalMediaDir()!;
-  const fullPath = path.resolve(baseDir, key);
-  if (!fullPath.startsWith(path.resolve(baseDir) + path.sep) && fullPath !== path.resolve(baseDir)) {
+  const resolvedBaseDir = path.resolve(/* turbopackIgnore: true */ baseDir);
+  const fullPath = path.resolve(/* turbopackIgnore: true */ resolvedBaseDir, key);
+  if (!fullPath.startsWith(resolvedBaseDir + path.sep) && fullPath !== resolvedBaseDir) {
     throw new Error("Path traversal detected");
   }
   await fs.mkdir(path.dirname(fullPath), { recursive: true });
@@ -38,24 +45,21 @@ export async function saveMediaLocally(key: string, body: Buffer): Promise<strin
 
 export async function saveMediaLocallyStream(key: string, body: ReadableStream): Promise<string> {
   const baseDir = getLocalMediaDir()!;
-  const fullPath = path.resolve(baseDir, key);
-  if (!fullPath.startsWith(path.resolve(baseDir) + path.sep) && fullPath !== path.resolve(baseDir)) {
+  const resolvedBaseDir = path.resolve(/* turbopackIgnore: true */ baseDir);
+  const fullPath = path.resolve(/* turbopackIgnore: true */ resolvedBaseDir, key);
+  if (!fullPath.startsWith(resolvedBaseDir + path.sep) && fullPath !== resolvedBaseDir) {
     throw new Error("Path traversal detected");
   }
   await fs.mkdir(path.dirname(fullPath), { recursive: true });
-
-  const chunks: Uint8Array[] = [];
-  const reader = body.getReader();
   try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-    }
-  } finally {
-    reader.releaseLock();
+    await pipeline(
+      Readable.fromWeb(body as import("stream/web").ReadableStream),
+      createWriteStream(fullPath)
+    );
+  } catch (error) {
+    await fs.rm(fullPath, { force: true }).catch(() => undefined);
+    throw error;
   }
-  await fs.writeFile(fullPath, Buffer.concat(chunks));
   return `local/${key}`;
 }
 
@@ -69,8 +73,9 @@ export async function readLocalMedia(
 ): Promise<{ buffer: Buffer; contentType: string } | null> {
   const baseDir = getLocalMediaDir();
   if (!baseDir) return null;
-  const fullPath = path.resolve(baseDir, key);
-  if (!fullPath.startsWith(path.resolve(baseDir) + path.sep)) return null;
+  const resolvedBaseDir = path.resolve(/* turbopackIgnore: true */ baseDir);
+  const fullPath = path.resolve(/* turbopackIgnore: true */ resolvedBaseDir, key);
+  if (!fullPath.startsWith(resolvedBaseDir + path.sep)) return null;
   try {
     const buffer = await fs.readFile(fullPath);
     return { buffer, contentType: contentTypeForPath(fullPath) };
