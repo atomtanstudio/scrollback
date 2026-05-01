@@ -3,8 +3,21 @@ import { cookies } from "next/headers";
 import { exchangeCodeForTokens } from "@/lib/xapi/oauth";
 import { storeTokens } from "@/lib/xapi/token-store";
 import { fetchMe } from "@/lib/xapi/client";
+import { auth } from "@/lib/auth/auth";
 
 export async function GET(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user) {
+    const loginUrl = new URL("/login", request.nextUrl.origin);
+    loginUrl.searchParams.set("callbackUrl", "/settings");
+    return NextResponse.redirect(loginUrl);
+  }
+  if (session.user.role !== "admin") {
+    return NextResponse.redirect(
+      new URL("/settings?xapi_error=forbidden", request.nextUrl.origin)
+    );
+  }
+
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
   const error = request.nextUrl.searchParams.get("error");

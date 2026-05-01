@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sanitizeErrorMessage } from "@/lib/security/redact";
+import { requireSetupUnlocked } from "@/lib/setup/guard";
 
 export async function POST(request: NextRequest) {
   try {
+    const locked = await requireSetupUnlocked({ allowAdmin: true });
+    if (locked) return locked;
+
     const { apiKey } = await request.json();
     if (!apiKey || typeof apiKey !== "string") {
       return NextResponse.json(

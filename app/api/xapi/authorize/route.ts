@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generatePKCE, generateState, buildAuthorizeUrl } from "@/lib/xapi/oauth";
 import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/auth/session";
 
 export async function GET(request: NextRequest) {
+  const session = await requireAdmin();
+  if (session instanceof NextResponse) return session;
+
   const clientId = process.env.XAPI_CLIENT_ID;
   if (!clientId) {
     return NextResponse.json(

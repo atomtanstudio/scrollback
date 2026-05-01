@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { sanitizeErrorMessage } from "@/lib/security/redact";
+import { requireSetupUnlocked } from "@/lib/setup/guard";
 
 const requestSchema = z.object({
   type: z.enum(["postgresql", "supabase", "sqlite"]),
@@ -17,6 +18,9 @@ const requestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const locked = await requireSetupUnlocked();
+    if (locked) return locked;
+
     const body = await request.json();
     const parsed = requestSchema.safeParse(body);
     if (!parsed.success) {
