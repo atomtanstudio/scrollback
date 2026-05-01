@@ -4,6 +4,7 @@ import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import { getClient } from "@/lib/db/client";
 import { ingestItem } from "@/lib/ingest";
+import { safeFetch } from "@/lib/security/safe-fetch";
 import type { CapturePayload } from "@/lib/db/types";
 
 type ParsedFeed = {
@@ -142,9 +143,8 @@ async function fetchReadableArticle(url: string): Promise<{
 }> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15_000);
-  const response = await fetch(url, {
+  const response = await safeFetch(url, {
     headers: { "User-Agent": "FeedSilo RSS Fetcher/1.0" },
-    redirect: "follow",
     signal: controller.signal,
   });
   clearTimeout(timeout);
@@ -209,7 +209,7 @@ async function fetchParsedFeed(
   if (options.etag) headers["If-None-Match"] = options.etag;
   if (options.lastModified) headers["If-Modified-Since"] = options.lastModified;
 
-  const response = await fetch(feedUrl, { headers, redirect: "follow" });
+  const response = await safeFetch(feedUrl, { headers });
 
   if (response.status === 304) {
     return {

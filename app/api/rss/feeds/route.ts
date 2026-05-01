@@ -38,6 +38,10 @@ export async function POST(request: NextRequest) {
     const userId = resolveUserId(session, body?.userId);
 
     if (action === "sync-all") {
+      if (session.user.role !== "admin") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+
       const result = await syncAllRssFeeds();
       return NextResponse.json({ success: true, ...result });
     }
