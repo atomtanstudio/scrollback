@@ -104,12 +104,11 @@ export async function fetchItems(options: FetchItemsOptions) {
     return new Date((preferPublishedAt ? item.posted_at : null) ?? item.created_at).getTime();
   };
 
-  // Pick one recent thread card per author, choosing the root tweet from each conversation.
-  // This keeps large threads from flooding the feed while still surfacing the newest thread
-  // capture per author in globally recent order.
+  // Pick one card per conversation, choosing the earliest captured post as the root.
+  // This keeps reply-rich threads from flooding the feed even when captures include
+  // replies from multiple authors.
   const dedupeThreads = <T extends {
     conversation_id: string | null;
-    author_handle: string | null;
     posted_at: Date | string | null;
     created_at: Date | string;
   }>(rows: T[]): T[] => {
@@ -126,21 +125,7 @@ export async function fetchItems(options: FetchItemsOptions) {
       }
     }
 
-    const latestByAuthor = new Map<string, T>();
-    for (const row of Array.from(earliestByConversation.values())) {
-      const authorKey = (row.author_handle || "").toLowerCase();
-      if (!authorKey) continue;
-      const existing = latestByAuthor.get(authorKey);
-      const rowTime = new Date(row.created_at).getTime();
-      const existingTime = existing
-        ? new Date(existing.created_at).getTime()
-        : Number.NEGATIVE_INFINITY;
-      if (!existing || rowTime > existingTime) {
-        latestByAuthor.set(authorKey, row);
-      }
-    }
-
-    return Array.from(latestByAuthor.values())
+    return Array.from(earliestByConversation.values())
       .sort((a, b) => itemSortKey(b) - itemSortKey(a))
       .slice(0, batchSize);
   };
@@ -169,11 +154,8 @@ export async function fetchItems(options: FetchItemsOptions) {
           take: batchSize,
         })
       : Promise.resolve([]),
-    // One thread per author: the same thread can be captured multiple times
-    // from different entry points, yielding different conversation_ids.
-    // Deduplicating by author_handle ensures only one thread card per author
-    // appears in the feed regardless of how many captures occurred.
-    // Within each author's threads, we pick the root tweet (earliest posted_at).
+    // One card per conversation. Replies from other authors are still stored and
+    // shown on the detail page, but do not become separate feed cards.
     isThreadFilter
       ? prisma.contentItem.findMany({
           where: dedupableThreadWhere,
@@ -201,8 +183,8 @@ export async function fetchStats(userId: string) {
   const [total, tweets, rawThreads, articles, rss, art] = await Promise.all([
     prisma.contentItem.count({ where: { user_id: userId } }),
     prisma.contentItem.count({ where: { source_type: "tweet", user_id: userId } }),
-    // Deduplicated thread count: one per conversation, then one per author,
-    // plus thread captures that cannot be deduplicated safely.
+    // Deduplicated thread count: one per conversation, plus thread captures that
+    // cannot be deduplicated safely.
     prisma.contentItem.findMany({
       where: { source_type: "thread", conversation_id: { not: null }, author_handle: { not: null }, user_id: userId },
       select: { conversation_id: true, author_handle: true, posted_at: true, created_at: true },
@@ -220,10 +202,6 @@ export async function fetchStats(userId: string) {
           byConv.set(row.conversation_id, row);
         }
       }
-      const authors = new Set<string>();
-      for (const row of Array.from(byConv.values())) {
-        authors.add((row.author_handle || "").toLowerCase());
-      }
       const orphanCount = await prisma.contentItem.count({
         where: {
           source_type: "thread",
@@ -231,7 +209,7 @@ export async function fetchStats(userId: string) {
           OR: [{ conversation_id: null }, { author_handle: null }],
         },
       });
-      return authors.size + orphanCount;
+      return byConv.size + orphanCount;
     }),
     prisma.contentItem.count({ where: { source_type: "article", source_platform: { not: "rss" }, user_id: userId } }),
     prisma.contentItem.count({ where: { source_platform: "rss", user_id: userId } }),
@@ -313,7 +291,7 @@ export async function fetchThreadChain(item: {
   user_id: string;
   id: string;
 }) {
-  if (item.source_type !== "thread" || !item.author_handle || !item.conversation_id) {
+  if (item.source_type !== "thread" || !item.conversation_id) {
     return [];
   }
 
@@ -322,7 +300,6 @@ export async function fetchThreadChain(item: {
   const siblings = await prisma.contentItem.findMany({
     where: {
       source_type: "thread",
-      author_handle: item.author_handle,
       conversation_id: item.conversation_id,
       user_id: item.user_id,
       id: { not: item.id },

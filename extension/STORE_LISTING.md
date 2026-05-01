@@ -93,7 +93,7 @@ Capture these for your 1280x800 store screenshots:
 When filling out the "Privacy practices" tab:
 
 - **Single purpose description**: "Captures tweets, threads, and articles from X/Twitter and sends them to the user's self-hosted FeedSilo server."
-- Does the extension collect personal data? **No** — all data goes to the user's own server.
+- Does the extension collect or transmit data to the developer? **No** — user-directed captured content is sent only to the user's configured FeedSilo server.
 - Does the extension use remote code? **No**
 - Certify data use disclosures: **Yes**
 

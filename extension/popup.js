@@ -8,8 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const testBtn = document.getElementById('testBtn');
   const saveXapiBtn = document.getElementById('saveXapiBtn');
   const bulkBtn = document.getElementById('bulkBtn');
+  const recaptureThreadsBtn = document.getElementById('recaptureThreadsBtn');
   const statusMsg = document.getElementById('statusMsg');
   const xapiStatusMsg = document.getElementById('xapiStatusMsg');
+  const repairStatusMsg = document.getElementById('repairStatusMsg');
   const connectionDot = document.getElementById('connectionDot');
   const connectionStatus = document.getElementById('connectionStatus');
   const connectionLabel = document.getElementById('connectionLabel');
@@ -17,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const captureModeText = document.getElementById('captureModeText');
 
   bootstrapActiveTwitterTab();
+  refreshRepairQueueStatus();
 
   // Load saved settings
   loadSettings((result) => {
@@ -143,6 +146,54 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  recaptureThreadsBtn.addEventListener('click', () => {
+    recaptureThreadsBtn.disabled = true;
+    showStatus(repairStatusMsg, 'Recapturing singleton threads...', 'info');
+
+    chrome.runtime.sendMessage({ type: 'RECAPTURE_SINGLETON_THREADS', limit: 5 }, (response) => {
+      recaptureThreadsBtn.disabled = false;
+
+      if (chrome.runtime.lastError) {
+        showStatus(repairStatusMsg, chrome.runtime.lastError.message || 'Recapture failed', 'error');
+        return;
+      }
+
+      if (!response?.success) {
+        showStatus(repairStatusMsg, response?.error || 'Recapture failed', 'error');
+        return;
+      }
+
+      const remaining = response.remainingAfter === null || response.remainingAfter === undefined
+        ? 'unknown remaining'
+        : `${response.remainingAfter} remaining`;
+      const message = `Queued ${response.queued || 0}, recaptured ${response.recaptured || 0}, skipped ${response.skipped || 0}, errors ${response.errors || 0}; ${remaining}`;
+      showStatus(repairStatusMsg, message, response.errors ? 'error' : 'success');
+      if (response.remainingAfter !== null && response.remainingAfter !== undefined) {
+        recaptureThreadsBtn.textContent = response.remainingAfter > 0
+          ? `Recapture 5 of ${response.remainingAfter} singleton threads`
+          : 'No singleton threads left';
+        recaptureThreadsBtn.disabled = response.remainingAfter === 0;
+      }
+      console.log('FeedSilo thread recapture summary', response);
+    });
+  });
+
+  function refreshRepairQueueStatus() {
+    if (!recaptureThreadsBtn || !repairStatusMsg) return;
+    chrome.runtime.sendMessage({ type: 'GET_SINGLETON_THREAD_QUEUE', limit: 5 }, (response) => {
+      if (chrome.runtime.lastError || !response?.success) return;
+      const remaining = response.remaining || 0;
+      recaptureThreadsBtn.textContent = remaining > 0
+        ? `Recapture 5 of ${remaining} singleton threads`
+        : 'No singleton threads left';
+      recaptureThreadsBtn.disabled = remaining === 0;
+      showStatus(repairStatusMsg, remaining > 0
+        ? `${remaining} singleton thread captures left to check.`
+        : 'No singleton thread captures left to check.',
+      remaining > 0 ? 'info' : 'success');
+    });
+  }
 
   function updateCaptureMode(hasToken) {
     if (hasToken) {

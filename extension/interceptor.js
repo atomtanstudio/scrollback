@@ -28,7 +28,7 @@
           }));
         }).catch(() => {});
       }
-    } catch (e) {
+    } catch {
       // Never break the page
     }
 
@@ -52,7 +52,7 @@
           document.dispatchEvent(new CustomEvent('feedsilo-api-response', {
             detail: JSON.stringify(data),
           }));
-        } catch (e) {}
+        } catch {}
       });
     }
     return originalXHRSend.apply(this, args);

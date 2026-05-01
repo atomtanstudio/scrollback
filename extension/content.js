@@ -13,40 +13,6 @@ const contentBootstrappedLate = document.readyState !== 'loading';
 const DEBUG = false;
 function log(...args) { if (DEBUG) console.log('FeedSilo:', ...args); }
 
-// Send a message to background.js with retry on failure
-function sendMessageSafe(message) {
-  return new Promise((resolve, reject) => {
-    try {
-      chrome.runtime.sendMessage(message, (response) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
-        } else {
-          resolve(response);
-        }
-      });
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
-
-async function sendMessageWithRetry(message, retries = 1) {
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      return await sendMessageSafe(message);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('context invalidated')) throw err; // Can't retry this
-      if (attempt < retries) {
-        log('sendMessage failed, retrying...', msg);
-        await new Promise(r => setTimeout(r, 300));
-      } else {
-        throw err;
-      }
-    }
-  }
-}
-
 // Merge source into target without overwriting non-null values with null
 function mergeKeepNonNull(target, source) {
   for (const key of Object.keys(source)) {
@@ -894,6 +860,22 @@ function cacheTweetData(tweet) {
     bodyText = legacy.full_text || '';
   }
 
+  if (quotedTweet) {
+    const quotedLegacy = quotedTweet.legacy || {};
+    const quotedNote = quotedTweet.note_tweet?.note_tweet_results?.result;
+    const quotedText = quotedNote?.text || quotedLegacy.full_text || '';
+    const quotedUserResult = quotedTweet.core?.user_results?.result;
+    const quotedUser = quotedUserResult?.legacy || quotedUserResult?.result?.legacy || quotedTweet.user?.legacy || {};
+    const quotedHandle = quotedUser.screen_name
+      || quotedUserResult?.screen_name
+      || quotedUserResult?.result?.screen_name
+      || null;
+    if (quotedText && !bodyText.includes(quotedText)) {
+      const quotedLabel = quotedHandle ? `Quoted post by @${quotedHandle}` : 'Quoted post';
+      bodyText = [bodyText, `${quotedLabel}:\n${quotedText}`].filter(Boolean).join('\n\n');
+    }
+  }
+
   // Thread detection: conversation_id differs from tweet's own ID
   // X API uses conversation_id_str (string), not conversation_id
   let conversationId = legacy.conversation_id_str || legacy.conversation_id || tweetId;
@@ -1430,10 +1412,6 @@ function injectSaveButtons() {
           return (a.external_id || '').localeCompare(b.external_id || '', undefined, { numeric: true });
         });
 
-        const root = threadItems[0];
-        const allMediaUrls = [];
-        const bodyParts = [];
-
         // Resolve missing media for tweets with empty media_urls (e.g., link card images)
         const resolvePromises = threadItems
           .filter(item => (!item.media_urls || item.media_urls.length === 0) && item.external_id)
@@ -1456,46 +1434,20 @@ function injectSaveButtons() {
         for (let idx = 0; idx < threadItems.length; idx++) {
           const item = threadItems[idx];
           log(`  [${idx}] id=${item.external_id} posted_at=${item.posted_at} media=${(item.media_urls||[]).length} body="${(item.body_text||'').substring(0,50)}"`);
-          if (item.body_text) bodyParts.push(item.body_text);
-          // Insert media markers inline after each tweet's text
-          for (const url of (item.media_urls || [])) {
-            if (!allMediaUrls.includes(url)) allMediaUrls.push(url);
-            if (url.includes('.mp4') || url.includes('/vid/')) {
-              bodyParts.push(`[Video: ${url}]`);
-            } else {
-              bodyParts.push(`[Image: ${url}]`);
-            }
-          }
         }
-        log('Assembled bodyParts count:', bodyParts.length);
-        // Log position of image markers
-        bodyParts.forEach((part, i) => {
-          if (part.startsWith('[Image:') || part.startsWith('[Video:')) {
-            log(`  bodyPart[${i}] = ${part.substring(0, 80)}`);
-          }
-        });
 
-        const assembled = {
-          external_id: root.external_id,
-          source_url: root.source_url,
-          source_type: 'thread',
-          conversation_id: root.conversation_id || root.external_id,
-          author_handle: root.author_handle,
-          author_display_name: root.author_display_name,
-          author_avatar_url: root.author_avatar_url,
-          body_text: bodyParts.join('\n\n---\n\n'),
-          posted_at: root.posted_at,
-          media_urls: allMediaUrls,
-          likes: root.likes,
-          retweets: root.retweets,
-          replies: root.replies,
-          views: root.views,
-        };
+        const conversationId = threadItems.find(item => item.conversation_id)?.conversation_id
+          || data.conversation_id
+          || data.external_id;
+        const payloadItems = threadItems.map((item) => stripInternalCaptureFields({
+          ...item,
+          source_type: item.source_type === 'article' ? item.source_type : 'thread',
+          conversation_id: item.conversation_id || conversationId,
+        }));
 
-        log(' Thread detected — assembled', threadItems.length, 'tweets into single item');
-        log(' Assembled body length:', assembled.body_text.length, 'media:', assembled.media_urls.length);
+        log(' Thread detected — saving', payloadItems.length, 'conversation posts');
 
-        chrome.runtime.sendMessage({ type: 'CAPTURE_TWEET', data: assembled }, (response) => {
+        chrome.runtime.sendMessage({ type: 'CAPTURE_BULK', items: payloadItems }, (response) => {
           clearTimeout(saveTimeout);
           btn.classList.remove('saving');
           if (chrome.runtime.lastError) {
@@ -1505,17 +1457,17 @@ function injectSaveButtons() {
             return;
           }
           if (response?.success) {
-            if (response.already_exists) {
+            const changed = (response.captured || 0) + (response.skipped || 0);
+            if ((response.captured || 0) === 0 && (response.skipped || 0) > 0) {
               btn.classList.add('dupe');
               btn.innerHTML = 'DUPE';
-              log('Thread already exists in DB (external_id:', assembled.external_id, ')');
+              log('Thread already exists in DB (conversation_id:', conversationId, ')');
               setTimeout(() => resetButton(btn), 3000);
             } else {
               btn.classList.add('saved');
-              btn.innerHTML = `&#10003; ${threadItems.length}`;
+              btn.innerHTML = `&#10003; ${changed || payloadItems.length}`;
               // Mark all other thread tweets' save buttons as saved too
-              const threadConversationId = assembled.conversation_id;
-              markThreadButtonsSaved(threadConversationId, data.author_handle);
+              markThreadButtonsSaved(conversationId, data.author_handle);
             }
           } else {
             btn.classList.add('error');
@@ -1610,31 +1562,35 @@ function getThreadSiblingsFromCache(conversationId, authorHandle) {
     log('  tweet', item.external_id, 'author=', item.author_handle, 'replyTo=', item._replyToHandle, 'convId=', item.conversation_id, 'body=', (item.body_text || '').substring(0, 60));
   }
 
-  if (!shouldTreatItemsAsThread(conversationItems, author, conversationId)) {
-    log('  shouldTreatItemsAsThread returned false — not a thread');
+  if (conversationItems.length < 2) {
+    log('  fewer than two conversation items — not a thread');
     return [];
   }
-  const candidates = getCandidateSelfThreadItems(conversationItems, author, conversationId);
-  log('  getCandidateSelfThreadItems returned', candidates.length, 'candidates:', candidates.map(c => c.external_id));
-  const candidateIds = new Set(candidates.map((item) => item.external_id));
+  const likelySelfThread = shouldTreatItemsAsThread(conversationItems, author, conversationId);
+  if (!likelySelfThread) {
+    log('  no self-thread pattern detected; saving visible conversation replies anyway');
+  }
   for (const [, data] of tweetCache) {
     if (data.conversation_id !== conversationId) continue;
-    if (candidateIds.has(data.external_id)) {
-      // Backfill missing author info and mark as thread
-      const clean = { ...data };
-      if (!clean.author_handle && author) clean.author_handle = author;
-      if (!clean.author_display_name && refDisplayName) clean.author_display_name = refDisplayName;
-      if (!clean.author_avatar_url && refAvatarUrl) clean.author_avatar_url = refAvatarUrl;
-      if (clean.source_url?.includes('/i/web/') && clean.author_handle) {
-        clean.source_url = `https://x.com/${clean.author_handle}/status/${clean.external_id}`;
-      }
-      // Mark as thread so server groups them together
-      if (clean.source_type !== 'article') {
-        clean.source_type = 'thread';
-      }
-      log('  sibling', clean.external_id, 'media_urls:', clean.media_urls, 'source_type:', clean.source_type);
-      siblings.push(stripInternalCaptureFields(clean));
+    const clean = { ...data };
+    if (!clean.author_handle && isLikelySelfThreadEntry(clean, author, conversationId) && author) {
+      clean.author_handle = author;
     }
+    if (!clean.author_display_name && normalizeHandle(clean.author_handle) === author && refDisplayName) {
+      clean.author_display_name = refDisplayName;
+    }
+    if (!clean.author_avatar_url && normalizeHandle(clean.author_handle) === author && refAvatarUrl) {
+      clean.author_avatar_url = refAvatarUrl;
+    }
+    if (clean.source_url?.includes('/i/web/') && clean.author_handle) {
+      clean.source_url = `https://x.com/${clean.author_handle}/status/${clean.external_id}`;
+    }
+    // Mark conversation entries as thread so the app can group them together.
+    if (clean.source_type !== 'article') {
+      clean.source_type = 'thread';
+    }
+    log('  sibling', clean.external_id, 'author=', clean.author_handle, 'media_urls:', clean.media_urls, 'source_type:', clean.source_type);
+    siblings.push(stripInternalCaptureFields(clean));
   }
   // Sort by posted_at to maintain thread order (oldest first)
   siblings.sort((a, b) => {
@@ -1684,13 +1640,17 @@ async function getThreadSiblingsFromDOM(tweetElement, seedData = null) {
     || extracted[0]?.external_id
     || null;
 
-  const threadItems = getCandidateSelfThreadItems(extracted, authorHandle, conversationId)
+  const threadItems = extracted
+    .filter((item) => {
+      if (!conversationId) return false;
+      return item.conversation_id === conversationId || item.external_id === conversationId || item.external_id === seedData?.external_id;
+    })
     .sort((a, b) => {
       if (!a.posted_at || !b.posted_at) return 0;
       return new Date(a.posted_at).getTime() - new Date(b.posted_at).getTime();
     });
 
-  if (threadItems.length < 2 || !shouldTreatItemsAsThread(threadItems, authorHandle, conversationId)) return [];
+  if (threadItems.length < 2) return [];
 
   return threadItems.map((item) => stripInternalCaptureFields({
     ...item,
@@ -1704,7 +1664,7 @@ function markThreadButtonsSaved(conversationId, authorHandle) {
   const author = normalizeHandle(authorHandle);
   const threadIds = new Set();
   for (const [id, data] of tweetCache) {
-    if (isLikelySelfThreadEntry(data, author, conversationId)) {
+    if (data.conversation_id === conversationId || isLikelySelfThreadEntry(data, author, conversationId)) {
       threadIds.add(id);
     }
   }
@@ -1776,36 +1736,6 @@ function isThreadReply(tweetElement) {
 
   return false;
 }
-
-// Detect self-threads via DOM: checks if the current page shows multiple
-// tweets from the same author connected in a thread (for fallback when cache misses)
-function isSelfThreadOnPage(tweetElement) {
-  const hasConnector = (el) => {
-    const cell = el?.closest?.('[data-testid="cellInnerDiv"]');
-    return !!cell?.querySelector('div[style*="width: 2px"]');
-  };
-
-  const authorHandle = getAuthorHandleFromTweetElement(tweetElement);
-  if (!authorHandle) return false;
-
-  const allTweets = Array.from(document.querySelectorAll('article[data-testid="tweet"]'));
-  const index = allTweets.indexOf(tweetElement);
-  if (index === -1) return false;
-
-  const prevTweet = allTweets[index - 1] || null;
-  const nextTweet = allTweets[index + 1] || null;
-  const prevSameAuthor = getAuthorHandleFromTweetElement(prevTweet) === authorHandle;
-  const nextSameAuthor = getAuthorHandleFromTweetElement(nextTweet) === authorHandle;
-
-  if (!prevSameAuthor && !nextSameAuthor) return false;
-
-  return (
-    hasConnector(tweetElement) ||
-    (prevSameAuthor && hasConnector(prevTweet)) ||
-    (nextSameAuthor && hasConnector(nextTweet))
-  );
-}
-
 
 // --- Bulk Capture ---
 let isBulkCapturing = false;

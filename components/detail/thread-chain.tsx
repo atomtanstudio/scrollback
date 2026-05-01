@@ -35,9 +35,14 @@ function buildInitials(displayName: string | null, handle: string | null): strin
   return name.slice(0, 2).toUpperCase();
 }
 
+function normalizeHandle(handle: string | null): string {
+  return (handle || "").replace(/^@/, "").trim().toLowerCase();
+}
+
 export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showOriginalCurrent, setShowOriginalCurrent] = useState(false);
+  const [replyScope, setReplyScope] = useState<"all" | "self">("all");
   const currentHasTranslation = hasEnglishTranslation(currentItem);
   const currentBodyText = showOriginalCurrent
     ? currentItem.body_text || getDisplayBodyText(currentItem)
@@ -70,18 +75,27 @@ export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
     return aTime - bTime;
   });
 
-  const totalCount = allEntries.length;
+  const rootAuthor = normalizeHandle(allEntries[0]?.author_handle ?? currentItem.author_handle);
+  const selfEntries = rootAuthor
+    ? allEntries.filter((entry) => normalizeHandle(entry.author_handle) === rootAuthor)
+    : allEntries;
+  const visibleEntries = replyScope === "self" ? selfEntries : allEntries;
+  const totalCount = visibleEntries.length;
+  const allCount = allEntries.length;
+  const selfCount = selfEntries.length;
+  const hasReplyScopeToggle = allCount > selfCount;
+
   const mediaStartOffsets = useMemo(() => {
     let offset = 0;
-    return allEntries.map((entry) => {
+    return visibleEntries.map((entry) => {
       const start = offset;
       offset += entry.media_items?.length ?? 0;
       return start;
     });
-  }, [allEntries]);
+  }, [visibleEntries]);
   const galleryItems = useMemo(
     () =>
-      allEntries.flatMap((entry) =>
+      visibleEntries.flatMap((entry) =>
         (entry.media_items ?? []).map((item) => ({
           id: item.id,
           media_type: item.media_type,
@@ -91,23 +105,58 @@ export function ThreadChain({ currentItem, siblings }: ThreadChainProps) {
           ai_description: item.ai_description,
         }))
       ),
-    [allEntries]
+    [visibleEntries]
   );
 
   return (
     <>
       <div className="rounded-[28px] border border-[#d6c9b214] bg-[linear-gradient(180deg,rgba(18,24,32,0.96),rgba(13,18,24,0.98))] p-5 sm:p-6">
-        <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-[rgba(140,127,159,0.22)] bg-[rgba(140,127,159,0.12)] px-3.5 py-1.5 font-heading text-xs font-semibold text-[#c7bad6]">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <circle cx="6" cy="6" r="5" stroke="#c7bad6" strokeWidth="1.2" />
-            <circle cx="6" cy="6" r="2" fill="#c7bad6" />
-          </svg>
-          Thread &middot; {totalCount} post{totalCount !== 1 ? "s" : ""}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(140,127,159,0.22)] bg-[rgba(140,127,159,0.12)] px-3.5 py-1.5 font-heading text-xs font-semibold text-[#c7bad6]">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <circle cx="6" cy="6" r="5" stroke="#c7bad6" strokeWidth="1.2" />
+              <circle cx="6" cy="6" r="2" fill="#c7bad6" />
+            </svg>
+            Thread &middot; {totalCount} post{totalCount !== 1 ? "s" : ""}
+          </div>
+
+          {hasReplyScopeToggle && (
+            <div className="inline-flex rounded-full border border-[#d6c9b214] bg-[#0f141b] p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setLightboxIndex(null);
+                  setReplyScope("all");
+                }}
+                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
+                  replyScope === "all"
+                    ? "bg-[#d6c9b214] text-[#f2ede5]"
+                    : "text-[#9c9387] hover:text-[#f2ede5]"
+                }`}
+              >
+                All replies {allCount}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLightboxIndex(null);
+                  setReplyScope("self");
+                }}
+                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
+                  replyScope === "self"
+                    ? "bg-[#d6c9b214] text-[#f2ede5]"
+                    : "text-[#9c9387] hover:text-[#f2ede5]"
+                }`}
+              >
+                Self replies {selfCount}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-0">
-          {allEntries.map((entry, index) => {
-            const isLast = index === allEntries.length - 1;
+          {visibleEntries.map((entry, index) => {
+            const isLast = index === visibleEntries.length - 1;
             const initials = buildInitials(
               entry.author_display_name,
               entry.author_handle

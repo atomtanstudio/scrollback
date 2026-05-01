@@ -74,6 +74,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === 'RECAPTURE_SINGLETON_THREADS') {
+    handleRecaptureSingletonThreads(message.limit).then(sendResponse);
+    return true;
+  }
+
+  if (message.type === 'GET_SINGLETON_THREAD_QUEUE') {
+    handleGetSingletonThreadQueue(message.limit).then(sendResponse);
+    return true;
+  }
+
   if (message.type === 'FETCH_THREAD') {
     const originTabId = sender.tab?.id;
     if (!originTabId) {
@@ -84,7 +94,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: false, tweets: [] });
       return;
     }
-    handleFetchThread(message.url, message.conversationId, originTabId).then(sendResponse);
+    handleFetchThread(message.url, message.conversationId, originTabId, message.expectedReplies).then(sendResponse);
     return true;
   }
 
@@ -93,10 +103,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const pending = pendingThreadFetches.get(bgTabId);
     if (pending) {
       // Forward tweets to the originating tab
-      chrome.tabs.sendMessage(pending.originTabId, {
-        type: 'MERGE_CACHE',
-        tweets: message.tweets || [],
-      }).catch(() => {});
+      if (pending.originTabId) {
+        chrome.tabs.sendMessage(pending.originTabId, {
+          type: 'MERGE_CACHE',
+          tweets: message.tweets || [],
+        }).catch(() => {});
+      }
       // resolve() handles timeout clear, map cleanup, and window close
       pending.resolve({ success: true, tweets: message.tweets || [] });
     }
@@ -190,9 +202,82 @@ async function resolveArticleContent(data) {
       data.source_type = 'article';
       if (article.title) data.title = article.title;
       if (article.preview_text && bodyIsEmpty) data.body_text = article.preview_text;
+      return;
+    }
+
+    const bindingValues = syndicationData.card?.binding_values || {};
+    const cardTitle = bindingValues.title?.string_value
+      || bindingValues.app_star_rating?.string_value
+      || null;
+    const cardDescription = bindingValues.description?.string_value
+      || bindingValues.vanity_url?.string_value
+      || null;
+    const cardText = [cardTitle, cardDescription]
+      .filter((value, index, values) => value && values.indexOf(value) === index)
+      .join('\n\n');
+    if (cardText && (bodyIsEmpty || data.body_text.length < cardText.length)) {
+      data.body_text = cardText;
+      if (!data.title && cardTitle) data.title = cardTitle;
     }
   } catch (e) {
     console.warn('FeedSilo: article resolve failed', e instanceof Error ? e.message : 'Unknown error');
+  }
+}
+
+function extractIdentityFromSyndication(data) {
+  const user =
+    data?.user ||
+    data?.core?.user_results?.result?.legacy ||
+    data?.core?.user_results?.result ||
+    data?.tweet?.core?.user_results?.result?.legacy ||
+    data?.tweet?.core?.user_results?.result ||
+    {};
+
+  const handle =
+    user.screen_name ||
+    user.username ||
+    data?.screen_name ||
+    data?.username ||
+    null;
+  const displayName =
+    user.name ||
+    data?.name ||
+    null;
+  const avatarRaw =
+    user.profile_image_url_https ||
+    user.profile_image_url ||
+    user.avatar?.image_url ||
+    data?.profile_image_url_https ||
+    null;
+
+  return {
+    handle,
+    displayName,
+    avatarUrl: avatarRaw ? avatarRaw.replace('_normal.', '_400x400.') : null,
+  };
+}
+
+async function resolveAuthorIdentity(data) {
+  if (data.author_handle && data.author_display_name && data.author_avatar_url) return;
+  const tweetId = data.external_id;
+  if (!tweetId) return;
+
+  try {
+    const resp = await fetch(
+      `https://cdn.syndication.twimg.com/tweet-result?id=${tweetId}&token=x`
+    );
+    if (!resp.ok) return;
+    const syndicationData = await resp.json();
+    const identity = extractIdentityFromSyndication(syndicationData);
+
+    if (!data.author_handle && identity.handle) data.author_handle = identity.handle;
+    if (!data.author_display_name && identity.displayName) data.author_display_name = identity.displayName;
+    if (!data.author_avatar_url && identity.avatarUrl) data.author_avatar_url = identity.avatarUrl;
+    if (data.author_handle && data.source_url?.includes('/i/web/status/')) {
+      data.source_url = `https://x.com/${data.author_handle}/status/${tweetId}`;
+    }
+  } catch {
+    // Identity is best-effort; keep capture flowing if X blocks the request.
   }
 }
 
@@ -245,12 +330,13 @@ async function resolveMissingMedia(data) {
     if (mediaUrls.length > 0) {
       data.media_urls = mediaUrls;
     }
-  } catch (e) {
+  } catch {
     // Silently ignore — media is optional
   }
 }
 
 async function handleSingleCapture(data) {
+  await resolveAuthorIdentity(data);
   await resolveVideoUrls(data);
   await resolveArticleContent(data);
   await resolveMissingMedia(data);
@@ -288,6 +374,7 @@ async function handleSingleCapture(data) {
 
 async function handleBulkCapture(items) {
   for (const item of items) {
+    await resolveAuthorIdentity(item);
     await resolveVideoUrls(item);
     await resolveArticleContent(item);
     await resolveMissingMedia(item);
@@ -376,7 +463,129 @@ async function handleCheckConnection() {
   }
 }
 
-async function handleFetchThread(url, conversationId, originTabId) {
+async function fetchSingletonThreadQueue(limit = 5) {
+  const settings = await getSettings();
+  if (!settings.serverUrl || !settings.captureSecret) {
+    throw new Error('Extension not configured.');
+  }
+
+  const response = await fetch(`${settings.serverUrl}/api/extension/threads/singletons?limit=${encodeURIComponent(limit)}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${settings.captureSecret}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `HTTP ${response.status}`;
+    const payload = await response.json().catch(() => null);
+    if (payload?.error) message += `: ${payload.error}`;
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+async function handleGetSingletonThreadQueue(limit = 5) {
+  try {
+    const queueLimit = Number.isFinite(limit) ? Math.max(1, Math.min(25, limit)) : 5;
+    const queue = await fetchSingletonThreadQueue(queueLimit);
+    return {
+      success: true,
+      remaining: queue.remaining || 0,
+      queued: (queue.items || []).length,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unable to check thread queue',
+    };
+  }
+}
+
+async function handleRecaptureSingletonThreads(limit = 5) {
+  const queueLimit = Number.isFinite(limit) ? Math.max(1, Math.min(25, limit)) : 5;
+  const summary = {
+    success: true,
+    queued: 0,
+    processed: 0,
+    recaptured: 0,
+    skipped: 0,
+    errors: 0,
+    details: [],
+  };
+
+  try {
+    const queue = await fetchSingletonThreadQueue(queueLimit);
+    const items = queue.items || [];
+    summary.remainingBefore = queue.remaining || items.length;
+    summary.queued = items.length;
+
+    for (const item of items) {
+      const conversationId = item.conversation_id || item.external_id;
+      if (!item.url || !conversationId) {
+        summary.skipped++;
+        summary.details.push({ id: item.id, status: 'skipped', reason: 'missing url or conversation id' });
+        continue;
+      }
+
+      try {
+        const result = await handleFetchThread(item.url, conversationId, null, 20);
+        const tweets = (result?.tweets || [])
+          .filter((tweet) => tweet.external_id)
+          .map((tweet) => ({
+            ...tweet,
+            source_type: tweet.source_type === 'article' ? tweet.source_type : 'thread',
+            conversation_id: conversationId,
+          }));
+
+        if (tweets.length < 2) {
+          summary.skipped++;
+          summary.details.push({ id: item.id, external_id: item.external_id, status: 'skipped', tweets: tweets.length });
+          continue;
+        }
+
+        const capture = await handleBulkCapture(tweets);
+        summary.processed++;
+        if (capture?.success) {
+          summary.recaptured++;
+          summary.details.push({
+            id: item.id,
+            external_id: item.external_id,
+            status: 'recaptured',
+            tweets: tweets.length,
+            captured: capture.captured || 0,
+            skipped: capture.skipped || 0,
+            errors: capture.errors || 0,
+          });
+        } else {
+          summary.errors++;
+          summary.details.push({ id: item.id, external_id: item.external_id, status: 'error', error: capture?.error || 'capture failed' });
+        }
+      } catch (error) {
+        summary.errors++;
+        summary.details.push({
+          id: item.id,
+          external_id: item.external_id,
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    const refreshedQueue = await fetchSingletonThreadQueue(1).catch(() => null);
+    summary.remainingAfter = refreshedQueue?.remaining ?? null;
+    return summary;
+  } catch (error) {
+    return {
+      ...summary,
+      success: false,
+      error: error instanceof Error ? error.message : 'Recapture failed',
+    };
+  }
+}
+
+async function handleFetchThread(url, conversationId, originTabId, expectedReplies = null) {
   if (inflight.has(conversationId)) {
     return inflight.get(conversationId);
   }
@@ -406,7 +615,7 @@ async function handleFetchThread(url, conversationId, originTabId) {
       const timer = setTimeout(() => {
         cleanup();
         resolve({ success: false, tweets: [], timeout: true });
-      }, 8000);
+      }, 30000);
 
       pendingThreadFetches.set(tab.id, {
         originTabId,
@@ -430,6 +639,7 @@ async function handleFetchThread(url, conversationId, originTabId) {
           chrome.tabs.sendMessage(tab.id, {
             type: 'BG_FETCH_INIT',
             conversationId,
+            expectedReplies,
           }).catch(() => {});
         } catch {
           // If the helper cannot attach, let the normal timeout clean up.
