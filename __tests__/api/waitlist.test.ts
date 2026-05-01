@@ -7,8 +7,8 @@ const mockFindUnique = vi.fn();
 vi.mock("@/lib/db/client", () => ({
   getClient: vi.fn().mockResolvedValue({
     waitlistEntry: {
-      create: (...args: any[]) => mockCreate(...args),
-      findUnique: (...args: any[]) => mockFindUnique(...args),
+      create: mockCreate,
+      findUnique: mockFindUnique,
     },
   }),
 }));
