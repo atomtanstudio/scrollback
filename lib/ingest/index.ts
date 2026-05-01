@@ -11,6 +11,7 @@ import { isLocalStorageConfigured } from "@/lib/storage/local";
 import { downloadAndStoreMedia } from "@/lib/storage/download";
 import { qualifiesAsArtCapture } from "@/lib/art-detection";
 import { normalizeCapturedText } from "@/lib/text-cleanup";
+import { sanitizeArticleHtml } from "@/lib/security/html";
 
 function sanitizeText(s: string | null | undefined): string | null {
   if (!s) return null;
@@ -42,7 +43,8 @@ export async function ingestItem(payload: CapturePayload, userId: string): Promi
   const authorDisplayName = sanitizeText(payload.author_display_name);
   const cleanHandle = authorHandle?.startsWith("@") ? authorHandle.slice(1) : authorHandle;
 
-  const bodyHtml = sanitizeText(payload.body_html);
+  const rawBodyHtml = sanitizeText(payload.body_html);
+  const bodyHtml = rawBodyHtml ? sanitizeArticleHtml(rawBodyHtml, payload.source_url) : null;
 
   const contentHash = createHash("sha256")
     .update(bodyText + payload.source_url)

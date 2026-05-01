@@ -4,6 +4,7 @@ import {
   rankSuggestedPinnedFilters,
   type SuggestedPinnedFilter,
 } from "@/lib/pinned-filters";
+import { sanitizeArticleHtml } from "@/lib/security/html";
 
 export type SortMode = "recent" | "most_liked" | "most_viewed";
 
@@ -15,6 +16,19 @@ export interface FetchItemsOptions {
   search?: string;
   sort?: SortMode;
   userId: string;
+}
+
+type StoredHtmlItem = {
+  body_html?: string | null;
+  original_url?: string | null;
+};
+
+function sanitizeStoredArticleHtml<T extends StoredHtmlItem>(item: T | null): T | null {
+  if (!item?.body_html) return item;
+  return {
+    ...item,
+    body_html: sanitizeArticleHtml(item.body_html, item.original_url) || null,
+  } as T;
 }
 
 export async function fetchItems(options: FetchItemsOptions) {
@@ -280,7 +294,7 @@ export async function fetchSuggestedPinnedFilters(userId: string): Promise<Sugge
 
 export async function fetchItemById(id: string, userId: string) {
   const prisma = await getClient();
-  return prisma.contentItem.findFirst({
+  const item = await prisma.contentItem.findFirst({
     where: { id, user_id: userId },
     include: {
       media_items: true,
@@ -288,6 +302,8 @@ export async function fetchItemById(id: string, userId: string) {
       tags: { include: { tag: true } },
     },
   });
+
+  return sanitizeStoredArticleHtml(item);
 }
 
 export async function fetchThreadChain(item: {
