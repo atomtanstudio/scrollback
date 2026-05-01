@@ -23,12 +23,116 @@ type StoredHtmlItem = {
   original_url?: string | null;
 };
 
+type ItemWithPreviewMedia = {
+  id: string;
+  source_type: string;
+  conversation_id: string | null;
+  media_items?: Array<{ media_type?: string | null }>;
+};
+
+type ThreadPreviewMediaRow = {
+  media_type: string | null;
+  position_in_content: number | null;
+  content_item?: {
+    conversation_id: string | null;
+    posted_at: Date | string | null;
+    created_at: Date | string;
+  };
+  [key: string]: unknown;
+};
+
+function mediaPreviewPriority(mediaType: string | null | undefined): number {
+  if (mediaType === "image" || mediaType === "gif") return 0;
+  if (mediaType === "video") return 1;
+  return 2;
+}
+
+function threadPreviewMediaTime(media: ThreadPreviewMediaRow): number {
+  return new Date(media.content_item?.posted_at ?? media.content_item?.created_at ?? 0).getTime();
+}
+
 function sanitizeStoredArticleHtml<T extends StoredHtmlItem>(item: T | null): T | null {
   if (!item?.body_html) return item;
   return {
     ...item,
     body_html: sanitizeArticleHtml(item.body_html, item.original_url) || null,
   } as T;
+}
+
+async function hydrateThreadPreviewMedia<T extends ItemWithPreviewMedia>(items: T[]): Promise<T[]> {
+  const prisma = await getClient();
+  const conversationIds = Array.from(
+    new Set(
+      items
+        .filter((item) => {
+          if (item.source_type !== "thread" || !item.conversation_id) return false;
+          return mediaPreviewPriority(item.media_items?.[0]?.media_type) > 0;
+        })
+        .map((item) => item.conversation_id as string)
+    )
+  );
+
+  if (conversationIds.length === 0) return items;
+
+  const mediaRows: ThreadPreviewMediaRow[] = await prisma.media.findMany({
+    where: {
+      content_item: {
+        conversation_id: { in: conversationIds },
+        source_type: "thread",
+      },
+    },
+    include: {
+      content_item: {
+        select: {
+          conversation_id: true,
+          posted_at: true,
+          created_at: true,
+        },
+      },
+    },
+    orderBy: [
+      { content_item: { posted_at: "asc" } },
+      { content_item: { created_at: "asc" } },
+      { position_in_content: "asc" },
+    ],
+  });
+
+  const firstMediaByConversation = new Map<string, (typeof mediaRows)[number]>();
+  const sortedMediaRows = mediaRows.sort((a, b) => {
+    const priorityDelta = mediaPreviewPriority(a.media_type) - mediaPreviewPriority(b.media_type);
+    if (priorityDelta !== 0) return priorityDelta;
+
+    const aTime = threadPreviewMediaTime(a);
+    const bTime = threadPreviewMediaTime(b);
+    if (aTime !== bTime) return aTime - bTime;
+
+    return (a.position_in_content ?? 0) - (b.position_in_content ?? 0);
+  });
+
+  for (const media of sortedMediaRows) {
+    const conversationId = media.content_item?.conversation_id;
+    if (!conversationId || firstMediaByConversation.has(conversationId)) continue;
+    firstMediaByConversation.set(conversationId, media);
+  }
+
+  return items.map((item) => {
+    if (item.source_type !== "thread" || !item.conversation_id) {
+      return item;
+    }
+
+    const previewMedia = firstMediaByConversation.get(item.conversation_id);
+    if (!previewMedia) return item;
+    if (mediaPreviewPriority(item.media_items?.[0]?.media_type) <= mediaPreviewPriority(previewMedia.media_type)) {
+      return item;
+    }
+
+    const media = { ...previewMedia };
+    delete media.content_item;
+    return {
+      ...item,
+      media_items: [media],
+    };
+  });
 }
 
 export async function fetchItems(options: FetchItemsOptions) {
@@ -172,7 +276,7 @@ export async function fetchItems(options: FetchItemsOptions) {
   const mergedCandidates = [...nonThreadItems, ...orphanThreadItems, ...threadItems]
     .sort((a, b) => itemSortKey(b) - itemSortKey(a));
   const hasMore = mergedCandidates.length > limit;
-  const merged = mergedCandidates.slice(0, limit);
+  const merged = await hydrateThreadPreviewMedia(mergedCandidates.slice(0, limit));
 
   return { items: merged, hasMore, totalCount };
 }
