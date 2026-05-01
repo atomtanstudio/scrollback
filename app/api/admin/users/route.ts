@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { getClient } from "@/lib/db/client";
 
 export async function GET() {
-  const session = await requireAuth();
+  const session = await requireAdmin();
   if (session instanceof NextResponse) return session;
-
-  // Only admins can list users
-  if (session.user.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const prisma = await getClient();
   const users = await prisma.user.findMany({

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { getClient } from "@/lib/db/client";
 import { downloadAndStoreMedia } from "@/lib/storage/download";
 import { isLocalStorageConfigured } from "@/lib/storage/local";
@@ -9,7 +9,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await requireAuth();
+  const session = await requireAdmin();
   if (session instanceof NextResponse) return session;
 
   if (!isR2Configured() && !isLocalStorageConfigured()) {

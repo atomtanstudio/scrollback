@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { getClient } from "@/lib/db/client";
 
 export async function GET(request: NextRequest) {
-  const session = await requireAuth();
+  const session = await requireAdmin();
   if (session instanceof NextResponse) return session;
 
   const db = await getClient();
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await requireAuth();
+  const session = await requireAdmin();
   if (session instanceof NextResponse) return session;
 
   const db = await getClient();

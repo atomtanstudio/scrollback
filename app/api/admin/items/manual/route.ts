@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth/session";
+import { randomUUID } from "crypto";
+import { requireAdmin } from "@/lib/auth/session";
 import { ingestItem } from "@/lib/ingest";
-import { v4 as uuidv4 } from "uuid";
 
 export async function POST(request: NextRequest) {
-  const session = await requireAuth();
+  const session = await requireAdmin();
   if (session instanceof NextResponse) return session;
 
   const body = await request.json();
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     body.userId && session.user.role === "admin" ? body.userId : session.user.id;
 
   const result = await ingestItem({
-    external_id: `manual-${uuidv4()}`,
+    external_id: `manual-${randomUUID()}`,
     source_url: source_url || "",
     source_type: source_type || "tweet",
     body_text: body_text || "",
