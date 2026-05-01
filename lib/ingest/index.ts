@@ -1,9 +1,8 @@
-import { v4 as uuidv4 } from "uuid";
-import { createHash } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { getClient } from "@/lib/db/client";
 import { getCategoryOptions } from "@/lib/default-categories";
 import { getSearchProvider } from "@/lib/db/search-provider";
-import { generateEmbedding, classifyContent, describeImage, translateToEnglish } from "@/lib/embeddings/gemini";
+import { generateEmbedding, classifyContent, describeImage, translateToEnglish, isAiConfigured } from "@/lib/embeddings";
 import { getMediaDisplayUrl } from "@/lib/media-url";
 import type { CapturePayload, CaptureResult } from "@/lib/db/types";
 import { isR2Configured } from "@/lib/storage/r2";
@@ -50,7 +49,7 @@ export async function ingestItem(payload: CapturePayload, userId: string): Promi
     .update(bodyText + payload.source_url)
     .digest("hex");
 
-  const itemId = uuidv4();
+  const itemId = randomUUID();
   const itemTitle = title || (bodyText.slice(0, 100) || "Untitled");
   const sourcePlatform = payload.source_platform || "x";
 
@@ -91,7 +90,7 @@ export async function ingestItem(payload: CapturePayload, userId: string): Promi
   if (payload.media_urls && payload.media_urls.length > 0) {
     for (let i = 0; i < payload.media_urls.length; i++) {
       const url = payload.media_urls[i];
-      const mediaId = uuidv4();
+      const mediaId = randomUUID();
       const mediaType = detectMediaType(url);
       await prisma.media.create({
         data: {
@@ -242,8 +241,8 @@ async function assignCategoriesInBackground(itemId: string, categorySlugs: strin
 }
 
 /**
- * Background processing: embeddings + unified Gemini classification.
- * Single Gemini call produces: ai_summary, tags, categories, prompt detection.
+ * Background processing: embeddings + unified AI classification.
+ * A single provider call produces: ai_summary, tags, categories, prompt detection.
  */
 async function indexAndClassifyInBackground(
   itemId: string,
@@ -263,7 +262,7 @@ async function indexAndClassifyInBackground(
     let englishTitle = title;
     let englishBody = body;
 
-    if (process.env.GEMINI_API_KEY) {
+    if (isAiConfigured()) {
       try {
         const translation = await translateToEnglish(title, body);
         language = translation.language;
@@ -284,7 +283,7 @@ async function indexAndClassifyInBackground(
       author: authorParts || undefined,
     });
 
-    if (process.env.GEMINI_API_KEY) {
+    if (isAiConfigured()) {
       let embeddingError: string | null = null;
 
       // Generate embedding
@@ -302,7 +301,7 @@ async function indexAndClassifyInBackground(
         console.warn(`Embedding write failed for ${itemId}:`, embeddingWriteError);
       }
 
-      // Unified Gemini classification: summary + tags + categories + prompt detection
+      // Unified AI classification: summary + tags + categories + prompt detection
       try {
         const categoryOptions = await getCategoryOptions(prisma);
 
@@ -341,7 +340,7 @@ async function indexAndClassifyInBackground(
           if (classification.prompt_type) {
             updateData.prompt_type = classification.prompt_type;
           }
-          // Reclassify source_type if Gemini detected an image/video prompt with high confidence
+          // Reclassify source_type if the provider detected an image/video prompt with high confidence
           // Skip reclassification for assembled threads (body contains [Image:]/[Video:] markers)
           const hasInlineMarkers = body.includes("[Image:") || body.includes("[Video:");
           if (canPromoteToArt && !hasInlineMarkers) {
@@ -397,7 +396,7 @@ async function indexAndClassifyInBackground(
 }
 
 /**
- * Download media to R2, then describe images via Gemini Vision.
+ * Download media to R2, then describe images via the configured AI provider.
  */
 async function downloadMediaInBackground(
   contentItemId: string,
@@ -416,8 +415,8 @@ async function downloadMediaInBackground(
             data: { stored_path: storedPath },
           });
 
-          // Describe images via Gemini Vision (after R2 download)
-          if (process.env.GEMINI_API_KEY && (mediaType === "image" || mediaType === "gif")) {
+          // Describe images after R2 download
+          if (isAiConfigured() && (mediaType === "image" || mediaType === "gif")) {
             try {
               const displayUrl = getMediaDisplayUrl(storedPath, originalUrl);
               // Use absolute URL for server-side fetch

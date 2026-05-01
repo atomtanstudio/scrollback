@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { v4 as uuidv4 } from "uuid";
 import { TokenDisplay } from "@/components/shared/token-display";
 import {
   onboardingHeadingClass,
@@ -16,24 +15,31 @@ export function ExtensionStep() {
   const router = useRouter();
   const [token, setToken] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const generated = uuidv4();
-    setToken(generated);
+    setToken(crypto.randomUUID());
   }, []);
 
   const handleFinish = useCallback(async () => {
     setSaving(true);
+    setError("");
     try {
-      await fetch("/api/settings", {
+      const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           extension: { pairingToken: token },
         }),
       });
-    } catch {
-      // Non-fatal.
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Could not save extension token");
+      }
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Could not save extension token");
+      setSaving(false);
+      return;
     }
 
     try {
@@ -79,6 +85,7 @@ export function ExtensionStep() {
           <TokenDisplay token={token} />
         </div>
       )}
+      {error && <p className="mb-4 text-sm text-red-300">{error}</p>}
 
       <div className="flex w-full flex-col items-center gap-3">
         <button

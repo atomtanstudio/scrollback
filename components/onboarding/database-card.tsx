@@ -36,8 +36,8 @@ export function DatabaseCard({
         boxShadow: selected ? `0 20px 56px -34px ${accentColor}` : undefined,
       }}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <div className="mb-3 flex items-center gap-3">
             <span
               className="h-2.5 w-2.5 rounded-full"
@@ -52,7 +52,7 @@ export function DatabaseCard({
           </p>
         </div>
         <span
-          className="shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]"
+          className="max-w-full self-start rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] sm:shrink-0 sm:text-[11px] sm:tracking-[0.16em]"
           style={{
             backgroundColor: `${accentColor}12`,
             borderColor: `${accentColor}24`,

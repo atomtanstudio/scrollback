@@ -20,18 +20,24 @@ interface XApiStepProps {
 export function XApiStep({ onContinue }: XApiStepProps) {
   const [bearerToken, setBearerToken] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const handleSave = async () => {
     setSaving(true);
+    setSaveError("");
     try {
-      await fetch("/api/settings", {
+      const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ xapi: { bearerToken } }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Could not save X API token");
+      }
       onContinue();
-    } catch {
-      onContinue();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Could not save X API token");
     } finally {
       setSaving(false);
     }
@@ -80,7 +86,10 @@ export function XApiStep({ onContinue }: XApiStepProps) {
         <input
           type="password"
           value={bearerToken}
-          onChange={(e) => setBearerToken(e.target.value)}
+          onChange={(e) => {
+            setBearerToken(e.target.value);
+            setSaveError("");
+          }}
           placeholder="AAAAAAAAAAAAAAAAAAA..."
           className={onboardingInputClass}
         />
@@ -88,6 +97,9 @@ export function XApiStep({ onContinue }: XApiStepProps) {
           Create a project in the Developer Portal, generate a Bearer Token, and
           paste it above.
         </p>
+        {saveError && (
+          <p className="mt-2 text-left text-xs text-red-300">{saveError}</p>
+        )}
       </div>
 
       <a

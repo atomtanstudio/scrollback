@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, DM_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
+const geistHeading = localFont({
+  src: "./fonts/GeistVF.woff",
   variable: "--font-heading",
   display: "swap",
+  weight: "100 900",
 });
 
-const dmSans = DM_Sans({
-  subsets: ["latin"],
+const geistBody = localFont({
+  src: "./fonts/GeistVF.woff",
   variable: "--font-body",
   display: "swap",
+  weight: "100 900",
 });
 
 export const metadata: Metadata = {
@@ -26,7 +28,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${plusJakarta.variable} ${dmSans.variable} font-sans bg-glow`}>
+      <body className={`${geistHeading.variable} ${geistBody.variable} font-sans bg-glow`}>
         {children}
       </body>
     </html>

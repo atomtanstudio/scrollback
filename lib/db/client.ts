@@ -46,7 +46,7 @@ export async function getClient(): Promise<PrismaClientAny> {
     const rawPath = config.database.url.replace(/^file:/, "");
     const filePath = path.isAbsolute(rawPath)
       ? rawPath
-      : path.resolve(process.cwd(), rawPath);
+      : path.resolve(/* turbopackIgnore: true */ process.cwd(), rawPath);
     const adapter = new PrismaBetterSqlite3({ url: `file:${filePath}` });
     client = new PrismaClient({
       adapter,
