@@ -98,6 +98,8 @@ export const AGENT_MEMORY_SCHEMA_SQL = [
     )
     LANGUAGE sql
     STABLE
+    SECURITY DEFINER
+    SET search_path = public
     AS $$
       SELECT
         c.id,
@@ -135,6 +137,8 @@ export const AGENT_MEMORY_SCHEMA_SQL = [
     )
     LANGUAGE sql
     STABLE
+    SECURITY DEFINER
+    SET search_path = public
     AS $$
       SELECT
         c.id,
@@ -173,6 +177,8 @@ export const AGENT_MEMORY_SCHEMA_SQL = [
     )
     LANGUAGE sql
     STABLE
+    SECURITY DEFINER
+    SET search_path = public
     AS $$
       SELECT
         c.id,
@@ -216,6 +222,8 @@ export const AGENT_MEMORY_SCHEMA_SQL = [
     )
     LANGUAGE sql
     STABLE
+    SECURITY DEFINER
+    SET search_path = public
     AS $$
       WITH keyword AS (
         SELECT c.id, ts_rank_cd(c.search_vector, websearch_to_tsquery('english', p_query))::double precision AS score
@@ -284,6 +292,8 @@ export const AGENT_MEMORY_SCHEMA_SQL = [
     )
     LANGUAGE sql
     STABLE
+    SECURITY DEFINER
+    SET search_path = public
     AS $$
       WITH keyword AS (
         SELECT c.id, ts_rank_cd(c.search_vector, websearch_to_tsquery('english', p_query))::double precision AS score
@@ -335,6 +345,8 @@ export const AGENT_MEMORY_SCHEMA_SQL = [
     RETURNS jsonb
     LANGUAGE sql
     STABLE
+    SECURITY DEFINER
+    SET search_path = public
     AS $$
       SELECT jsonb_build_object(
         'id', ci.id,
@@ -405,6 +417,8 @@ export const AGENT_MEMORY_SCHEMA_SQL = [
     )
     LANGUAGE sql
     STABLE
+    SECURITY DEFINER
+    SET search_path = public
     AS $$
       SELECT
         c.id,
