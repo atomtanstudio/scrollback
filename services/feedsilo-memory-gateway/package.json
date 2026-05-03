@@ -1,0 +1,16 @@
+{
+  "name": "feedsilo-memory-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node --check server.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.20.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
