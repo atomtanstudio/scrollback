@@ -27,7 +27,22 @@ FeedSilo material, use the FeedSilo Memory Gateway and answer from captured
 database text. Use GBrain for markdown-brain skills, routing, memory structure,
 and GBrain-specific runtime operations.
 
-The GBrain CLI/runtime may not be installed inside the container yet. If
-`gbrain --version` fails, use the skillpack docs only and report that the runtime
-install is still pending.
+Runtime is installed at:
 
+```text
+/home/node/.openclaw/workspace/vendor/gbrain/bin/gbrain
+```
+
+Use this command shape for GBrain operations:
+
+```sh
+cd /home/node/.openclaw/workspace/vendor/gbrain
+set -a
+. /home/node/.openclaw/workspace/.secrets/gbrain.env
+set +a
+bin/gbrain doctor --json
+```
+
+Do not print `.secrets/gbrain.env`; it contains the GBrain database password.
+Fresh-brain warnings about missing embeddings, graph coverage, timeline, or
+brain score are expected until pages are imported.

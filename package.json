@@ -22,6 +22,7 @@
     "agent-memory:backfill": "tsx scripts/backfill-agent-memory.ts",
     "agent-memory:search": "tsx scripts/search-agent-memory.ts",
     "agent-memory:gateway": "node scripts/feedsilo-memory-search.mjs",
+    "gbrain": "node scripts/gbrain-run.mjs",
     "postinstall": "npm run prisma:generate"
   },
   "dependencies": {

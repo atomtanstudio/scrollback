@@ -15,6 +15,9 @@ installing the upstream generic skill names directly into Codex.
 - Resolver: `/Users/richgates/gbrain/skills/RESOLVER.md`
 - Install guide: `/Users/richgates/gbrain/INSTALL_FOR_AGENTS.md`
 - OpenClaw plugin manifest: `/Users/richgates/gbrain/openclaw.plugin.json`
+- Local env file: `/Users/richgates/.gbrain/gbrain.env`
+
+Do not print or inspect the env file. It contains the GBrain database password.
 
 ## Routing
 
@@ -49,15 +52,29 @@ routes:
 
 ## Runtime
 
-The GBrain runtime is available only after Bun and the CLI have been installed:
+The GBrain runtime is installed locally. Prefer the FeedSilo wrapper so the
+database URL and local embedding endpoint are loaded without exposing secrets:
 
 ```bash
-cd /Users/richgates/gbrain
-bun install
-bun link
+cd /Users/richgates/Documents/coding/feedsilo
+npm run gbrain -- doctor --json
+```
+
+Direct local runtime:
+
+```bash
 gbrain --version
 ```
 
-If `gbrain` is not on PATH, answer from the skillpack/docs and say the runtime is
-not installed yet.
+Expected fresh-brain warnings: no embeddings, graph coverage, timeline, or brain
+score until pages are imported.
 
+OpenClaw runtime:
+
+```bash
+cd /home/node/.openclaw/workspace/vendor/gbrain
+set -a
+. /home/node/.openclaw/workspace/.secrets/gbrain.env
+set +a
+bin/gbrain doctor --json
+```

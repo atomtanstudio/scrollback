@@ -21,6 +21,37 @@ Instead:
 - Full runtime install remains a separate step because it needs Bun, a Postgres
   + pgvector database, and an embedding API key or compatible local endpoint.
 
+## Installed Runtime
+
+Current installed state:
+
+- Local Bun: `1.3.13`
+- Local GBrain CLI: `gbrain 0.25.1` at `/opt/homebrew/bin/gbrain`
+- Local env file: `/Users/richgates/.gbrain/gbrain.env`
+- OpenClaw binary: `/home/node/.openclaw/workspace/vendor/gbrain/bin/gbrain`
+- OpenClaw env file:
+  `/home/node/.openclaw/workspace/.secrets/gbrain.env`
+- Database: separate `gbrain` database on the existing Unraid Postgres server
+- Embeddings: Legion WSL2 sidecar through `OPENAI_BASE_URL`, using 1536 dims
+
+Do not print either env file. They contain the GBrain database password.
+
+Local Codex command:
+
+```sh
+npm run gbrain -- doctor --json
+```
+
+OpenClaw command:
+
+```sh
+cd /home/node/.openclaw/workspace/vendor/gbrain
+set -a
+. /home/node/.openclaw/workspace/.secrets/gbrain.env
+set +a
+bin/gbrain doctor --json
+```
+
 ## Runtime Requirements
 
 GBrain itself expects:
@@ -33,8 +64,12 @@ GBrain itself expects:
 The current FeedSilo memory gateway already provides a 1536-dimensional local
 embedding surface through the Legion WSL2 sidecar. GBrain's current embedding
 service is hard-coded to `text-embedding-3-large` at 1536 dimensions and uses the
-OpenAI SDK. A local OpenAI-compatible embedding endpoint should be evaluated
-before running a large GBrain embedding backfill.
+OpenAI SDK. The Legion sidecar advertises `text-embedding-3-large` as an alias
+for `Qwen/Qwen3-Embedding-4B`, and supports the OpenAI SDK's default `base64`
+embedding response format.
+
+Fresh-brain doctor warnings about missing embeddings, graph coverage, timeline,
+or brain score are expected until markdown pages are imported.
 
 ## Checkpoint
 
@@ -44,3 +79,9 @@ A git checkpoint was created before this integration:
 7d30aac Checkpoint before GBrain integration
 ```
 
+Additional checkpoints:
+
+```text
+faa8b2f Add GBrain agent skill integration
+28d1bda Support GBrain embedding compatibility
+```
