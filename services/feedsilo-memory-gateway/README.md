@@ -41,6 +41,20 @@ docker run --rm \
   feedsilo-memory-gateway:local
 ```
 
+## Production Deployment
+
+Current Unraid deployment:
+
+- Container: `feedsilo-memory-gateway`
+- Image: `feedsilo-memory-gateway:local`
+- Host port: `8788`
+- Container port: `8787`
+- Env file: `/mnt/user/feedsilo/secrets/feedsilo-memory-gateway.env`
+- OpenClaw bridge URL: `http://172.17.0.1:8788`
+- LAN URL: `http://100.79.193.105:8788`
+
+The env file contains the gateway bearer token. Do not paste it into logs.
+
 ## Agent Handoff
 
 Give agents:

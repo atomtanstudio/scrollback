@@ -258,9 +258,10 @@ async function runSearch(payload) {
   }
 
   const normalized = normalizeRows(rows);
-  const results = payload.dedupe
+  const candidates = payload.dedupe
     ? dedupeByContentItem(normalized).slice(0, payload.limit)
     : normalized.slice(0, payload.limit);
+  const results = candidates.map((result, index) => ({ ...result, rank: index + 1 }));
 
   return {
     query: payload.query,

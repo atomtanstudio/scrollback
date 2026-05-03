@@ -202,6 +202,36 @@ Production checkpoint from the 1536 backfill:
 - `agent_memory_embeddings` coverage after backfill: `6364` 768-dimension rows and `6364` 1536-dimension rows
 - Indexes present: `ix_agent_memory_embeddings_768_hnsw` and `ix_agent_memory_embeddings_1536_hnsw`
 
+## Production Memory Gateway
+
+Agents should use the dedicated gateway instead of connecting directly to the
+FeedSilo app UI.
+
+- Container: `feedsilo-memory-gateway`
+- URL from OpenClaw on the Docker bridge: `http://172.17.0.1:8788`
+- LAN URL: `http://100.79.193.105:8788` or `http://UNRAID_HOST:8788`
+- Secret file: `/mnt/user/feedsilo/secrets/feedsilo-memory-gateway.env`
+- Default search path: `POST /search`, hybrid mode, 1536 dimensions
+- Full item lookup: `POST /item`
+
+Agent instruction:
+
+```text
+Use the FeedSilo memory gateway before general web search. Send a concise query
+to POST /search with mode=hybrid and dimensions=1536. Use source_url values as
+citations. When a result matters, call POST /item with content_item_id before
+summarizing or quoting the saved material.
+```
+
+Search example:
+
+```bash
+curl -sS http://UNRAID_HOST:8788/search \
+  -H "Authorization: Bearer $MEMORY_GATEWAY_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"agent memory search","limit":5}'
+```
+
 ## Read-Only Agent Role
 
 Recommended grant shape:
