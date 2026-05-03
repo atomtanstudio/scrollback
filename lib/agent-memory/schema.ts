@@ -328,6 +328,100 @@ export const AGENT_MEMORY_SCHEMA_SQL = [
       ORDER BY score DESC, c.posted_at DESC NULLS LAST, c.item_created_at DESC
       LIMIT LEAST(GREATEST(p_limit, 1), 200);
     $$`,
+  `CREATE OR REPLACE FUNCTION agent_memory_get_item(
+      p_user_id uuid,
+      p_content_item_id uuid
+    )
+    RETURNS jsonb
+    LANGUAGE sql
+    STABLE
+    AS $$
+      SELECT jsonb_build_object(
+        'id', ci.id,
+        'source_type', ci.source_type::text,
+        'source_platform', ci.source_platform,
+        'external_id', ci.external_id,
+        'conversation_id', ci.conversation_id,
+        'title', ci.title,
+        'body_text', ci.body_text,
+        'translated_title', ci.translated_title,
+        'translated_body_text', ci.translated_body_text,
+        'ai_summary', ci.ai_summary,
+        'prompt_text', ci.prompt_text,
+        'author_handle', ci.author_handle,
+        'author_display_name', ci.author_display_name,
+        'original_url', ci.original_url,
+        'posted_at', ci.posted_at,
+        'created_at', ci.created_at,
+        'updated_at', ci.updated_at,
+        'tags', coalesce((
+          SELECT jsonb_agg(jsonb_build_object('name', t.name, 'slug', t.slug) ORDER BY t.name)
+          FROM content_tags ct
+          JOIN tags t ON t.id = ct.tag_id
+          WHERE ct.content_item_id = ci.id
+        ), '[]'::jsonb),
+        'categories', coalesce((
+          SELECT jsonb_agg(jsonb_build_object('name', c.name, 'slug', c.slug) ORDER BY c.name)
+          FROM content_categories cc
+          JOIN categories c ON c.id = cc.category_id
+          WHERE cc.content_item_id = ci.id
+        ), '[]'::jsonb),
+        'media', coalesce((
+          SELECT jsonb_agg(jsonb_build_object(
+            'id', m.id,
+            'type', m.media_type::text,
+            'original_url', m.original_url,
+            'stored_path', m.stored_path,
+            'alt_text', m.alt_text,
+            'ai_description', m.ai_description,
+            'position_in_content', m.position_in_content,
+            'file_size_bytes', m.file_size_bytes,
+            'width', m.width,
+            'height', m.height
+          ) ORDER BY m.position_in_content ASC NULLS LAST)
+          FROM media m
+          WHERE m.content_item_id = ci.id
+        ), '[]'::jsonb)
+      )
+      FROM content_items ci
+      WHERE ci.user_id = p_user_id
+        AND ci.id = p_content_item_id;
+    $$`,
+  `CREATE OR REPLACE FUNCTION agent_memory_recent(
+      p_user_id uuid,
+      p_limit integer DEFAULT 20
+    )
+    RETURNS TABLE (
+      chunk_id uuid,
+      content_item_id uuid,
+      title text,
+      chunk_text text,
+      source_url text,
+      author_handle text,
+      author_display_name text,
+      source_type text,
+      posted_at timestamptz,
+      item_created_at timestamptz
+    )
+    LANGUAGE sql
+    STABLE
+    AS $$
+      SELECT
+        c.id,
+        c.content_item_id,
+        c.title,
+        c.chunk_text,
+        c.source_url,
+        c.author_handle,
+        c.author_display_name,
+        c.source_type,
+        c.posted_at,
+        c.item_created_at
+      FROM agent_memory_chunks c
+      WHERE c.user_id = p_user_id
+      ORDER BY c.item_created_at DESC, c.chunk_index ASC
+      LIMIT LEAST(GREATEST(p_limit, 1), 200);
+    $$`,
 ];
 
 export const AGENT_MEMORY_OPTIONAL_INDEX_SQL = [

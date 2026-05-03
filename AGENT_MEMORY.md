@@ -81,6 +81,41 @@ from agent_memory_hybrid_search_768(
 - `agent_memory_vector_search_1536`
 - `agent_memory_hybrid_search_1536`
 
+Fetch the full canonical item after a chunk match:
+
+```sql
+select agent_memory_get_item(
+  'USER_UUID'::uuid,
+  'CONTENT_ITEM_UUID'::uuid
+);
+```
+
+Fetch recent chunks:
+
+```sql
+select *
+from agent_memory_recent('USER_UUID'::uuid, 20);
+```
+
+## Direct CLI Search
+
+Search without opening the web app:
+
+```bash
+npm run agent-memory:search -- \
+  --user-email you@example.com \
+  --query "agent orchestration"
+```
+
+Use raw JSON for agent tool wrappers:
+
+```bash
+npm run agent-memory:search -- \
+  --user-email you@example.com \
+  --query "agent orchestration" \
+  --json
+```
+
 ## Read-Only Agent Role
 
 Recommended grant shape:
@@ -95,6 +130,8 @@ grant execute on function agent_memory_vector_search_768(uuid, vector, integer) 
 grant execute on function agent_memory_vector_search_1536(uuid, vector, integer) to openclaw_memory_reader;
 grant execute on function agent_memory_hybrid_search_768(uuid, text, vector, integer, double precision, double precision) to openclaw_memory_reader;
 grant execute on function agent_memory_hybrid_search_1536(uuid, text, vector, integer, double precision, double precision) to openclaw_memory_reader;
+grant execute on function agent_memory_get_item(uuid, uuid) to openclaw_memory_reader;
+grant execute on function agent_memory_recent(uuid, integer) to openclaw_memory_reader;
 ```
 
 Do not give agents the main FeedSilo application database credentials.

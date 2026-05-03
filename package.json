@@ -19,6 +19,7 @@
     "db:push": "tsx scripts/db-push.ts",
     "db:push:postgres": "prisma db push --schema=prisma/schema.prisma --accept-data-loss",
     "agent-memory:backfill": "tsx scripts/backfill-agent-memory.ts",
+    "agent-memory:search": "tsx scripts/search-agent-memory.ts",
     "postinstall": "npm run prisma:generate"
   },
   "dependencies": {
