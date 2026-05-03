@@ -121,6 +121,7 @@ function manifest() {
       dimensions: DEFAULT_DIMENSIONS,
       limit: DEFAULT_LIMIT,
       dedupe: true,
+      include_items: false,
     },
     endpoints: {
       health: "GET /healthz",
@@ -173,6 +174,9 @@ async function searchFromQuery(url, response) {
     dimensions: url.searchParams.get("dimensions") || undefined,
     limit: url.searchParams.get("limit") || undefined,
     dedupe: url.searchParams.get("dedupe") === "false" ? false : undefined,
+    include_items:
+      url.searchParams.get("include_items") === "true" ||
+      url.searchParams.get("includeItems") === "true",
   });
   const results = await runSearch(payload);
   sendJson(response, 200, results);
@@ -195,6 +199,10 @@ function normalizeSearchPayload(body) {
   const dimensions = parseDimensions(body.dimensions, DEFAULT_DIMENSIONS);
   const limit = clampInteger(body.limit, DEFAULT_LIMIT, 1, 200);
   const dedupe = body.dedupe !== false;
+  const includeItems = body.include_items === true || body.includeItems === true;
+  if (includeItems && limit > 20) {
+    throw httpError(400, "include_items is limited to 20 results per request");
+  }
   const userId = resolveUserId(body.user_id || body.userId);
 
   return {
@@ -203,6 +211,7 @@ function normalizeSearchPayload(body) {
     dimensions,
     limit,
     dedupe,
+    includeItems,
     userId,
     keywordWeight: optionalWeight(body.keywordWeight ?? body.keyword_weight, 0.45),
     vectorWeight: optionalWeight(body.vectorWeight ?? body.vector_weight, 0.55),
@@ -261,7 +270,10 @@ async function runSearch(payload) {
   const candidates = payload.dedupe
     ? dedupeByContentItem(normalized).slice(0, payload.limit)
     : normalized.slice(0, payload.limit);
-  const results = candidates.map((result, index) => ({ ...result, rank: index + 1 }));
+  let results = candidates.map((result, index) => ({ ...result, rank: index + 1 }));
+  if (payload.includeItems) {
+    results = await attachFullItems(payload.userId, results);
+  }
 
   return {
     query: payload.query,
@@ -269,11 +281,29 @@ async function runSearch(payload) {
     dimensions: payload.dimensions,
     limit: payload.limit,
     dedupe: payload.dedupe,
+    include_items: payload.includeItems,
     count: results.length,
     embedding_model: payload.mode === "keyword" ? null : OPENAI_EMBEDDING_MODEL,
     latency_ms: Date.now() - startedAt,
     results,
   };
+}
+
+async function attachFullItems(userId, results) {
+  const fullItems = new Map();
+  for (const result of results) {
+    if (fullItems.has(result.content_item_id)) continue;
+    const response = await pool.query(
+      "SELECT agent_memory_get_item($1::uuid, $2::uuid) AS item",
+      [userId, result.content_item_id]
+    );
+    fullItems.set(result.content_item_id, response.rows[0]?.item || null);
+  }
+
+  return results.map((result) => ({
+    ...result,
+    item: fullItems.get(result.content_item_id),
+  }));
 }
 
 async function item(request, response) {

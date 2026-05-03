@@ -14,10 +14,14 @@ Run from any workspace:
 
 ```bash
 cd /Users/richgates/Documents/coding/feedsilo
-npm run agent-memory:gateway -- search "QUERY" --limit 5
+npm run agent-memory:gateway -- check "QUERY" --limit 3
 ```
 
-Default search is hybrid retrieval over 1536-dimensional FeedSilo vectors.
+Default search is hybrid retrieval over 1536-dimensional FeedSilo vectors. The
+`check` command returns both matched chunks and full saved FeedSilo items.
+
+Use this command for normal user requests like "check FeedSilo for this." Use
+`search` only when you need lighter output or more candidates.
 
 ## Fetch Full Item
 
@@ -31,6 +35,9 @@ npm run agent-memory:gateway -- item CONTENT_ITEM_UUID
 ## Response Rules
 
 - Cite `source_url` or `citation_url` values from results.
+- Answer from captured `chunk_text` and `item` data, not from Twitter/X fetches.
+- Do not give only source links. Links are citations and follow-up references,
+  while the saved database text is the source the agent can read.
 - Prefer concise summaries of the saved material.
 - Do not print or inspect `~/.codex/secrets/feedsilo-memory-gateway.env`.
 - If search fails because the gateway is unreachable, run:

@@ -251,9 +251,14 @@ Do not print that file in logs or chat.
 Codex chats on this Mac can use the same gateway through the local helper:
 
 ```bash
+npm run agent-memory:gateway -- check "agent memory search" --limit 3
 npm run agent-memory:gateway -- search "agent memory search" --limit 5
 npm run agent-memory:gateway -- item CONTENT_ITEM_UUID
 ```
+
+Use `check` for normal agent answers. It returns matched chunks plus full saved
+FeedSilo item records, so agents can read captured text even when Twitter/X is
+locked down. Use `source_url` as a citation, not as the primary readable source.
 
 The helper reads its token from:
 

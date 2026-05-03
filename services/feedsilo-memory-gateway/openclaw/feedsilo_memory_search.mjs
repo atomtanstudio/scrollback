@@ -39,6 +39,11 @@ if (command === "health") {
 } else if (command === "search") {
   const options = parseSearchArgs(args);
   print(await request("POST", "/search", options));
+} else if (command === "search-full" || command === "check") {
+  const options = parseSearchArgs(args);
+  options.include_items = true;
+  if (!args.includes("--limit") && !args.includes("-n")) options.limit = 3;
+  print(await request("POST", "/search", options));
 } else if (command === "item") {
   const id = args[0];
   if (!id) fail("item requires a content_item_id");
@@ -53,6 +58,7 @@ if (command === "health") {
 function usage() {
   console.log(`Usage:
   node tools/feedsilo_memory_search.mjs search "agent memory search" [--limit 5]
+  node tools/feedsilo_memory_search.mjs check "agent memory search" [--limit 3]
   node tools/feedsilo_memory_search.mjs item CONTENT_ITEM_UUID
   node tools/feedsilo_memory_search.mjs recent [--limit 10]
   node tools/feedsilo_memory_search.mjs health
@@ -90,6 +96,8 @@ function parseSearchArgs(args) {
       i += 1;
     } else if (arg === "--no-dedupe") {
       options.dedupe = false;
+    } else if (arg === "--include-items" || arg === "--include-item") {
+      options.include_items = true;
     } else {
       queryParts.push(arg);
     }

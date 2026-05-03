@@ -89,6 +89,16 @@ Default behavior:
 - `dimensions`: `1536`
 - `limit`: `20`
 - `dedupe`: `true`
+- `include_items`: `false`
+
+For agent-facing answers, prefer the full captured-data path:
+
+```bash
+node tools/feedsilo_memory_search.mjs check "agent memory search" --limit 3
+```
+
+This attaches the full saved FeedSilo item to each result. Use source URLs as
+citations, but answer from `chunk_text` and `item`, not from Twitter/X fetches.
 
 ## Fetch Full Item
 
