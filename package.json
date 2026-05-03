@@ -21,6 +21,7 @@
     "db:backup": "tsx scripts/backup-database.ts",
     "agent-memory:backfill": "tsx scripts/backfill-agent-memory.ts",
     "agent-memory:search": "tsx scripts/search-agent-memory.ts",
+    "agent-memory:gateway": "node scripts/feedsilo-memory-search.mjs",
     "postinstall": "npm run prisma:generate"
   },
   "dependencies": {

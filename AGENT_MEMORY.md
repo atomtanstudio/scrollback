@@ -248,6 +248,22 @@ The wrapper reads its token from:
 
 Do not print that file in logs or chat.
 
+Codex chats on this Mac can use the same gateway through the local helper:
+
+```bash
+npm run agent-memory:gateway -- search "agent memory search" --limit 5
+npm run agent-memory:gateway -- item CONTENT_ITEM_UUID
+```
+
+The helper reads its token from:
+
+```text
+~/.codex/secrets/feedsilo-memory-gateway.env
+```
+
+That local file contains only the gateway URL and gateway bearer token. It does
+not contain the FeedSilo database password.
+
 ## Read-Only Agent Role
 
 Recommended grant shape:
