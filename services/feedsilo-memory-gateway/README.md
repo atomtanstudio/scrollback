@@ -66,6 +66,14 @@ with a short natural-language query. Prefer hybrid search, keep dimensions at
 full saved content for a result.
 ```
 
+OpenClaw workspace wrapper:
+
+```bash
+cd /home/node/.openclaw/workspace
+node tools/feedsilo_memory_search.mjs search "agent memory search" --limit 5
+node tools/feedsilo_memory_search.mjs item CONTENT_ITEM_UUID
+```
+
 ## Search
 
 ```bash

@@ -232,6 +232,22 @@ curl -sS http://UNRAID_HOST:8788/search \
   -d '{"query":"agent memory search","limit":5}'
 ```
 
+OpenClaw wrapper installed in the persistent workspace:
+
+```bash
+cd /home/node/.openclaw/workspace
+node tools/feedsilo_memory_search.mjs search "agent memory search" --limit 5
+node tools/feedsilo_memory_search.mjs item CONTENT_ITEM_UUID
+```
+
+The wrapper reads its token from:
+
+```text
+/home/node/.openclaw/workspace/.secrets/feedsilo-memory-gateway.env
+```
+
+Do not print that file in logs or chat.
+
 ## Read-Only Agent Role
 
 Recommended grant shape:
