@@ -27,6 +27,21 @@ FeedSilo material, use the FeedSilo Memory Gateway and answer from captured
 database text. Use GBrain for markdown-brain skills, routing, memory structure,
 and GBrain-specific runtime operations.
 
+### Scope Rule For Judy And OpenClaw Agents
+
+GBrain is in scope for Judy and all OpenClaw agents. Use it as the synthesized
+memory layer before answering questions about OpenClaw architecture, agent
+memory, business strategy, distribution, monetization, or durable project
+decisions.
+
+Use FeedSilo as the raw captured-source layer. Use GBrain as the distilled
+playbook/knowledge layer.
+
+Current promoted GBrain pages:
+
+- `concepts/openclaw-memory-architecture`
+- `concepts/ai-business-distribution-playbook`
+
 Runtime is installed at:
 
 ```text

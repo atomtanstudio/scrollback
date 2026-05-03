@@ -69,6 +69,14 @@ gbrain --version
 Expected fresh-brain warnings: no embeddings, graph coverage, timeline, or brain
 score until pages are imported.
 
+Current promoted pages:
+
+```bash
+cd /Users/richgates/Documents/coding/feedsilo
+npm run gbrain -- get concepts/openclaw-memory-architecture
+npm run gbrain -- get concepts/ai-business-distribution-playbook
+```
+
 OpenClaw runtime:
 
 ```bash
