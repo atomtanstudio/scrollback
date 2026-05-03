@@ -1,0 +1,7 @@
+interface:
+  display_name: "FeedSilo Memory"
+  short_description: "Search saved FeedSilo captures"
+  brand_color: "#2563EB"
+  default_prompt: "Use $feedsilo-memory to search my saved FeedSilo captures for this topic."
+policy:
+  allow_implicit_invocation: true

@@ -264,6 +264,15 @@ The helper reads its token from:
 That local file contains only the gateway URL and gateway bearer token. It does
 not contain the FeedSilo database password.
 
+A global Codex skill is installed as `feedsilo-memory`, so future Codex chats
+can respond naturally to requests like:
+
+```text
+Can you check FeedSilo for this?
+Search my saved FeedSilo captures for vector databases.
+Look in FeedSilo for that article about agent memory.
+```
+
 ## Read-Only Agent Role
 
 Recommended grant shape:
