@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import time
+from base64 import b64encode
 from typing import Literal
 
 import numpy as np
@@ -12,6 +13,11 @@ from sentence_transformers import SentenceTransformer
 
 
 MODEL_NAME = os.getenv("EMBEDDING_MODEL", "Qwen/Qwen3-Embedding-4B")
+MODEL_ALIASES = [
+    alias.strip()
+    for alias in os.getenv("EMBEDDING_MODEL_ALIASES", "text-embedding-3-large").split(",")
+    if alias.strip()
+]
 DEVICE = os.getenv("EMBEDDING_DEVICE", "cuda" if torch.cuda.is_available() else "cpu")
 DTYPE = os.getenv("EMBEDDING_DTYPE", "float16")
 BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", "4"))
@@ -27,7 +33,7 @@ class EmbeddingRequest(BaseModel):
     model: str | None = None
     input: str | list[str]
     dimensions: int | None = Field(default=None, ge=1)
-    encoding_format: Literal["float"] = "float"
+    encoding_format: Literal["float", "base64"] = "float"
     input_type: Literal["document", "query"] | None = None
     prompt_name: str | None = None
     prompt: str | None = None
@@ -94,11 +100,19 @@ def truncate_dimensions(embeddings: np.ndarray, dimensions: int) -> np.ndarray:
     return truncated / norms
 
 
+def format_embedding(vector: np.ndarray, encoding_format: str) -> list[float] | str:
+    vector = np.asarray(vector, dtype=np.float32)
+    if encoding_format == "base64":
+        return b64encode(vector.tobytes()).decode("ascii")
+    return vector.tolist()
+
+
 @app.get("/healthz")
 def healthz() -> dict[str, object]:
     return {
         "ok": True,
         "model": MODEL_NAME,
+        "aliases": MODEL_ALIASES,
         "loaded": _model is not None,
         "loaded_at": _loaded_at,
         "device": DEVICE,
@@ -110,14 +124,16 @@ def healthz() -> dict[str, object]:
 
 @app.get("/v1/models")
 def models() -> dict[str, object]:
+    model_ids = [MODEL_NAME, *MODEL_ALIASES]
     return {
         "object": "list",
         "data": [
             {
-                "id": MODEL_NAME,
+                "id": model_id,
                 "object": "model",
                 "owned_by": "local",
             }
+            for model_id in dict.fromkeys(model_ids)
         ],
     }
 
@@ -152,7 +168,7 @@ def embeddings(request: EmbeddingRequest) -> dict[str, object]:
             {
                 "object": "embedding",
                 "index": index,
-                "embedding": vector.tolist(),
+                "embedding": format_embedding(vector, request.encoding_format),
             }
             for index, vector in enumerate(array)
         ],

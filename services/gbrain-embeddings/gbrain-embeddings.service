@@ -12,6 +12,7 @@ Environment=EMBEDDING_DTYPE=float16
 Environment=EMBEDDING_MAX_SEQ_LENGTH=8192
 Environment=EMBEDDING_BATCH_SIZE=4
 Environment=EMBEDDING_DEFAULT_DIMENSIONS=1536
+Environment=EMBEDDING_MODEL_ALIASES=text-embedding-3-large
 ExecStart=/home/codex/services/gbrain-embeddings/.venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001
 Restart=on-failure
 RestartSec=5

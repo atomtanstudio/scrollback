@@ -7,6 +7,11 @@ Postgres and the FeedSilo data stay on Unraid. FeedSilo can point
 `OPENAI_BASE_URL` at this service when generating 1536-dimensional agent memory
 vectors.
 
+The service also accepts OpenAI SDK compatibility requests from clients such as
+GBrain. By default it advertises `text-embedding-3-large` as an alias for the
+local Qwen model and supports both `float` and `base64` embedding response
+formats.
+
 ## Model
 
 Default model:
@@ -44,6 +49,7 @@ EMBEDDING_DEVICE=cuda \
 EMBEDDING_DTYPE=float16 \
 EMBEDDING_MAX_SEQ_LENGTH=8192 \
 EMBEDDING_BATCH_SIZE=4 \
+EMBEDDING_MODEL_ALIASES=text-embedding-3-large \
 uvicorn server:app --host 0.0.0.0 --port 8001
 ```
 
@@ -63,6 +69,10 @@ curl http://127.0.0.1:8001/healthz
 curl http://127.0.0.1:8001/v1/embeddings \
   -H 'Content-Type: application/json' \
   -d '{"model":"Qwen/Qwen3-Embedding-4B","input":"agent memory search","dimensions":1536}'
+
+curl http://127.0.0.1:8001/v1/embeddings \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"text-embedding-3-large","input":"gbrain smoke test","dimensions":1536,"encoding_format":"base64"}'
 ```
 
 For direct search clients that can send non-OpenAI extra fields, pass
