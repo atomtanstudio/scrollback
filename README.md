@@ -62,7 +62,9 @@ Environment variables override values from `feedsilo.config.json`.
 | `DATABASE_URL` | Yes | PostgreSQL/Supabase URL or SQLite file URL such as `file:./feedsilo.db` |
 | `DATABASE_TYPE` | Yes | `postgresql`, `supabase`, or `sqlite` |
 | `AUTH_SECRET` | Yes | Auth.js session secret. Generate with `openssl rand -hex 32` |
+| `EMBEDDINGS_PROVIDER` | No | Override the configured AI provider. Supported values: `openai`, `gemini` |
 | `OPENAI_API_KEY` | No | Enables OpenAI embeddings, classification, summaries, translation, and image descriptions |
+| `OPENAI_BASE_URL` | No | OpenAI-compatible API base URL for local/proxy embedding and model servers |
 | `GEMINI_API_KEY` | No | Enables Gemini embeddings, classification, summaries, translation, and image descriptions |
 | `CAPTURE_SECRET` | No | Legacy/global browser extension pairing token. Per-user tokens are generated in-app |
 | `SEARCH_KEYWORD_WEIGHT` | No | Keyword search weight. Default `0.4` |

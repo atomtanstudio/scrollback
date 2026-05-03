@@ -21,7 +21,9 @@ function getApiKey(): string {
 }
 
 async function openaiFetch<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`https://api.openai.com/v1/${path}`, {
+  const baseUrl = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, "");
+  const cleanPath = path.replace(/^\/+/, "");
+  const res = await fetch(`${baseUrl}/${cleanPath}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${getApiKey()}`,

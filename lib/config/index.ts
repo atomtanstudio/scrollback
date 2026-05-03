@@ -39,6 +39,7 @@ export async function readConfigAsync(
 const MANAGED_ENV_KEYS = new Set([
   "DATABASE_URL",
   "DATABASE_TYPE",
+  "EMBEDDINGS_PROVIDER",
   "GEMINI_API_KEY",
   "OPENAI_API_KEY",
   "CAPTURE_SECRET",
@@ -50,6 +51,11 @@ function getEnvApiKey(provider: FeedsiloConfig["embeddings"]["provider"]): strin
   return provider === "openai"
     ? process.env.OPENAI_API_KEY || undefined
     : process.env.GEMINI_API_KEY || undefined;
+}
+
+function getEnvProvider(fallback: FeedsiloConfig["embeddings"]["provider"]): FeedsiloConfig["embeddings"]["provider"] {
+  const provider = process.env.EMBEDDINGS_PROVIDER || process.env.AI_PROVIDER;
+  return provider === "openai" || provider === "gemini" ? provider : fallback;
 }
 
 export function writeConfig(
@@ -122,7 +128,7 @@ export function resolveConfig(
     const dbUrl = process.env.DATABASE_URL;
     const dbType = process.env.DATABASE_TYPE as DatabaseType | undefined;
     if (dbUrl && dbType) {
-      const provider = process.env.OPENAI_API_KEY ? "openai" : "gemini";
+      const provider = getEnvProvider(process.env.OPENAI_API_KEY ? "openai" : "gemini");
       return configSchema.parse({
         database: { type: dbType, url: dbUrl },
         embeddings: {
@@ -145,6 +151,8 @@ export function resolveConfig(
     return null;
   }
 
+  const embeddingsProvider = getEnvProvider(fileConfig.embeddings.provider);
+
   return {
     ...fileConfig,
     database: {
@@ -153,8 +161,9 @@ export function resolveConfig(
     },
     embeddings: {
       ...fileConfig.embeddings,
+      provider: embeddingsProvider,
       apiKey:
-        getEnvApiKey(fileConfig.embeddings.provider) ||
+        getEnvApiKey(embeddingsProvider) ||
         fileConfig.embeddings?.apiKey,
     },
     extension: {
