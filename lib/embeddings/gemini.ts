@@ -524,11 +524,18 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 export async function generateEmbeddings(
   texts: string[]
 ): Promise<number[][]> {
+  return generateEmbeddingsWithDimensions(texts, OUTPUT_DIMENSIONALITY);
+}
+
+export async function generateEmbeddingsWithDimensions(
+  texts: string[],
+  dimensions: 768 | 1536 = OUTPUT_DIMENSIONALITY
+): Promise<number[][]> {
   const genai = getClient();
   const result = await genai.models.embedContent({
     model: EMBEDDING_MODEL,
     contents: texts,
-    config: { outputDimensionality: OUTPUT_DIMENSIONALITY },
+    config: { outputDimensionality: dimensions },
   });
 
   if (!result.embeddings) {

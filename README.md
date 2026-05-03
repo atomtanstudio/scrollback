@@ -16,6 +16,7 @@ Built with Next.js 16, React 18, Prisma 7, PostgreSQL/pgvector, SQLite, Tailwind
 - **Multi-database setup** - Use SQLite for fast local installs, or PostgreSQL/Supabase for hosted installs and vector search.
 - **Admin tools** - Edit, delete, reprocess, backfill media, export data, manage pinned filters, and reveal/regenerate capture tokens.
 - **Remote query API** - Pull your archive into tools like Obsidian, OpenClaw, scripts, or local pipelines without exposing the database.
+- **Agent memory search** - Build a chunk-level Postgres/pgvector index for OpenClaw agents, direct SQL search, and the `/agent-search` web surface.
 - **Self-hosted privacy model** - No telemetry, no analytics, no central FeedSilo content service.
 
 ## Quick Start
@@ -208,6 +209,10 @@ Supported filters include:
 - `format=ndjson`
 
 See [REMOTE_QUERY_API.md](REMOTE_QUERY_API.md) for full examples and response shapes.
+
+## Agent Memory Search
+
+For agent-native retrieval, FeedSilo can maintain a separate chunk-level memory index beside the canonical archive. See [AGENT_MEMORY.md](AGENT_MEMORY.md) for backfill commands, direct SQL functions, read-only role grants, and the `/agent-search` interface.
 
 ## Troubleshooting
 

@@ -18,6 +18,7 @@
     "prisma:generate": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/schema-sqlite.prisma",
     "db:push": "tsx scripts/db-push.ts",
     "db:push:postgres": "prisma db push --schema=prisma/schema.prisma --accept-data-loss",
+    "agent-memory:backfill": "tsx scripts/backfill-agent-memory.ts",
     "postinstall": "npm run prisma:generate"
   },
   "dependencies": {

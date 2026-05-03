@@ -23,6 +23,18 @@ export function supportsEmbeddings(): boolean {
   return true;
 }
 
+export function getEmbeddingModelLabel(): string {
+  const provider = getProvider();
+  if (provider === "openai") {
+    return process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small";
+  }
+  return "gemini-embedding-001";
+}
+
+export function getDefaultEmbeddingDimensions(): number {
+  return 768;
+}
+
 async function loadProvider() {
   const provider = getProvider();
   if (provider === "openai") return import("./openai");
@@ -63,4 +75,20 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   const provider = await loadProvider();
   return provider.generateEmbeddings(texts);
+}
+
+export async function generateEmbeddingWithDimensions(
+  text: string,
+  dimensions: 768 | 1536
+): Promise<number[]> {
+  const embeddings = await generateEmbeddingsWithDimensions([text], dimensions);
+  return embeddings[0];
+}
+
+export async function generateEmbeddingsWithDimensions(
+  texts: string[],
+  dimensions: 768 | 1536
+): Promise<number[][]> {
+  const provider = await loadProvider();
+  return provider.generateEmbeddingsWithDimensions(texts, dimensions);
 }

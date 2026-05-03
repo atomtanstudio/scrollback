@@ -289,12 +289,19 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 }
 
 export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
+  return generateEmbeddingsWithDimensions(texts, OUTPUT_DIMENSIONALITY);
+}
+
+export async function generateEmbeddingsWithDimensions(
+  texts: string[],
+  dimensions: 768 | 1536 = OUTPUT_DIMENSIONALITY
+): Promise<number[][]> {
   const response = await openaiFetch<{
     data?: Array<{ embedding?: number[]; index?: number }>;
   }>("embeddings", {
     model: EMBEDDING_MODEL,
     input: texts,
-    dimensions: OUTPUT_DIMENSIONALITY,
+    dimensions,
   });
 
   if (!response.data) throw new Error("No embeddings returned from OpenAI API");

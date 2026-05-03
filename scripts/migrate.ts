@@ -11,6 +11,10 @@ config({ path: ".env.local" });
 config();
 
 import pg from "pg";
+import {
+  AGENT_MEMORY_OPTIONAL_INDEX_SQL,
+  AGENT_MEMORY_SCHEMA_SQL,
+} from "../lib/agent-memory/schema";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -112,6 +116,22 @@ async function main() {
     console.log("[migrate] Dropping invalid vector btree index if present...");
     await client.query(`DROP INDEX IF EXISTS idx_content_items_embedding`);
     console.log("[migrate] Vector index cleanup done.");
+
+    console.log("[migrate] Ensuring agent memory tables and search functions...");
+    for (const sql of AGENT_MEMORY_SCHEMA_SQL) {
+      await client.query(sql);
+    }
+    for (const sql of AGENT_MEMORY_OPTIONAL_INDEX_SQL) {
+      try {
+        await client.query(sql);
+      } catch (error) {
+        console.warn(
+          "[migrate] Optional agent memory HNSW index skipped:",
+          error instanceof Error ? error.message : error
+        );
+      }
+    }
+    console.log("[migrate] Agent memory schema done.");
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
     console.error("[migrate] Migration failed:", error);
