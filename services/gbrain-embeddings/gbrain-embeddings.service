@@ -1,0 +1,20 @@
+[Unit]
+Description=GBrain OpenAI-compatible embedding sidecar
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/codex/services/gbrain-embeddings
+Environment=EMBEDDING_MODEL=Qwen/Qwen3-Embedding-4B
+Environment=EMBEDDING_DEVICE=cuda
+Environment=EMBEDDING_DTYPE=float16
+Environment=EMBEDDING_MAX_SEQ_LENGTH=8192
+Environment=EMBEDDING_BATCH_SIZE=4
+Environment=EMBEDDING_DEFAULT_DIMENSIONS=1536
+ExecStart=/home/codex/services/gbrain-embeddings/.venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

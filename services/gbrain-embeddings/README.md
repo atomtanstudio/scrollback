@@ -47,6 +47,15 @@ EMBEDDING_BATCH_SIZE=4 \
 uvicorn server:app --host 0.0.0.0 --port 8001
 ```
 
+Or install the user-level systemd unit:
+
+```sh
+mkdir -p ~/.config/systemd/user
+cp gbrain-embeddings.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now gbrain-embeddings.service
+```
+
 ## Smoke Test
 
 ```sh
