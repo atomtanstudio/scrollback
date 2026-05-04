@@ -1449,6 +1449,39 @@ async function hydrateArticleCaptureIfUseful(data, button = null) {
   return true;
 }
 
+function getLongFormArticleCandidate(items) {
+  return (items || [])
+    .filter(Boolean)
+    .filter((item) => {
+      const bodyLength = (item.body_text || '').length;
+      const mediaCount = (item.media_urls || []).length;
+      return item.source_type === 'article' || bodyLength > 1000 || mediaCount >= 2;
+    })
+    .sort((a, b) => (b.body_text || '').length - (a.body_text || '').length)[0] || null;
+}
+
+function promoteLongFormCandidate(target, candidate) {
+  if (!candidate || candidate === target) return false;
+  const targetBodyLength = (target.body_text || '').length;
+  const candidateBodyLength = (candidate.body_text || '').length;
+
+  if (candidateBodyLength > targetBodyLength) {
+    target.body_text = candidate.body_text;
+  }
+  if ((!target.media_urls || target.media_urls.length === 0) && candidate.media_urls?.length) {
+    target.media_urls = [...candidate.media_urls];
+  } else if (candidate.media_urls?.length) {
+    const mediaUrls = target.media_urls || [];
+    for (const url of candidate.media_urls) {
+      if (!mediaUrls.includes(url)) mediaUrls.push(url);
+    }
+    target.media_urls = mediaUrls;
+  }
+  if (!target.title && candidate.title) target.title = candidate.title;
+  if (!target.posted_at && candidate.posted_at) target.posted_at = candidate.posted_at;
+  return true;
+}
+
 async function expandTweetText(tweetElement, delay = 500) {
   const showMore = tweetElement?.querySelector?.('[data-testid="tweet-text-show-more-link"]');
   if (!showMore) return false;
@@ -1522,6 +1555,14 @@ function injectSaveButtons() {
       if (data.conversation_id && data.author_handle) {
         threadItems = getThreadSiblingsFromCache(data.conversation_id, data.author_handle);
       }
+      const longFormCandidate = getLongFormArticleCandidate([data, ...threadItems]);
+      if (longFormCandidate) {
+        promoteLongFormCandidate(data, longFormCandidate);
+      }
+      let capturedAsArticle = await hydrateArticleCaptureIfUseful(data, btn);
+      if (capturedAsArticle) {
+        threadItems = [];
+      }
 
       const needsHydration = typeof shouldHydrateCaptureData === 'function'
         && shouldHydrateCaptureData({
@@ -1535,7 +1576,8 @@ function injectSaveButtons() {
       // or we found a partial thread but root tweet has more replies than we captured
       const threadLooksIncomplete = threadItems.length >= 2
         && data.replies != null && data.replies > threadItems.length;
-      if ((needsHydration || shouldFetchViaBackgroundTab(data, tweet))
+      if (!capturedAsArticle
+          && (needsHydration || shouldFetchViaBackgroundTab(data, tweet))
           && (needsHydration || threadItems.length < 2 || data.source_type === 'article' || threadLooksIncomplete)) {
         const tweetUrl = data.source_url || `https://x.com/i/web/status/${data.external_id}`;
         // Use conversation_id if available, fall back to external_id (root tweets have conv_id === ext_id)
@@ -1588,11 +1630,6 @@ function injectSaveButtons() {
         } catch (err) {
           log('Background fetch failed:', err);
         }
-      }
-
-      const capturedAsArticle = await hydrateArticleCaptureIfUseful(data, btn);
-      if (capturedAsArticle) {
-        threadItems = [];
       }
 
       // Final DOM fallback
