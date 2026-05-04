@@ -1415,9 +1415,38 @@ async function hydrateArticleDataFromDOMWithScroll(data, button = null) {
   }
 
   collectArticleDomSnapshot(accumulator, data.title || '');
-  hydrateArticleDataFromDOM(data, accumulator);
+  const hydrated = hydrateArticleDataFromDOM(data, accumulator);
   window.scrollTo({ top: startY, behavior: 'auto' });
   if (button) button.title = 'Save to FeedSilo';
+  return hydrated;
+}
+
+async function hydrateArticleCaptureIfUseful(data, button = null) {
+  const bodyLengthBefore = (data.body_text || '').length;
+  const mediaCountBefore = (data.media_urls || []).length;
+  const isKnownArticle = data.source_type === 'article';
+  const likelyLongFormPage =
+    isKnownArticle ||
+    bodyLengthBefore > 1000 ||
+    document.querySelectorAll('[data-testid="primaryColumn"] img[src*="pbs.twimg.com/media"]').length >= 2;
+
+  if (!likelyLongFormPage) return false;
+
+  const hydrated = await hydrateArticleDataFromDOMWithScroll(data, button);
+  const bodyLengthAfter = (data.body_text || '').length;
+  const mediaCountAfter = (data.media_urls || []).length;
+  const foundSubstantialArticle =
+    hydrated &&
+    (bodyLengthAfter > bodyLengthBefore + 500 || mediaCountAfter >= Math.max(2, mediaCountBefore + 1));
+
+  if (!foundSubstantialArticle) return false;
+
+  data.source_type = 'article';
+  if (!data.title || data.title === data.body_text?.slice(0, 100)) {
+    const pageTitle = normalizeDomText(document.title || '').replace(/\s*\/\s*X$/, '');
+    if (pageTitle) data.title = pageTitle;
+  }
+  return true;
 }
 
 async function expandTweetText(tweetElement, delay = 500) {
@@ -1561,17 +1590,17 @@ function injectSaveButtons() {
         }
       }
 
-      if (data.source_type === 'article') {
-        btn.title = 'Capturing full X article…';
-        await hydrateArticleDataFromDOMWithScroll(data, btn);
+      const capturedAsArticle = await hydrateArticleCaptureIfUseful(data, btn);
+      if (capturedAsArticle) {
+        threadItems = [];
       }
 
       // Final DOM fallback
-      if (threadItems.length < 2) {
+      if (!capturedAsArticle && threadItems.length < 2) {
         threadItems = await getThreadSiblingsFromDOM(tweet, data);
       }
 
-      if (threadItems.length > 1) {
+      if (!capturedAsArticle && threadItems.length > 1) {
         // Assemble thread into a single item: combine body text and media
         // Sort oldest first. Use posted_at if available, fall back to external_id
         // (Twitter IDs are chronologically ordered — lower ID = earlier tweet)
