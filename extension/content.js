@@ -1310,6 +1310,19 @@ function isArticleBodyIncomplete(data) {
   return false;
 }
 
+function isGenericArticleTextElement(el) {
+  return el.matches?.('div, span')
+    && !el.matches?.('div[dir="auto"], span[dir="auto"], pre, code, p');
+}
+
+function shouldSkipGenericArticleTextElement(el) {
+  if (!isGenericArticleTextElement(el)) return false;
+  return Array.from(el.children).some((child) => {
+    const childText = normalizeDomText(child.innerText || child.textContent || '');
+    return childText.length >= 10;
+  });
+}
+
 function addArticleTextPart(accumulator, text) {
   const normalized = normalizeDomText(text);
   if (!normalized || shouldSkipArticleTextValue(normalized, '')) return;
@@ -1377,6 +1390,7 @@ function collectArticleDomSnapshot(accumulator, title = '') {
     }
 
     if (shouldSkipArticleTextElement(node, title)) return;
+    if (shouldSkipGenericArticleTextElement(node)) return;
     candidates.push({ type: 'text', text: node.innerText || node.textContent || '', sortTop, sortLeft, index });
   });
 
