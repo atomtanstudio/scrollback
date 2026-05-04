@@ -1267,6 +1267,16 @@ function isElementVisible(el) {
   return style.visibility !== 'hidden' && style.display !== 'none';
 }
 
+function isArticleElementNearViewport(el, rect = null) {
+  const box = rect || el.getBoundingClientRect();
+  if (box.width < 8 || box.height < 8) return false;
+  const style = window.getComputedStyle(el);
+  if (style.visibility === 'hidden' || style.display === 'none') return false;
+
+  const margin = Math.max(260, Math.floor(window.innerHeight * 0.45));
+  return box.bottom >= -margin && box.top <= window.innerHeight + margin;
+}
+
 function shouldSkipArticleTextElement(el, title) {
   if (!isElementVisible(el)) return true;
   if (el.closest('button, [role="button"], [data-testid="User-Name"], [data-testid="caret"], [data-testid="app-bar-close"]')) return true;
@@ -1334,40 +1344,41 @@ function collectArticleDomSnapshot(accumulator, title = '') {
   ].join(',');
 
   const nodes = Array.from(mainColumn.querySelectorAll(selector));
-  for (const node of nodes) {
+  const candidates = [];
+  nodes.forEach((node, index) => {
+    const rect = node.getBoundingClientRect();
+    if (!isArticleElementNearViewport(node, rect)) return;
+    const sortTop = rect.top + window.scrollY;
+    const sortLeft = rect.left + window.scrollX;
+
     if (node.matches?.('img[src*="pbs.twimg.com/media"]')) {
-      addArticleMediaPart(accumulator, node.currentSrc || node.src, 'Image');
-      continue;
+      candidates.push({ type: 'media', mediaType: 'Image', url: node.currentSrc || node.src, sortTop, sortLeft, index });
+      return;
     }
 
     if (node.matches?.('video source[src*="video.twimg.com"]')) {
-      addArticleMediaPart(accumulator, node.src, 'Video');
-      continue;
+      candidates.push({ type: 'media', mediaType: 'Video', url: node.src, sortTop, sortLeft, index });
+      return;
     }
 
     if (node.matches?.('video[src*="video.twimg.com"]')) {
-      addArticleMediaPart(accumulator, node.currentSrc || node.src, 'Video');
-      continue;
+      candidates.push({ type: 'media', mediaType: 'Video', url: node.currentSrc || node.src, sortTop, sortLeft, index });
+      return;
     }
 
-    if (shouldSkipArticleTextElement(node, title)) continue;
-    addArticleTextPart(accumulator, node.innerText || node.textContent || '');
-  }
+    if (shouldSkipArticleTextElement(node, title)) return;
+    candidates.push({ type: 'text', text: node.innerText || node.textContent || '', sortTop, sortLeft, index });
+  });
 
-  const textSnapshot = normalizeDomText(mainColumn.innerText || '');
-  for (const block of textSnapshot.split(/\n{2,}/)) {
-    const normalizedBlock = normalizeDomText(block);
-    if (shouldSkipArticleTextValue(normalizedBlock, title)) continue;
-    if (normalizedBlock.length > 900) {
-      for (const chunk of normalizedBlock.split(/\n(?=(?:Nano Banana|Prompt|\\{|\\s*"[^"]+"\\s*:|\\s*\\]))/g)) {
-        if (!shouldSkipArticleTextValue(normalizeDomText(chunk), title)) {
-          addArticleTextPart(accumulator, chunk);
-        }
+  candidates
+    .sort((a, b) => a.sortTop - b.sortTop || a.sortLeft - b.sortLeft || a.index - b.index)
+    .forEach((candidate) => {
+      if (candidate.type === 'media') {
+        addArticleMediaPart(accumulator, candidate.url, candidate.mediaType);
+      } else {
+        addArticleTextPart(accumulator, candidate.text);
       }
-    } else {
-      addArticleTextPart(accumulator, normalizedBlock);
-    }
-  }
+    });
 
   return accumulator;
 }
