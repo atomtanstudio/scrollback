@@ -1273,12 +1273,7 @@ function shouldSkipArticleTextElement(el, title) {
   if (el.closest('nav, header')) return true;
 
   const text = normalizeDomText(el.innerText || el.textContent || '');
-  if (!text || text.length < 10) return true;
-  if (title && text === title) return true;
-  if (/^(copy|post|reply|repost|like|likes|views|share|bookmark|read original article)$/i.test(text)) return true;
-  if (/^\d+\s*(views?|likes?|replies?|reposts?)$/i.test(text)) return true;
-  if (/^@\w{1,15}$/.test(text)) return true;
-  if (/^\w{3}\s+\d{1,2},\s+\d{4}$/.test(text)) return true;
+  if (shouldSkipArticleTextValue(text, title)) return true;
 
   const childText = Array.from(el.children)
     .map(child => normalizeDomText(child.innerText || child.textContent || ''))
@@ -1286,11 +1281,23 @@ function shouldSkipArticleTextElement(el, title) {
   return childText.some(childText => childText !== text && text.includes(childText));
 }
 
+function shouldSkipArticleTextValue(text, title) {
+  if (!text || text.length < 10) return true;
+  if (title && text === title) return true;
+  if (/^(copy|post|reply|repost|like|likes|views|share|bookmark|read original article)$/i.test(text)) return true;
+  if (/^\d+\s*(views?|likes?|replies?|reposts?)$/i.test(text)) return true;
+  if (/^@\w{1,15}$/.test(text)) return true;
+  if (/^\w{3}\s+\d{1,2},\s+\d{4}$/.test(text)) return true;
+  if (/^(for you|following|subscribe|verified|show more|show this thread)$/i.test(text)) return true;
+  return false;
+}
+
 function addArticleTextPart(accumulator, text) {
   const normalized = normalizeDomText(text);
-  if (!normalized) return;
+  if (!normalized || shouldSkipArticleTextValue(normalized, '')) return;
   const key = normalized.replace(/\s+/g, ' ').toLowerCase();
   if (accumulator.seenText.has(key)) return;
+  if (normalized.length > 20 && accumulator.parts.some(part => !part.startsWith('[') && part.includes(normalized))) return;
 
   const previous = accumulator.parts[accumulator.parts.length - 1] || '';
   if (previous && !previous.startsWith('[') && normalized.includes(previous) && previous.length > 30) {
@@ -1347,6 +1354,21 @@ function collectArticleDomSnapshot(accumulator, title = '') {
     addArticleTextPart(accumulator, node.innerText || node.textContent || '');
   }
 
+  const textSnapshot = normalizeDomText(mainColumn.innerText || '');
+  for (const block of textSnapshot.split(/\n{2,}/)) {
+    const normalizedBlock = normalizeDomText(block);
+    if (shouldSkipArticleTextValue(normalizedBlock, title)) continue;
+    if (normalizedBlock.length > 900) {
+      for (const chunk of normalizedBlock.split(/\n(?=(?:Nano Banana|Prompt|\\{|\\s*"[^"]+"\\s*:|\\s*\\]))/g)) {
+        if (!shouldSkipArticleTextValue(normalizeDomText(chunk), title)) {
+          addArticleTextPart(accumulator, chunk);
+        }
+      }
+    } else {
+      addArticleTextPart(accumulator, normalizedBlock);
+    }
+  }
+
   return accumulator;
 }
 
@@ -1368,7 +1390,7 @@ function hydrateArticleDataFromDOM(data, accumulator = null) {
 
   if (!hasMoreBody && !hasMoreMedia) return false;
 
-  if (hasMoreBody) {
+  if (hasMoreBody || hasMoreMedia) {
     data.body_text = domArticle.body;
   }
 
