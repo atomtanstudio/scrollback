@@ -47,6 +47,7 @@ document.addEventListener('feedsilo-api-response', (event) => {
 let bgFetchConversationId = null;
 let bgFetchTimer = null;
 let lastBgFetchCount = 0;
+let bgArticleDomAccumulator = null;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PING') {
@@ -57,13 +58,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'BG_FETCH_INIT' && message.conversationId) {
     bgFetchConversationId = message.conversationId;
     lastBgFetchCount = 0;
+    bgArticleDomAccumulator = createArticleDomAccumulator();
     log('Background fetch mode — waiting for conversation', bgFetchConversationId);
+    runBackgroundFetchHarvest(message.expectedReplies).catch((error) => {
+      log('Background fetch harvest failed:', error);
+      sendThreadData();
+    });
     // Also poll briefly in case data arrives after init
     let checks = 0;
     bgFetchTimer = setInterval(() => {
       checks++;
       trySendThreadData();
-      if (checks >= 15) { // 15 × 500ms = 7.5s max
+      if (checks >= 22) { // 22 × 500ms = 11s max
         clearInterval(bgFetchTimer);
         bgFetchTimer = null;
         // Send whatever we have
@@ -90,6 +96,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 function trySendThreadData() {
   if (!bgFetchConversationId) return;
+  const hasArticle = Array.from(tweetCache.values()).some(
+    data => data.conversation_id === bgFetchConversationId && data.source_type === 'article'
+  );
+  if (hasArticle && bgArticleDomAccumulator && !bgArticleDomAccumulator.done) {
+    hydrateArticleCacheFromDOM();
+    return;
+  }
   // Count how many tweets we have for this conversation
   let count = 0;
   for (const [, data] of tweetCache) {
@@ -109,6 +122,7 @@ function trySendThreadData() {
 
 function sendThreadData() {
   if (!bgFetchConversationId) return;
+  hydrateArticleCacheFromDOM();
   const tweets = [];
   for (const [, data] of tweetCache) {
     if (data.conversation_id === bgFetchConversationId) {
@@ -121,6 +135,52 @@ function sendThreadData() {
     tweets,
   });
   bgFetchConversationId = null;
+  bgArticleDomAccumulator = null;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function runBackgroundFetchHarvest(expectedReplies = null) {
+  await sleep(900);
+  let unchangedHeightCount = 0;
+  let lastHeight = 0;
+
+  for (let i = 0; i < 14; i++) {
+    hydrateArticleCacheFromDOM();
+
+    const height = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
+    const bottom = window.scrollY + window.innerHeight >= height - 80;
+    if (bottom || height === lastHeight) {
+      unchangedHeightCount++;
+    } else {
+      unchangedHeightCount = 0;
+    }
+    lastHeight = height;
+    if (unchangedHeightCount >= 3) break;
+
+    window.scrollBy({ top: Math.max(700, Math.floor(window.innerHeight * 0.82)), behavior: 'auto' });
+    await sleep(850);
+
+    if (expectedReplies && getConversationCacheCount(bgFetchConversationId) >= expectedReplies + 1) {
+      break;
+    }
+  }
+
+  hydrateArticleCacheFromDOM();
+  if (bgArticleDomAccumulator) {
+    bgArticleDomAccumulator.done = true;
+  }
+  sendThreadData();
+}
+
+function getConversationCacheCount(conversationId) {
+  let count = 0;
+  for (const [, data] of tweetCache) {
+    if (data.conversation_id === conversationId) count++;
+  }
+  return count;
 }
 
 function extractTweetsFromApiResponse(data) {
@@ -1054,11 +1114,8 @@ function extractTweetFromDOM(tweetElement, options = {}) {
       }
     }
     // For articles with truncated body, try to get full content
-    if (cached.source_type === 'article' && (!cached.body_text || cached.body_text.length < 500)) {
-      const fullBody = extractArticleBodyFromDOM();
-      if (fullBody && fullBody.length > (cached.body_text?.length || 0)) {
-        cached.body_text = fullBody;
-      }
+    if (cached.source_type === 'article') {
+      hydrateArticleDataFromDOM(cached);
     }
     // Backfill missing author info from DOM (API sometimes omits user data)
     if (!cached.author_handle || !cached.author_display_name || !cached.author_avatar_url) {
@@ -1167,91 +1224,200 @@ function extractTweetFromDOM(tweetElement, options = {}) {
 
 
 // --- Article Body DOM Extraction ---
-function extractArticleBodyFromDOM() {
-  // Try to extract full article content from the page DOM.
-  // When viewing an X Article page, the article body is rendered in the DOM.
-  const mainColumn = document.querySelector('[data-testid="primaryColumn"]');
-  if (!mainColumn) return null;
-
-  // Strategy 1: Look for article body container (X articles use specific containers)
-  // The article content is typically rendered after the tweet's action bar
-  const articleContainers = mainColumn.querySelectorAll(
-    '[data-testid="article-body"], [data-testid="articleBody"], [role="article"]'
-  );
-  for (const container of articleContainers) {
-    const text = extractTextFromContainer(container);
-    if (text && text.length > 200) {
-      log(' Found article body via container selector:', text.length, 'chars');
-      return text;
-    }
-  }
-
-  // Strategy 2: Look for rich text blocks in the main content area
-  // X articles render paragraphs as individual div/span elements within a specific area
-  // After the tweet element, look for long text content
-  const tweets = mainColumn.querySelectorAll('article[data-testid="tweet"]');
-  if (tweets.length > 0) {
-    const firstTweet = tweets[0];
-    // Look for text content AFTER the tweet that could be article body
-    const tweetContainer = firstTweet.closest('[data-testid="cellInnerDiv"]');
-    if (tweetContainer) {
-      let sibling = tweetContainer.nextElementSibling;
-      const paragraphs = [];
-      while (sibling) {
-        // Collect text from subsequent content cells
-        const textEls = sibling.querySelectorAll('span, p, div[dir="auto"]');
-        for (const el of textEls) {
-          const text = el.innerText?.trim();
-          // Only collect substantial text blocks (not UI elements)
-          if (text && text.length > 20 && !el.closest('a[role="link"]') && !el.closest('[data-testid="User-Name"]')) {
-            // Avoid duplicate text from parent/child elements
-            if (!paragraphs.some(p => p.includes(text) || text.includes(p))) {
-              paragraphs.push(text);
-            }
-          }
-        }
-        sibling = sibling.nextElementSibling;
-      }
-      if (paragraphs.length > 2) {
-        const fullText = paragraphs.join('\n\n');
-        if (fullText.length > 200) {
-          log(' Found article body via sibling traversal:', fullText.length, 'chars,', paragraphs.length, 'paragraphs');
-          return fullText;
-        }
-      }
-    }
-  }
-
-  return null;
+function createArticleDomAccumulator() {
+  return {
+    parts: [],
+    mediaUrls: [],
+    seenText: new Set(),
+    seenMedia: new Set(),
+    done: false,
+  };
 }
 
-function extractTextFromContainer(container) {
-  // Extract text content from a container, preserving paragraph structure
-  const blocks = [];
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
-  let currentBlock = '';
-  let node;
-  while ((node = walker.nextNode())) {
-    const text = node.textContent.trim();
-    if (!text) {
-      if (currentBlock) {
-        blocks.push(currentBlock);
-        currentBlock = '';
-      }
+function normalizeDomText(value) {
+  return (value || '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
+function normalizeDomMediaUrl(url) {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url, location.href);
+    if (!parsed.hostname.includes('pbs.twimg.com') && !parsed.hostname.includes('video.twimg.com')) {
+      return null;
+    }
+    if (parsed.hostname.includes('pbs.twimg.com') && !parsed.pathname.includes('/media/')) {
+      return null;
+    }
+    return parsed.href;
+  } catch {
+    return null;
+  }
+}
+
+function isElementVisible(el) {
+  const rect = el.getBoundingClientRect();
+  if (rect.width < 8 || rect.height < 8) return false;
+  const style = window.getComputedStyle(el);
+  return style.visibility !== 'hidden' && style.display !== 'none';
+}
+
+function shouldSkipArticleTextElement(el, title) {
+  if (!isElementVisible(el)) return true;
+  if (el.closest('button, [role="button"], [data-testid="User-Name"], [data-testid="caret"], [data-testid="app-bar-close"]')) return true;
+  if (el.closest('nav, header')) return true;
+
+  const text = normalizeDomText(el.innerText || el.textContent || '');
+  if (!text || text.length < 10) return true;
+  if (title && text === title) return true;
+  if (/^(copy|post|reply|repost|like|likes|views|share|bookmark|read original article)$/i.test(text)) return true;
+  if (/^\d+\s*(views?|likes?|replies?|reposts?)$/i.test(text)) return true;
+  if (/^@\w{1,15}$/.test(text)) return true;
+  if (/^\w{3}\s+\d{1,2},\s+\d{4}$/.test(text)) return true;
+
+  const childText = Array.from(el.children)
+    .map(child => normalizeDomText(child.innerText || child.textContent || ''))
+    .filter(childText => childText && childText.length >= Math.min(80, text.length * 0.7));
+  return childText.some(childText => childText !== text && text.includes(childText));
+}
+
+function addArticleTextPart(accumulator, text) {
+  const normalized = normalizeDomText(text);
+  if (!normalized) return;
+  const key = normalized.replace(/\s+/g, ' ').toLowerCase();
+  if (accumulator.seenText.has(key)) return;
+
+  const previous = accumulator.parts[accumulator.parts.length - 1] || '';
+  if (previous && !previous.startsWith('[') && normalized.includes(previous) && previous.length > 30) {
+    accumulator.parts.pop();
+  } else if (previous && !previous.startsWith('[') && previous.includes(normalized) && normalized.length > 30) {
+    return;
+  }
+
+  accumulator.seenText.add(key);
+  accumulator.parts.push(normalized);
+}
+
+function addArticleMediaPart(accumulator, url, type = 'Image') {
+  const normalized = normalizeDomMediaUrl(url);
+  if (!normalized || accumulator.seenMedia.has(normalized)) return;
+  accumulator.seenMedia.add(normalized);
+  accumulator.mediaUrls.push(normalized);
+  accumulator.parts.push(`[${type}: ${normalized}]`);
+}
+
+function collectArticleDomSnapshot(accumulator, title = '') {
+  const mainColumn = document.querySelector('[data-testid="primaryColumn"]');
+  if (!mainColumn) return accumulator;
+
+  const selector = [
+    'img[src*="pbs.twimg.com/media"]',
+    'video source[src*="video.twimg.com"]',
+    'video[src*="video.twimg.com"]',
+    'pre',
+    'code',
+    'div[dir="auto"]',
+    'span[dir="auto"]',
+    'p',
+  ].join(',');
+
+  const nodes = Array.from(mainColumn.querySelectorAll(selector));
+  for (const node of nodes) {
+    if (node.matches?.('img[src*="pbs.twimg.com/media"]')) {
+      addArticleMediaPart(accumulator, node.currentSrc || node.src, 'Image');
       continue;
     }
-    // Check if this is a block-level boundary
-    const parent = node.parentElement;
-    const display = window.getComputedStyle(parent).display;
-    if (display === 'block' || parent.tagName === 'P' || parent.tagName === 'DIV') {
-      if (currentBlock) blocks.push(currentBlock);
-      currentBlock = text;
-    } else {
-      currentBlock += (currentBlock ? ' ' : '') + text;
+
+    if (node.matches?.('video source[src*="video.twimg.com"]')) {
+      addArticleMediaPart(accumulator, node.src, 'Video');
+      continue;
+    }
+
+    if (node.matches?.('video[src*="video.twimg.com"]')) {
+      addArticleMediaPart(accumulator, node.currentSrc || node.src, 'Video');
+      continue;
+    }
+
+    if (shouldSkipArticleTextElement(node, title)) continue;
+    addArticleTextPart(accumulator, node.innerText || node.textContent || '');
+  }
+
+  return accumulator;
+}
+
+function extractArticleBodyFromDOM(title = '') {
+  const accumulator = collectArticleDomSnapshot(createArticleDomAccumulator(), title);
+  const body = accumulator.parts.join('\n\n');
+  return body.length > 200 ? { body, mediaUrls: accumulator.mediaUrls } : null;
+}
+
+function hydrateArticleDataFromDOM(data, accumulator = null) {
+  const domArticle = accumulator
+    ? { body: accumulator.parts.join('\n\n'), mediaUrls: accumulator.mediaUrls }
+    : extractArticleBodyFromDOM(data.title || '');
+  if (!domArticle || domArticle.body.length < 200) return false;
+
+  const currentBodyLength = (data.body_text || '').length;
+  const hasMoreBody = domArticle.body.length > currentBodyLength + 300;
+  const hasMoreMedia = domArticle.mediaUrls.length > (data.media_urls || []).length;
+
+  if (!hasMoreBody && !hasMoreMedia) return false;
+
+  if (hasMoreBody) {
+    data.body_text = domArticle.body;
+  }
+
+  const mediaUrls = data.media_urls || [];
+  for (const url of domArticle.mediaUrls) {
+    if (!mediaUrls.includes(url)) mediaUrls.push(url);
+  }
+  data.media_urls = mediaUrls;
+  log(' Hydrated article from DOM:', data.body_text?.length || 0, 'chars,', data.media_urls.length, 'media');
+  return true;
+}
+
+function hydrateArticleCacheFromDOM() {
+  if (!bgFetchConversationId || !bgArticleDomAccumulator) return;
+  collectArticleDomSnapshot(bgArticleDomAccumulator);
+  for (const [, data] of tweetCache) {
+    if (data.conversation_id === bgFetchConversationId && data.source_type === 'article') {
+      hydrateArticleDataFromDOM(data, bgArticleDomAccumulator);
     }
   }
-  if (currentBlock) blocks.push(currentBlock);
-  return blocks.filter(b => b.length > 5).join('\n\n');
+}
+
+async function hydrateArticleDataFromDOMWithScroll(data, button = null) {
+  const accumulator = createArticleDomAccumulator();
+  const startY = window.scrollY;
+  let unchangedHeightCount = 0;
+  let lastHeight = 0;
+
+  for (let i = 0; i < 18; i++) {
+    collectArticleDomSnapshot(accumulator, data.title || '');
+    const height = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
+    const bottom = window.scrollY + window.innerHeight >= height - 100;
+    if (bottom || height === lastHeight) {
+      unchangedHeightCount++;
+    } else {
+      unchangedHeightCount = 0;
+    }
+    lastHeight = height;
+    if (unchangedHeightCount >= 3) break;
+
+    if (button) button.title = `Capturing full X article… ${Math.min(95, Math.round((i + 1) * 5))}%`;
+    window.scrollBy({ top: Math.max(700, Math.floor(window.innerHeight * 0.82)), behavior: 'auto' });
+    await new Promise(resolve => setTimeout(resolve, 550));
+  }
+
+  collectArticleDomSnapshot(accumulator, data.title || '');
+  hydrateArticleDataFromDOM(data, accumulator);
+  window.scrollTo({ top: startY, behavior: 'auto' });
+  if (button) button.title = 'Save to FeedSilo';
 }
 
 async function expandTweetText(tweetElement, delay = 500) {
@@ -1393,6 +1559,11 @@ function injectSaveButtons() {
         } catch (err) {
           log('Background fetch failed:', err);
         }
+      }
+
+      if (data.source_type === 'article') {
+        btn.title = 'Capturing full X article…';
+        await hydrateArticleDataFromDOMWithScroll(data, btn);
       }
 
       // Final DOM fallback
