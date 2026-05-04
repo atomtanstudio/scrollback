@@ -1427,24 +1427,30 @@ function hydrateArticleCacheFromDOM() {
 async function hydrateArticleDataFromDOMWithScroll(data, button = null) {
   const accumulator = createArticleDomAccumulator();
   const startY = window.scrollY;
-  let unchangedHeightCount = 0;
-  let lastHeight = 0;
+  let stuckScrollCount = 0;
 
-  for (let i = 0; i < 18; i++) {
+  for (let i = 0; i < 70; i++) {
     collectArticleDomSnapshot(accumulator, data.title || '');
     const height = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
-    const bottom = window.scrollY + window.innerHeight >= height - 100;
-    if (bottom || height === lastHeight) {
-      unchangedHeightCount++;
-    } else {
-      unchangedHeightCount = 0;
-    }
-    lastHeight = height;
-    if (unchangedHeightCount >= 3) break;
+    const maxScroll = Math.max(1, height - window.innerHeight);
+    const currentY = window.scrollY;
+    const bottom = currentY + window.innerHeight >= height - 140;
+    if (bottom) break;
 
-    if (button) button.title = `Capturing full X article… ${Math.min(95, Math.round((i + 1) * 5))}%`;
-    window.scrollBy({ top: Math.max(700, Math.floor(window.innerHeight * 0.82)), behavior: 'auto' });
-    await new Promise(resolve => setTimeout(resolve, 550));
+    if (button) {
+      const progress = Math.min(95, Math.max(5, Math.round((currentY / maxScroll) * 100)));
+      button.title = `Capturing full X article… ${progress}%`;
+    }
+
+    window.scrollBy({ top: Math.max(700, Math.floor(window.innerHeight * 0.78)), behavior: 'auto' });
+    await new Promise(resolve => setTimeout(resolve, 450));
+
+    if (Math.abs(window.scrollY - currentY) < 20) {
+      stuckScrollCount++;
+    } else {
+      stuckScrollCount = 0;
+    }
+    if (stuckScrollCount >= 2) break;
   }
 
   collectArticleDomSnapshot(accumulator, data.title || '');
@@ -1564,13 +1570,13 @@ function injectSaveButtons() {
 
       btn.classList.add('saving');
 
-      // Global timeout — never hang longer than 15 seconds
+      // Long X articles may need to scroll through a lot of virtualized content.
       const saveTimeout = setTimeout(() => {
         btn.classList.remove('saving');
         btn.classList.add('error');
         btn.title = 'Save timed out — try again';
         setTimeout(() => resetButton(btn), 5000);
-      }, 15000);
+      }, 60000);
 
       try {
       // Try to expand long tweets first
