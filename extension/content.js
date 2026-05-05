@@ -1013,47 +1013,43 @@ function shouldFetchViaBackgroundTab(data, tweetElement) {
   // Skip if this tab is a background fetch tab (opened by background.js)
   if (bgFetchConversationId) return false;
 
-  // Condition 0: article with truncated body — need full content_state
+  // Known X articles may need a background page walk to collect virtualized
+  // long-form content. Ordinary tweets and replies should never trigger this:
+  // a single-tweet save must stay local to the clicked tweet.
   if (data.source_type === 'article') {
     if (isArticleBodyIncomplete(data)) return true;
+    return false;
   }
 
   const conversationId = data.conversation_id;
-  const externalId = data.external_id;
 
   if (conversationId) {
-    // Condition 1: tweet is a reply in a conversation (conversation_id ≠ own id)
-    if (conversationId !== externalId) return true;
-
-    // Condition 2: cache already has 2+ tweets with this conversation_id
-    let siblingCount = 0;
+    // Fetch only when the cache already identifies this as an author thread.
+    // Do not use reply count or conversation_id alone; nearly every popular
+    // single tweet has replies and would otherwise scroll the whole page.
     for (const [, cached] of tweetCache) {
-      if (cached.conversation_id === conversationId) {
-        siblingCount++;
-        if (siblingCount >= 2) return true;
+      if (
+        cached.conversation_id === conversationId &&
+        cached.source_type === 'thread' &&
+        normalizeHandle(cached.author_handle) === normalizeHandle(data.author_handle)
+      ) {
+        return true;
       }
     }
   }
 
-  // Condition 3: tweet has replies (from API cache)
-  if (data.replies > 0) return true;
-
-  // Condition 4: DOM signals — thread connector line or "Show this thread" visible
-  // This catches cases where API data wasn't intercepted (conversation_id/replies null)
+  // DOM signals for explicit author thread surfaces. Avoid using the next cell
+  // connector because that frequently belongs to unrelated replies below a
+  // normal tweet and makes single saves scroll/fetch as full conversations.
   if (tweetElement) {
     const cell = tweetElement.closest('[data-testid="cellInnerDiv"]');
     if (cell) {
-      // Thread connector: a thin vertical line connecting tweets
-      const connector = cell.querySelector('div[style*="width: 2px"]');
-      if (connector) return true;
-      // "Show this thread" link
       if (cell.textContent.includes('Show this thread')) return true;
-    }
-    // Also check the next sibling cell for a thread connector (root tweet with replies below)
-    const nextCell = cell?.nextElementSibling;
-    if (nextCell) {
-      const nextConnector = nextCell.querySelector('div[style*="width: 2px"]');
-      if (nextConnector) return true;
+      const replyingTo = getReplyingToHandleFromTweetElement(tweetElement);
+      if (replyingTo && normalizeHandle(replyingTo) === normalizeHandle(data.author_handle)) {
+        const connector = cell.querySelector('div[style*="width: 2px"]');
+        if (connector) return true;
+      }
     }
   }
 
@@ -1491,10 +1487,7 @@ async function hydrateArticleCaptureIfUseful(data, button = null) {
   const mediaCountBefore = (data.media_urls || []).length;
   const isKnownArticle = data.source_type === 'article';
   const wasIncompleteArticle = isArticleBodyIncomplete(data);
-  const likelyLongFormPage =
-    isKnownArticle ||
-    bodyLengthBefore > 1000 ||
-    document.querySelectorAll('[data-testid="primaryColumn"] img[src*="pbs.twimg.com/media"]').length >= 2;
+  const likelyLongFormPage = isKnownArticle || wasIncompleteArticle;
 
   if (!likelyLongFormPage) return false;
 
@@ -1877,7 +1870,8 @@ function getThreadSiblingsFromCache(conversationId, authorHandle) {
   }
   const likelySelfThread = shouldTreatItemsAsThread(conversationItems, author, conversationId);
   if (!likelySelfThread) {
-    log('  no self-thread pattern detected; saving visible conversation replies anyway');
+    log('  no self-thread pattern detected — keeping clicked tweet as a single save');
+    return [];
   }
   for (const [, data] of tweetCache) {
     if (data.conversation_id !== conversationId) continue;
@@ -1960,6 +1954,10 @@ async function getThreadSiblingsFromDOM(tweetElement, seedData = null) {
     });
 
   if (threadItems.length < 2) return [];
+
+  if (!shouldTreatItemsAsThread(threadItems, authorHandle, conversationId)) {
+    return [];
+  }
 
   return threadItems.map((item) => stripInternalCaptureFields({
     ...item,

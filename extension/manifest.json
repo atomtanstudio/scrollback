@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Scrollback Capture",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Capture X/Twitter posts, threads, media, and article cards to your self-hosted Scrollback archive.",
   "permissions": [
     "activeTab",
