@@ -98,7 +98,7 @@ export default function WaitlistPage() {
           <p className="mt-6 text-center text-sm text-[#b4ab9d]">
             Self-host Scrollback today.{" "}
             <a
-              href="https://github.com/atomtanstudio/feedsilo"
+              href="https://github.com/atomtanstudio/scrollback"
               className="font-medium text-[#d8c0a0] underline underline-offset-2 hover:text-[#f2ede5]"
               target="_blank"
               rel="noopener noreferrer"

@@ -67,7 +67,7 @@ async function generateText(prompt: string, jsonSchema?: Record<string, unknown>
         ? {
             format: {
               type: "json_schema",
-              name: "feedsilo_result",
+              name: "scrollback_result",
               schema: jsonSchema,
               strict: false,
             },

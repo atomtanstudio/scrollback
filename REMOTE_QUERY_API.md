@@ -197,7 +197,7 @@ curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
   "https://your-scrollback-domain/api/remote/items?format=ndjson&per_page=500" \
-  > feedsilo-export.ndjson
+  > scrollback-export.ndjson
 ```
 
 ## Useful Fields Per Item

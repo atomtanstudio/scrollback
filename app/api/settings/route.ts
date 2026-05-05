@@ -7,7 +7,7 @@ import {
   getConfiguredLocalMediaPath,
   isLocalStorageConfigured,
 } from "@/lib/storage/local-config";
-import type { FeedsiloConfig } from "@/lib/config";
+import type { ScrollbackConfig } from "@/lib/config";
 import { sanitizeErrorMessage } from "@/lib/security/redact";
 import { requireAuth } from "@/lib/auth/session";
 import { requireSetupUnlocked } from "@/lib/setup/guard";
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Not configured" }, { status: 400 });
     }
 
-    const updated: FeedsiloConfig = { ...current };
+    const updated: ScrollbackConfig = { ...current };
 
     if (body.database) {
       updated.database = { ...current.database, ...body.database };

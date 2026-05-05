@@ -10,7 +10,7 @@ type RateLimitEntry = {
 };
 
 const rateLimitStore = globalThis as typeof globalThis & {
-  feedsiloWaitlistRateLimits?: Map<string, RateLimitEntry>;
+  scrollbackWaitlistRateLimits?: Map<string, RateLimitEntry>;
 };
 
 function getRateLimitKey(request: Request): string {
@@ -22,8 +22,8 @@ function getRateLimitKey(request: Request): string {
 function isRateLimited(request: Request): boolean {
   const now = Date.now();
   const key = getRateLimitKey(request);
-  const store = rateLimitStore.feedsiloWaitlistRateLimits ?? new Map<string, RateLimitEntry>();
-  rateLimitStore.feedsiloWaitlistRateLimits = store;
+  const store = rateLimitStore.scrollbackWaitlistRateLimits ?? new Map<string, RateLimitEntry>();
+  rateLimitStore.scrollbackWaitlistRateLimits = store;
 
   for (const [entryKey, entry] of Array.from(store.entries())) {
     if (entry.resetAt <= now) store.delete(entryKey);

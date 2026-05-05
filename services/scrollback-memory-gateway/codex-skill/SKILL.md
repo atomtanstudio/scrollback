@@ -1,5 +1,5 @@
 ---
-name: feedsilo-memory
+name: scrollback-memory
 description: Use when the user asks to check, search, look in, query, or consult Scrollback, Scrollback, saved captures, saved articles, saved tweets, captured prompts, the personal archive, or prior captured research. This skill searches the Scrollback memory gateway and can fetch full saved items by content_item_id.
 ---
 
@@ -13,7 +13,7 @@ about saved or captured material.
 Run from any workspace:
 
 ```bash
-cd /Users/richgates/Documents/coding/feedsilo
+cd /path/to/scrollback
 npm run agent-memory:gateway -- check "QUERY" --limit 3
 ```
 
@@ -28,7 +28,7 @@ Use this command for normal user requests like "check Scrollback for this." Use
 When a result matters, fetch the full saved item before summarizing or quoting it:
 
 ```bash
-cd /Users/richgates/Documents/coding/feedsilo
+cd /path/to/scrollback
 npm run agent-memory:gateway -- item CONTENT_ITEM_UUID
 ```
 
@@ -39,11 +39,11 @@ npm run agent-memory:gateway -- item CONTENT_ITEM_UUID
 - Do not give only source links. Links are citations and follow-up references,
   while the saved database text is the source the agent can read.
 - Prefer concise summaries of the saved material.
-- Do not print or inspect `~/.codex/secrets/feedsilo-memory-gateway.env`.
+- Do not print or inspect `~/.codex/secrets/scrollback-memory-gateway.env`.
 - If search fails because the gateway is unreachable, run:
 
 ```bash
-cd /Users/richgates/Documents/coding/feedsilo
+cd /path/to/scrollback
 npm run agent-memory:gateway -- health
 ```
 

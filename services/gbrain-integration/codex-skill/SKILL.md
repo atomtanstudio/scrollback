@@ -46,7 +46,7 @@ routes:
 - Before running mutating GBrain commands, verify the target database/brain repo
   and confirm whether the command writes local markdown, Postgres, or both.
 - Do not print API keys or database URLs.
-- If the user asks for Scrollback-captured content, use the `feedsilo-memory`
+- If the user asks for Scrollback-captured content, use the `scrollback-memory`
   skill first. GBrain is a separate markdown-brain system unless explicitly
   wired to imported Scrollback exports.
 
@@ -56,7 +56,7 @@ The GBrain runtime is installed locally. Prefer the Scrollback wrapper so the
 database URL and local embedding endpoint are loaded without exposing secrets:
 
 ```bash
-cd /Users/richgates/Documents/coding/feedsilo
+cd /path/to/scrollback
 npm run gbrain -- doctor --json
 ```
 
@@ -72,7 +72,7 @@ score until pages are imported.
 Current promoted pages:
 
 ```bash
-cd /Users/richgates/Documents/coding/feedsilo
+cd /path/to/scrollback
 npm run gbrain -- get concepts/openclaw-memory-architecture
 npm run gbrain -- get concepts/ai-business-distribution-playbook
 ```

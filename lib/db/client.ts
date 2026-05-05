@@ -6,9 +6,9 @@ import path from "path";
 type PrismaClientAny = any; // Both PG and SQLite clients satisfy this
 
 const globalForClient = globalThis as unknown as {
-  feedsiloClient: PrismaClientAny | undefined;
-  feedsiloDbType: DatabaseType | undefined;
-  feedsiloPool: pg.Pool | undefined;
+  scrollbackClient: PrismaClientAny | undefined;
+  scrollbackDbType: DatabaseType | undefined;
+  scrollbackPool: pg.Pool | undefined;
 };
 
 /**
@@ -28,10 +28,10 @@ export async function getClient(): Promise<PrismaClientAny> {
 
   // Return cached client if same database type
   if (
-    globalForClient.feedsiloClient &&
-    globalForClient.feedsiloDbType === dbType
+    globalForClient.scrollbackClient &&
+    globalForClient.scrollbackDbType === dbType
   ) {
-    return globalForClient.feedsiloClient;
+    return globalForClient.scrollbackClient;
   }
 
   let client: PrismaClientAny;
@@ -78,11 +78,11 @@ export async function getClient(): Promise<PrismaClientAny> {
       log: process.env.NODE_ENV === "development" ? ["query"] : [],
     });
 
-    globalForClient.feedsiloPool = pool;
+    globalForClient.scrollbackPool = pool;
   }
 
-  globalForClient.feedsiloClient = client;
-  globalForClient.feedsiloDbType = dbType;
+  globalForClient.scrollbackClient = client;
+  globalForClient.scrollbackDbType = dbType;
 
   return client;
 }
@@ -101,11 +101,11 @@ export function getDatabaseType(): DatabaseType | null {
  */
 export async function disconnectClient(): Promise<void> {
   // Disconnect Prisma first (releases pool connections), then end the pool
-  const client = globalForClient.feedsiloClient;
-  const pool = globalForClient.feedsiloPool;
-  globalForClient.feedsiloClient = undefined;
-  globalForClient.feedsiloDbType = undefined;
-  globalForClient.feedsiloPool = undefined;
+  const client = globalForClient.scrollbackClient;
+  const pool = globalForClient.scrollbackPool;
+  globalForClient.scrollbackClient = undefined;
+  globalForClient.scrollbackDbType = undefined;
+  globalForClient.scrollbackPool = undefined;
   if (client) await client.$disconnect();
   if (pool) await pool.end();
 }

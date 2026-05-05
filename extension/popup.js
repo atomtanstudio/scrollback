@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const { ensureTwitterTabReady, isTwitterTabUrl, sendTabMessage } = globalThis.FeedSiloExtension || {};
+  const { ensureTwitterTabReady, isTwitterTabUrl, sendTabMessage } = globalThis.ScrollbackExtension || {};
   const STORAGE_KEYS = ['serverUrl', 'captureSecret', 'bearerToken'];
   const serverUrlInput = document.getElementById('serverUrl');
   const captureSecretInput = document.getElementById('captureSecret');

@@ -42,7 +42,7 @@ For the fastest local evaluation, choose SQLite. For a hosted instance with sema
 The onboarding wizard does the same setup work you can do manually:
 
 1. Choose SQLite, PostgreSQL, or Supabase.
-2. Write `feedsilo.config.json` and managed values in `.env.local`.
+2. Write `scrollback.config.json` and managed values in `.env.local`.
 3. Push the matching Prisma schema.
 4. Create the first admin account.
 5. Optionally choose OpenAI or Gemini, then test and save an API key.
@@ -55,11 +55,11 @@ Admin account creation is required. AI provider, X API, and extension pairing ca
 
 For local development, either use onboarding or copy `.env.example` to `.env.local`.
 
-Environment variables override values from `feedsilo.config.json`.
+Environment variables override values from `scrollback.config.json`.
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | PostgreSQL/Supabase URL or SQLite file URL such as `file:./feedsilo.db` |
+| `DATABASE_URL` | Yes | PostgreSQL/Supabase URL or SQLite file URL such as `file:./scrollback.db` |
 | `DATABASE_TYPE` | Yes | `postgresql`, `supabase`, or `sqlite` |
 | `AUTH_SECRET` | Yes | Auth.js session secret. Generate with `openssl rand -hex 32` |
 | `EMBEDDINGS_PROVIDER` | No | Override the configured AI provider. Supported values: `openai`, `gemini` |

@@ -36,6 +36,6 @@ export const configSchema = z.object({
   localMedia: localMediaConfigSchema.default({}),
 });
 
-export type FeedsiloConfig = z.infer<typeof configSchema>;
-export type DatabaseType = FeedsiloConfig["database"]["type"];
-export type AiProvider = FeedsiloConfig["embeddings"]["provider"];
+export type ScrollbackConfig = z.infer<typeof configSchema>;
+export type DatabaseType = ScrollbackConfig["database"]["type"];
+export type AiProvider = ScrollbackConfig["embeddings"]["provider"];

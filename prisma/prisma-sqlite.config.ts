@@ -7,6 +7,6 @@ export default defineConfig({
     path: "prisma/migrations-sqlite",
   },
   datasource: {
-    url: process.env["DATABASE_URL"] || "file:./feedsilo.db",
+    url: process.env["DATABASE_URL"] || "file:./scrollback.db",
   },
 });

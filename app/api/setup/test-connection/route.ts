@@ -50,7 +50,7 @@ async function testSqliteConnection(data: z.infer<typeof requestSchema>) {
   const fs = await import("fs");
   const path = await import("path");
 
-  const dbUrl = data.url || "file:./feedsilo.db";
+  const dbUrl = data.url || "file:./scrollback.db";
   const filePath = dbUrl.replace(/^file:/, "");
   const dir = path.dirname(path.resolve(filePath));
 
@@ -74,7 +74,7 @@ async function testPgConnection(data: z.infer<typeof requestSchema>) {
     const user = data.username || "postgres";
     const pass = data.password ? `:${data.password}` : "";
     const port = data.port || 5432;
-    const db = data.database || "feedsilo";
+    const db = data.database || "scrollback";
     connectionString = `postgresql://${user}${pass}@${data.host}:${port}/${db}`;
   }
 

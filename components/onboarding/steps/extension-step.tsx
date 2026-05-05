@@ -54,8 +54,8 @@ export function ExtensionStep() {
       // Non-fatal.
     }
 
-    sessionStorage.removeItem("feedsilo-onboarding-step");
-    sessionStorage.removeItem("feedsilo-onboarding-db");
+    sessionStorage.removeItem("scrollback-onboarding-step");
+    sessionStorage.removeItem("scrollback-onboarding-db");
 
     setTimeout(() => {
       router.push("/");
@@ -63,8 +63,8 @@ export function ExtensionStep() {
   }, [token, router]);
 
   const handleSkip = useCallback(() => {
-    sessionStorage.removeItem("feedsilo-onboarding-step");
-    sessionStorage.removeItem("feedsilo-onboarding-db");
+    sessionStorage.removeItem("scrollback-onboarding-step");
+    sessionStorage.removeItem("scrollback-onboarding-db");
     router.push("/");
   }, [router]);
 

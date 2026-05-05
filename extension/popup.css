@@ -117,7 +117,7 @@ body {
 .brand-wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 0.12em;
+  gap: 0;
   margin-top: 3px;
   color: var(--text);
   font-size: 21px;
@@ -128,7 +128,7 @@ body {
 .brand-separator {
   width: 0.34em;
   height: 0.34em;
-  margin-inline: 0.08em 0.04em;
+  margin-inline: 0.045em;
   border-radius: 999px;
   background: var(--gold);
   transform: translateY(0.03em);

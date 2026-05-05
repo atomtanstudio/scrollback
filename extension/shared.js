@@ -97,7 +97,7 @@
     return false;
   }
 
-  globalScope.FeedSiloExtension = {
+  globalScope.ScrollbackExtension = {
     ensureTwitterTabReady,
     injectCaptureAssets,
     isMissingReceiverError,

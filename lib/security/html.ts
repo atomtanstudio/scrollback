@@ -193,7 +193,7 @@ function sanitizeElement(element: Element, baseUrl?: string) {
 export function sanitizeArticleHtml(html: string | null | undefined, baseUrl?: string | null): string | null {
   if (!html?.trim()) return null;
 
-  const documentUrl = baseUrl || "https://feedsilo.invalid/";
+  const documentUrl = baseUrl || "https://scrollback.invalid/";
   const dom = new JSDOM(`<!doctype html><body>${html}</body>`, { url: documentUrl });
   sanitizeChildren(dom.window.document.body, baseUrl || undefined);
   const sanitized = dom.window.document.body.innerHTML.trim();

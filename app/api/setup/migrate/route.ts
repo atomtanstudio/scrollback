@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { writeConfig, invalidateConfigCache, type FeedsiloConfig } from "@/lib/config";
+import { writeConfig, invalidateConfigCache, type ScrollbackConfig } from "@/lib/config";
 import { exec } from "child_process";
 import { promisify } from "util";
 import path from "path";
@@ -47,7 +47,7 @@ async function deleteSqliteDatabaseFiles(databaseUrl: string): Promise<void> {
   );
 }
 
-async function pushSchema(config: FeedsiloConfig, schemaFlag: string): Promise<void> {
+async function pushSchema(config: ScrollbackConfig, schemaFlag: string): Promise<void> {
   await execAsync(`npx prisma db push ${schemaFlag} --accept-data-loss`, {
     env: { ...process.env, DATABASE_URL: config.database.url },
     timeout: 30000,
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
           }
         : parsed.data.database;
 
-    const config: FeedsiloConfig = {
+    const config: ScrollbackConfig = {
       database,
       embeddings: parsed.data.embeddings || { provider: "gemini" },
       extension: parsed.data.extension || {},
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
 
     // Set cookie so middleware knows app is configured (Edge Runtime can't read fs)
     const response = NextResponse.json({ success: true });
-    response.cookies.set("feedsilo-configured", "true", {
+    response.cookies.set("scrollback-configured", "true", {
       httpOnly: true,
       sameSite: "lax",
       path: "/",

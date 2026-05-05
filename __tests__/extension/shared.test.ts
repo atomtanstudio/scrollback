@@ -28,7 +28,7 @@ function loadSharedScript(chrome: ChromeMock) {
 
   context.globalThis = context;
   vm.runInNewContext(source, context, { filename: scriptPath });
-  return context.globalThis.FeedSiloExtension as {
+  return context.globalThis.ScrollbackExtension as {
     ensureTwitterTabReady: (tabId: number) => Promise<{
       ready: boolean;
       injected: boolean;

@@ -7,21 +7,21 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ENV_PATH = path.resolve(
   __dirname,
-  "../.secrets/feedsilo-memory-gateway.env"
+  "../.secrets/scrollback-memory-gateway.env"
 );
 
 const env = {
-  ...readEnvFile(process.env.FEEDSILO_MEMORY_GATEWAY_ENV || DEFAULT_ENV_PATH),
+  ...readEnvFile(process.env.SCROLLBACK_MEMORY_GATEWAY_ENV || process.env.FEEDSILO_MEMORY_GATEWAY_ENV || DEFAULT_ENV_PATH),
   ...process.env,
 };
 
 const BASE_URL =
-  env.FEEDSILO_MEMORY_GATEWAY_URL || env.MEMORY_GATEWAY_URL || "http://172.17.0.1:8788";
+  env.SCROLLBACK_MEMORY_GATEWAY_URL || env.FEEDSILO_MEMORY_GATEWAY_URL || env.MEMORY_GATEWAY_URL || "http://172.17.0.1:8788";
 const TOKEN = env.MEMORY_GATEWAY_TOKEN;
 
 if (!TOKEN) {
   fail(
-    `Missing MEMORY_GATEWAY_TOKEN. Expected it in ${process.env.FEEDSILO_MEMORY_GATEWAY_ENV || DEFAULT_ENV_PATH}`
+    `Missing MEMORY_GATEWAY_TOKEN. Expected it in ${process.env.SCROLLBACK_MEMORY_GATEWAY_ENV || process.env.FEEDSILO_MEMORY_GATEWAY_ENV || DEFAULT_ENV_PATH}`
   );
 }
 
@@ -57,11 +57,11 @@ if (command === "health") {
 
 function usage() {
   console.log(`Usage:
-  node tools/feedsilo_memory_search.mjs search "agent memory search" [--limit 5]
-  node tools/feedsilo_memory_search.mjs check "agent memory search" [--limit 3]
-  node tools/feedsilo_memory_search.mjs item CONTENT_ITEM_UUID
-  node tools/feedsilo_memory_search.mjs recent [--limit 10]
-  node tools/feedsilo_memory_search.mjs health
+  node tools/scrollback_memory_search.mjs search "agent memory search" [--limit 5]
+  node tools/scrollback_memory_search.mjs check "agent memory search" [--limit 3]
+  node tools/scrollback_memory_search.mjs item CONTENT_ITEM_UUID
+  node tools/scrollback_memory_search.mjs recent [--limit 10]
+  node tools/scrollback_memory_search.mjs health
 
 Defaults:
   search mode: hybrid

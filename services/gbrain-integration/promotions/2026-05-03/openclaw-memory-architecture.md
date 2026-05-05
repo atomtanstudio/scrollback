@@ -6,8 +6,8 @@ tags:
   - gbrain
   - agent-memory
   - knowledge-graphs
-  - feedsilo-promotion
-source: feedsilo
+  - scrollback-promotion
+source: scrollback
 promoted_at: 2026-05-03
 ---
 
@@ -108,4 +108,3 @@ For OpenClaw/Judy/Codex work:
 
 - 2026-05-03: Created from Scrollback promotion search after OpenClaw snapshot and
   GBrain backup. [Source: User-directed promotion, 2026-05-03]
-

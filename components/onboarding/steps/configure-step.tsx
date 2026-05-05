@@ -70,7 +70,7 @@ function InputField({
 }
 
 function SqliteForm({ onContinue }: { onContinue: () => void }) {
-  const [filePath, setFilePath] = useState("./feedsilo.db");
+  const [filePath, setFilePath] = useState("./scrollback.db");
   const [migrating, setMigrating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,7 +104,7 @@ function SqliteForm({ onContinue }: { onContinue: () => void }) {
         label="Database file path"
         value={filePath}
         onChange={setFilePath}
-        placeholder="./feedsilo.db"
+        placeholder="./scrollback.db"
         note="Your database file will be created automatically"
       />
 
@@ -130,7 +130,7 @@ function PostgresForm({ onContinue }: { onContinue: () => void }) {
   const [showFields, setShowFields] = useState(false);
   const [host, setHost] = useState("");
   const [port, setPort] = useState("5432");
-  const [database, setDatabase] = useState("feedsilo");
+  const [database, setDatabase] = useState("scrollback");
   const [username, setUsername] = useState("postgres");
   const [password, setPassword] = useState("");
   const [tested, setTested] = useState(false);
@@ -193,7 +193,7 @@ function PostgresForm({ onContinue }: { onContinue: () => void }) {
             label="Connection string"
             value={connectionString}
             onChange={setConnectionString}
-            placeholder="postgresql://user:pass@localhost:5432/feedsilo"
+            placeholder="postgresql://user:pass@localhost:5432/scrollback"
           />
           <button
             onClick={() => setShowFields(true)}
@@ -222,7 +222,7 @@ function PostgresForm({ onContinue }: { onContinue: () => void }) {
             label="Database"
             value={database}
             onChange={setDatabase}
-            placeholder="feedsilo"
+            placeholder="scrollback"
           />
           <div className="grid grid-cols-2 gap-3">
             <InputField

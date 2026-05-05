@@ -12,14 +12,14 @@ export function BrandWordmark({
   return (
     <span
       className={cn(
-        "font-heading inline-flex items-center gap-[0.32em] leading-none tracking-normal",
+        "font-heading inline-flex items-center leading-none tracking-normal",
         className
       )}
     >
       <svg
         aria-hidden="true"
         viewBox="0 0 44 44"
-        className="h-[0.98em] w-[0.98em] shrink-0 translate-y-[0.03em]"
+        className="mr-[0.28em] h-[0.98em] w-[0.98em] shrink-0 translate-y-[0.03em]"
       >
         <rect x="5" y="5" width="34" height="34" rx="11" fill="#111821" stroke="rgba(214,201,178,0.22)" />
         <path d="M15 13v18" stroke="#f2ede5" strokeWidth="5" strokeLinecap="round" />
@@ -31,7 +31,7 @@ export function BrandWordmark({
       <span
         aria-hidden="true"
         className={cn(
-          "ml-[0.14em] mr-[0.08em] inline-block h-[0.34em] w-[0.34em] shrink-0 translate-y-[0.03em] rounded-full bg-[var(--accent-article)]",
+          "mx-[0.045em] inline-block h-[0.34em] w-[0.34em] shrink-0 translate-y-[0.03em] rounded-full bg-[var(--accent-article)]",
           dotClassName
         )}
       />

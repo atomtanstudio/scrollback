@@ -5,7 +5,7 @@ import pg from "pg";
 
 const PORT = Number.parseInt(process.env.PORT || "8787", 10);
 const DATABASE_URL = process.env.DATABASE_URL;
-const DEFAULT_USER_ID = process.env.FEEDSILO_USER_ID || process.env.DEFAULT_USER_ID;
+const DEFAULT_USER_ID = process.env.SCROLLBACK_USER_ID || process.env.FEEDSILO_USER_ID || process.env.DEFAULT_USER_ID;
 const GATEWAY_TOKEN = process.env.MEMORY_GATEWAY_TOKEN;
 const ALLOW_ANONYMOUS = process.env.MEMORY_GATEWAY_ALLOW_ANONYMOUS === "true";
 const ALLOW_USER_OVERRIDE = process.env.MEMORY_GATEWAY_ALLOW_USER_OVERRIDE === "true";
@@ -26,7 +26,7 @@ if (!DATABASE_URL) {
   throw new Error("DATABASE_URL is required");
 }
 if (!DEFAULT_USER_ID) {
-  throw new Error("FEEDSILO_USER_ID or DEFAULT_USER_ID is required");
+  throw new Error("SCROLLBACK_USER_ID or DEFAULT_USER_ID is required");
 }
 if (!GATEWAY_TOKEN && !ALLOW_ANONYMOUS) {
   throw new Error("MEMORY_GATEWAY_TOKEN is required unless anonymous mode is enabled");
@@ -149,7 +149,7 @@ async function healthz(response) {
 
   sendJson(response, checks.db ? 200 : 503, {
     ok: checks.db,
-    service: "feedsilo-memory-gateway",
+    service: "scrollback-memory-gateway",
     defaults: {
       dimensions: DEFAULT_DIMENSIONS,
       limit: DEFAULT_LIMIT,

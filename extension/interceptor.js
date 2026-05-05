@@ -7,10 +7,10 @@
 (function () {
   'use strict';
 
-  if (window.__feedsiloInterceptorInjected) {
+  if (window.__scrollbackInterceptorInjected) {
     return;
   }
-  window.__feedsiloInterceptorInjected = true;
+  window.__scrollbackInterceptorInjected = true;
 
   // Patch fetch()
   const originalFetch = window.fetch;
@@ -23,7 +23,7 @@
       if (url.includes('/graphql/') || url.includes('/i/api/')) {
         const clone = response.clone();
         clone.json().then(data => {
-          document.dispatchEvent(new CustomEvent('feedsilo-api-response', {
+          document.dispatchEvent(new CustomEvent('scrollback-api-response', {
             detail: JSON.stringify(data),
           }));
         }).catch(() => {});
@@ -40,16 +40,16 @@
   const originalXHRSend = XMLHttpRequest.prototype.send;
 
   XMLHttpRequest.prototype.open = function (method, url, ...rest) {
-    this._fsUrl = url;
+    this._scrollbackUrl = url;
     return originalXHROpen.call(this, method, url, ...rest);
   };
 
   XMLHttpRequest.prototype.send = function (...args) {
-    if (this._fsUrl && (this._fsUrl.includes('/graphql/') || this._fsUrl.includes('/i/api/'))) {
+    if (this._scrollbackUrl && (this._scrollbackUrl.includes('/graphql/') || this._scrollbackUrl.includes('/i/api/'))) {
       this.addEventListener('load', function () {
         try {
           const data = JSON.parse(this.responseText);
-          document.dispatchEvent(new CustomEvent('feedsilo-api-response', {
+          document.dispatchEvent(new CustomEvent('scrollback-api-response', {
             detail: JSON.stringify(data),
           }));
         } catch {}

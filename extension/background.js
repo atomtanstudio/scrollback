@@ -3,7 +3,7 @@
 
 importScripts('shared.js');
 
-const { ensureTwitterTabReady, isTwitterTabUrl } = self.FeedSiloExtension;
+const { ensureTwitterTabReady, isTwitterTabUrl } = self.ScrollbackExtension;
 
 // Keep service worker alive — MV3 workers go to sleep after ~30s of inactivity.
 // A periodic alarm wakes it up to prevent stale connections with content scripts.

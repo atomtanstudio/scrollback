@@ -7,8 +7,8 @@ tags:
   - openclaw
   - monetization
   - startup-growth
-  - feedsilo-promotion
-source: feedsilo
+  - scrollback-promotion
+source: scrollback
 promoted_at: 2026-05-03
 ---
 
@@ -140,4 +140,3 @@ Scrollback remains the archive. GBrain keeps the playbook.
 
 - 2026-05-03: Created from Scrollback promotion search after OpenClaw snapshot and
   GBrain backup. [Source: User-directed promotion, 2026-05-03]
-

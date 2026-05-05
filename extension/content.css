@@ -1,20 +1,20 @@
 :root {
-  --feedsilo-text: #f2ede5;
-  --feedsilo-text-muted: #b4ab9d;
-  --feedsilo-text-soft: #8f8678;
-  --feedsilo-gold: #b89462;
-  --feedsilo-gold-soft: rgba(184, 148, 98, 0.14);
-  --feedsilo-sage: #88aeb0;
-  --feedsilo-rose: #d78181;
-  --feedsilo-success: #8bb5a0;
-  --feedsilo-surface: rgba(17, 22, 30, 0.96);
-  --feedsilo-surface-strong: rgba(12, 16, 22, 0.98);
-  --feedsilo-border: rgba(214, 201, 178, 0.16);
-  --feedsilo-border-strong: rgba(214, 201, 178, 0.28);
-  --feedsilo-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+  --scrollback-text: #f2ede5;
+  --scrollback-text-muted: #b4ab9d;
+  --scrollback-text-soft: #8f8678;
+  --scrollback-gold: #b89462;
+  --scrollback-gold-soft: rgba(184, 148, 98, 0.14);
+  --scrollback-sage: #88aeb0;
+  --scrollback-rose: #d78181;
+  --scrollback-success: #8bb5a0;
+  --scrollback-surface: rgba(17, 22, 30, 0.96);
+  --scrollback-surface-strong: rgba(12, 16, 22, 0.98);
+  --scrollback-border: rgba(214, 201, 178, 0.16);
+  --scrollback-border-strong: rgba(214, 201, 178, 0.28);
+  --scrollback-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
 }
 
-.feedsilo-save-btn {
+.scrollback-save-btn {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -42,15 +42,15 @@
   text-transform: uppercase;
 }
 
-.feedsilo-save-btn-slot {
+.scrollback-save-btn-slot {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.feedsilo-save-btn:hover {
-  color: var(--feedsilo-text);
-  border-color: var(--feedsilo-border);
+.scrollback-save-btn:hover {
+  color: var(--scrollback-text);
+  border-color: var(--scrollback-border);
   background:
     radial-gradient(circle at top left, rgba(184, 148, 98, 0.14), transparent 50%),
     linear-gradient(180deg, rgba(22, 27, 35, 0.94), rgba(14, 18, 24, 0.96));
@@ -58,22 +58,22 @@
   transform: translateY(-1px);
 }
 
-.feedsilo-save-btn svg {
+.scrollback-save-btn svg {
   width: 18px;
   height: 18px;
 }
 
-.feedsilo-save-btn.saving {
-  color: var(--feedsilo-gold);
+.scrollback-save-btn.saving {
+  color: var(--scrollback-gold);
   border-color: rgba(184, 148, 98, 0.18);
   background:
     radial-gradient(circle at center, rgba(184, 148, 98, 0.14), transparent 65%),
     linear-gradient(180deg, rgba(22, 27, 35, 0.96), rgba(14, 18, 24, 0.98));
-  animation: feedsilo-pulse 1s ease-in-out infinite;
+  animation: scrollback-pulse 1s ease-in-out infinite;
 }
 
-.feedsilo-save-btn.saved {
-  color: var(--feedsilo-success);
+.scrollback-save-btn.saved {
+  color: var(--scrollback-success);
   border-color: rgba(139, 181, 160, 0.2);
   background:
     linear-gradient(180deg, rgba(20, 30, 28, 0.95), rgba(13, 19, 18, 0.98));
@@ -81,22 +81,22 @@
   letter-spacing: 0;
 }
 
-.feedsilo-save-btn.dupe {
-  color: var(--feedsilo-gold);
+.scrollback-save-btn.dupe {
+  color: var(--scrollback-gold);
   border-color: rgba(184, 148, 98, 0.18);
   background:
     linear-gradient(180deg, rgba(30, 25, 18, 0.95), rgba(21, 17, 12, 0.98));
   font-size: 9px;
 }
 
-.feedsilo-save-btn.error {
-  color: var(--feedsilo-rose);
+.scrollback-save-btn.error {
+  color: var(--scrollback-rose);
   border-color: rgba(215, 129, 129, 0.2);
   background:
     linear-gradient(180deg, rgba(32, 21, 24, 0.95), rgba(22, 14, 17, 0.98));
 }
 
-@keyframes feedsilo-pulse {
+@keyframes scrollback-pulse {
   0%,
   100% {
     opacity: 1;
@@ -108,25 +108,25 @@
   }
 }
 
-#feedsilo-hud {
+#scrollback-hud {
   position: fixed;
   right: 20px;
   bottom: 20px;
   width: 268px;
   padding: 16px;
-  border: 1px solid var(--feedsilo-border);
+  border: 1px solid var(--scrollback-border);
   border-radius: 24px;
   background:
     radial-gradient(circle at top right, rgba(184, 148, 98, 0.12), transparent 28%),
     linear-gradient(180deg, rgba(22, 28, 37, 0.97), rgba(12, 16, 22, 0.99));
   backdrop-filter: blur(16px);
-  color: var(--feedsilo-text);
+  color: var(--scrollback-text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  box-shadow: var(--feedsilo-shadow);
+  box-shadow: var(--scrollback-shadow);
   z-index: 99999;
 }
 
-.feedsilo-hud-header {
+.scrollback-hud-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -134,33 +134,33 @@
   margin-bottom: 14px;
 }
 
-.feedsilo-hud-title {
+.scrollback-hud-title {
   min-width: 0;
 }
 
-.feedsilo-hud-kicker {
-  color: var(--feedsilo-text-soft);
+.scrollback-hud-kicker {
+  color: var(--scrollback-text-soft);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
-.feedsilo-hud-name {
+.scrollback-hud-name {
   margin-top: 4px;
-  color: var(--feedsilo-text);
+  color: var(--scrollback-text);
   font-size: 16px;
   font-weight: 650;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
 }
 
-#feedsilo-hud-stop {
+#scrollback-hud-stop {
   min-height: 32px;
   padding: 0 12px;
-  border: 1px solid var(--feedsilo-border);
+  border: 1px solid var(--scrollback-border);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.04);
-  color: var(--feedsilo-text);
+  color: var(--scrollback-text);
   font-family: inherit;
   font-size: 10px;
   font-weight: 700;
@@ -170,18 +170,18 @@
   transition: border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
 }
 
-#feedsilo-hud-stop:hover {
-  border-color: var(--feedsilo-border-strong);
+#scrollback-hud-stop:hover {
+  border-color: var(--scrollback-border-strong);
   color: #fff8ef;
   transform: translateY(-1px);
 }
 
-.feedsilo-hud-stats {
+.scrollback-hud-stats {
   display: grid;
   gap: 8px;
 }
 
-.feedsilo-hud-stats div {
+.scrollback-hud-stats div {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -190,35 +190,35 @@
   border-radius: 16px;
   border: 1px solid rgba(214, 201, 178, 0.08);
   background: rgba(255, 255, 255, 0.04);
-  color: var(--feedsilo-text-soft);
+  color: var(--scrollback-text-soft);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.feedsilo-hud-stats .stat-captured {
+.scrollback-hud-stats .stat-captured {
   color: #dce8e1;
   border-color: rgba(139, 181, 160, 0.16);
   background: rgba(139, 181, 160, 0.08);
 }
 
-.feedsilo-hud-stats .stat-skipped {
+.scrollback-hud-stats .stat-skipped {
   color: #e4d6c0;
   border-color: rgba(184, 148, 98, 0.16);
   background: rgba(184, 148, 98, 0.08);
 }
 
-.feedsilo-hud-stats .stat-errors {
+.scrollback-hud-stats .stat-errors {
   color: #f0d2d2;
   border-color: rgba(215, 129, 129, 0.16);
   background: rgba(215, 129, 129, 0.08);
 }
 
-.feedsilo-hud-stats span {
-  color: var(--feedsilo-text);
+.scrollback-hud-stats span {
+  color: var(--scrollback-text);
   font-size: 15px;
   font-weight: 650;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   text-transform: none;
 }

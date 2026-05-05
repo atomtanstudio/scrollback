@@ -14,8 +14,8 @@ The gateway:
 ## Environment
 
 ```sh
-DATABASE_URL=postgresql://openclaw_memory_reader:...@host:5432/feedsilo
-FEEDSILO_USER_ID=00000000-0000-0000-0000-000000000000
+DATABASE_URL=postgresql://openclaw_memory_reader:...@host:5432/scrollback
+SCROLLBACK_USER_ID=00000000-0000-0000-0000-000000000000
 MEMORY_GATEWAY_TOKEN=replace-with-random-token
 OPENAI_BASE_URL=http://192.168.1.102:8001/v1
 OPENAI_API_KEY=local
@@ -34,22 +34,22 @@ node server.mjs
 ## Docker
 
 ```sh
-docker build -t feedsilo-memory-gateway:local .
+docker build -t scrollback-memory-gateway:local .
 docker run --rm \
-  --env-file /mnt/user/feedsilo/secrets/feedsilo-memory-gateway.env \
+  --env-file /mnt/user/scrollback/secrets/scrollback-memory-gateway.env \
   -p 8787:8787 \
-  feedsilo-memory-gateway:local
+  scrollback-memory-gateway:local
 ```
 
 ## Production Deployment
 
 Current Unraid deployment:
 
-- Container: `feedsilo-memory-gateway`
-- Image: `feedsilo-memory-gateway:local`
+- Container: `scrollback-memory-gateway`
+- Image: `scrollback-memory-gateway:local`
 - Host port: `8788`
 - Container port: `8787`
-- Env file: `/mnt/user/feedsilo/secrets/feedsilo-memory-gateway.env`
+- Env file: `/mnt/user/scrollback/secrets/scrollback-memory-gateway.env`
 - OpenClaw bridge URL: `http://172.17.0.1:8788`
 - LAN URL: `http://100.79.193.105:8788`
 
@@ -70,8 +70,8 @@ OpenClaw workspace wrapper:
 
 ```bash
 cd /home/node/.openclaw/workspace
-node tools/feedsilo_memory_search.mjs search "agent memory search" --limit 5
-node tools/feedsilo_memory_search.mjs item CONTENT_ITEM_UUID
+node tools/scrollback_memory_search.mjs search "agent memory search" --limit 5
+node tools/scrollback_memory_search.mjs item CONTENT_ITEM_UUID
 ```
 
 ## Search
@@ -94,7 +94,7 @@ Default behavior:
 For agent-facing answers, prefer the full captured-data path:
 
 ```bash
-node tools/feedsilo_memory_search.mjs check "agent memory search" --limit 3
+node tools/scrollback_memory_search.mjs check "agent memory search" --limit 3
 ```
 
 This attaches the full saved Scrollback item to each result. Use source URLs as

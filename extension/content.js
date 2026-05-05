@@ -3,10 +3,10 @@
 // ============================================================
 
 {
-if (!globalThis.__feedsiloContentInjected) {
-  globalThis.__feedsiloContentInjected = true;
+if (!globalThis.__scrollbackContentInjected) {
+  globalThis.__scrollbackContentInjected = true;
 
-const { shouldHydrateCaptureData } = globalThis.FeedSiloExtension || {};
+const { shouldHydrateCaptureData } = globalThis.ScrollbackExtension || {};
 const contentBootstrappedLate = document.readyState !== 'loading';
 
 // --- Debug logging (set to true for development) ---
@@ -32,7 +32,7 @@ log('content script loaded at', document.readyState);
 const tweetCache = new Map();
 
 // Listen for API responses forwarded from the MAIN world interceptor
-document.addEventListener('feedsilo-api-response', (event) => {
+document.addEventListener('scrollback-api-response', (event) => {
   try {
     const data = JSON.parse(event.detail);
     extractTweetsFromApiResponse(data);
@@ -1567,7 +1567,7 @@ function getTweetTextFromDOM(tweetElement) {
 
 
 // --- Per-Tweet Save Buttons ---
-const BUTTON_ATTR = 'data-feedsilo-btn';
+const BUTTON_ATTR = 'data-scrollback-btn';
 
 function injectSaveButtons() {
   const tweets = document.querySelectorAll('article[data-testid="tweet"]');
@@ -1577,11 +1577,11 @@ function injectSaveButtons() {
     if (!actionBar || actionBar.querySelector(`[${BUTTON_ATTR}]`)) return;
 
     const btnSlot = document.createElement('div');
-    btnSlot.className = 'feedsilo-save-btn-slot';
+    btnSlot.className = 'scrollback-save-btn-slot';
 
     const btn = document.createElement('button');
     btn.setAttribute(BUTTON_ATTR, 'true');
-    btn.className = 'feedsilo-save-btn';
+    btn.className = 'scrollback-save-btn';
     btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`;
     btn.title = 'Save to Scrollback';
 
@@ -1993,7 +1993,7 @@ function markThreadButtonsSaved(conversationId, authorHandle) {
 }
 
 function resetButton(btn) {
-  btn.className = 'feedsilo-save-btn';
+  btn.className = 'scrollback-save-btn';
   btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`;
 }
 
@@ -2069,29 +2069,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 function createHUD() {
-  const existing = document.getElementById('feedsilo-hud');
+  const existing = document.getElementById('scrollback-hud');
   if (existing) existing.remove();
 
   const hud = document.createElement('div');
-  hud.id = 'feedsilo-hud';
+  hud.id = 'scrollback-hud';
   hud.innerHTML = `
-    <div class="feedsilo-hud-header">
-      <div class="feedsilo-hud-title">
-        <div class="feedsilo-hud-kicker">Scrollback</div>
-        <div class="feedsilo-hud-name">Capture run</div>
+    <div class="scrollback-hud-header">
+      <div class="scrollback-hud-title">
+        <div class="scrollback-hud-kicker">Scrollback</div>
+        <div class="scrollback-hud-name">Capture run</div>
       </div>
-      <button id="feedsilo-hud-stop">STOP</button>
+      <button id="scrollback-hud-stop">STOP</button>
     </div>
-    <div class="feedsilo-hud-stats">
-      <div>SCANNED <span id="feedsilo-stat-total">0</span></div>
-      <div class="stat-captured">CAPTURED <span id="feedsilo-stat-captured">0</span></div>
-      <div class="stat-skipped">SKIPPED <span id="feedsilo-stat-skipped">0</span></div>
-      <div class="stat-errors" style="display:none">ERRORS <span id="feedsilo-stat-errors">0</span></div>
+    <div class="scrollback-hud-stats">
+      <div>SCANNED <span id="scrollback-stat-total">0</span></div>
+      <div class="stat-captured">CAPTURED <span id="scrollback-stat-captured">0</span></div>
+      <div class="stat-skipped">SKIPPED <span id="scrollback-stat-skipped">0</span></div>
+      <div class="stat-errors" style="display:none">ERRORS <span id="scrollback-stat-errors">0</span></div>
     </div>
   `;
   document.body.appendChild(hud);
 
-  document.getElementById('feedsilo-hud-stop').addEventListener('click', () => {
+  document.getElementById('scrollback-hud-stop').addEventListener('click', () => {
     isBulkCapturing = false;
   });
 
@@ -2100,10 +2100,10 @@ function createHUD() {
 
 function updateHUD() {
   const el = (id) => document.getElementById(id);
-  const totalEl = el('feedsilo-stat-total');
-  const capturedEl = el('feedsilo-stat-captured');
-  const skippedEl = el('feedsilo-stat-skipped');
-  const errorsEl = el('feedsilo-stat-errors');
+  const totalEl = el('scrollback-stat-total');
+  const capturedEl = el('scrollback-stat-captured');
+  const skippedEl = el('scrollback-stat-skipped');
+  const errorsEl = el('scrollback-stat-errors');
   const errorsRow = errorsEl?.parentElement;
   if (totalEl) totalEl.textContent = bulkStats.total;
   if (capturedEl) capturedEl.textContent = bulkStats.captured;
@@ -2123,7 +2123,7 @@ async function startBulkCapture(useApi = false) {
 
   // Show API mode indicator in HUD
   if (useApi) {
-    const header = document.querySelector('.feedsilo-hud-name');
+    const header = document.querySelector('.scrollback-hud-name');
     if (header) header.textContent = 'Capture run · API';
   }
 
@@ -2255,13 +2255,13 @@ async function startBulkCapture(useApi = false) {
 
   // Capture complete
   isBulkCapturing = false;
-  const hudHeader = document.querySelector('.feedsilo-hud-name');
+  const hudHeader = document.querySelector('.scrollback-hud-name');
   if (hudHeader) hudHeader.textContent = 'Capture complete';
-  const stopBtn = document.getElementById('feedsilo-hud-stop');
+  const stopBtn = document.getElementById('scrollback-hud-stop');
   if (stopBtn) {
     stopBtn.textContent = 'CLOSE';
     stopBtn.addEventListener('click', () => {
-      document.getElementById('feedsilo-hud')?.remove();
+      document.getElementById('scrollback-hud')?.remove();
     });
   }
 }

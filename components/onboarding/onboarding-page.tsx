@@ -11,8 +11,8 @@ import { GeminiStep } from "./steps/gemini-step";
 import { XApiStep } from "./steps/xapi-step";
 import { ExtensionStep } from "./steps/extension-step";
 
-const STORAGE_KEY = "feedsilo-onboarding-step";
-const DB_STORAGE_KEY = "feedsilo-onboarding-db";
+const STORAGE_KEY = "scrollback-onboarding-step";
+const DB_STORAGE_KEY = "scrollback-onboarding-db";
 
 const slideVariants = {
   enter: (direction: number) => ({

@@ -25,7 +25,7 @@ describe('configSchema', () => {
 
   it('validates a minimal sqlite config', () => {
     const config = {
-      database: { type: 'sqlite', url: 'file:./feedsilo.db' },
+      database: { type: 'sqlite', url: 'file:./scrollback.db' },
     };
     const result = configSchema.safeParse(config);
     expect(result.success).toBe(true);
@@ -49,7 +49,7 @@ describe('configSchema', () => {
 
   it('applies defaults for optional fields', () => {
     const config = {
-      database: { type: 'sqlite', url: 'file:./feedsilo.db' },
+      database: { type: 'sqlite', url: 'file:./scrollback.db' },
     };
     const result = configSchema.parse(config);
     expect(result.search.keywordWeight).toBe(0.4);
@@ -67,8 +67,8 @@ describe('readConfig', () => {
   let configPath: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'feedsilo-test-'));
-    configPath = path.join(tmpDir, 'feedsilo.config.json');
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'scrollback-test-'));
+    configPath = path.join(tmpDir, 'scrollback.config.json');
   });
 
   afterEach(() => {
@@ -106,8 +106,8 @@ describe('writeConfig', () => {
   let configPath: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'feedsilo-test-'));
-    configPath = path.join(tmpDir, 'feedsilo.config.json');
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'scrollback-test-'));
+    configPath = path.join(tmpDir, 'scrollback.config.json');
   });
 
   afterEach(() => {

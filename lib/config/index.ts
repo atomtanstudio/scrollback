@@ -2,16 +2,25 @@ import fs from "fs";
 import fsp from "fs/promises";
 import path from "path";
 import { randomBytes } from "crypto";
-import { configSchema, type FeedsiloConfig, type DatabaseType } from "./schema";
+import { configSchema, type ScrollbackConfig, type DatabaseType } from "./schema";
 
 const PROJECT_ROOT = /* turbopackIgnore: true */ process.cwd();
-const DEFAULT_CONFIG_PATH = path.join(PROJECT_ROOT, "feedsilo.config.json");
+const DEFAULT_CONFIG_PATH = path.join(PROJECT_ROOT, "scrollback.config.json");
+const LEGACY_CONFIG_PATH = path.join(PROJECT_ROOT, "feedsilo.config.json");
 const DEFAULT_ENV_PATH = path.join(PROJECT_ROOT, ".env.local");
+
+function resolveConfigPath(configPath: string): string {
+  if (configPath !== DEFAULT_CONFIG_PATH) return configPath;
+  if (fs.existsSync(DEFAULT_CONFIG_PATH)) return DEFAULT_CONFIG_PATH;
+  if (fs.existsSync(LEGACY_CONFIG_PATH)) return LEGACY_CONFIG_PATH;
+  return DEFAULT_CONFIG_PATH;
+}
 
 export function readConfig(
   configPath: string = DEFAULT_CONFIG_PATH
-): FeedsiloConfig | null {
+): ScrollbackConfig | null {
   try {
+    configPath = resolveConfigPath(configPath);
     if (!fs.existsSync(configPath)) return null;
     const raw = fs.readFileSync(configPath, "utf-8");
     const parsed = JSON.parse(raw);
@@ -24,8 +33,9 @@ export function readConfig(
 
 export async function readConfigAsync(
   configPath: string = DEFAULT_CONFIG_PATH
-): Promise<FeedsiloConfig | null> {
+): Promise<ScrollbackConfig | null> {
   try {
+    configPath = resolveConfigPath(configPath);
     const raw = await fsp.readFile(configPath, "utf-8");
     const parsed = JSON.parse(raw);
     const result = configSchema.safeParse(parsed);
@@ -47,19 +57,19 @@ const MANAGED_ENV_KEYS = new Set([
   "SEARCH_VECTOR_WEIGHT",
 ]);
 
-function getEnvApiKey(provider: FeedsiloConfig["embeddings"]["provider"]): string | undefined {
+function getEnvApiKey(provider: ScrollbackConfig["embeddings"]["provider"]): string | undefined {
   return provider === "openai"
     ? process.env.OPENAI_API_KEY || undefined
     : process.env.GEMINI_API_KEY || undefined;
 }
 
-function getEnvProvider(fallback: FeedsiloConfig["embeddings"]["provider"]): FeedsiloConfig["embeddings"]["provider"] {
+function getEnvProvider(fallback: ScrollbackConfig["embeddings"]["provider"]): ScrollbackConfig["embeddings"]["provider"] {
   const provider = process.env.EMBEDDINGS_PROVIDER || process.env.AI_PROVIDER;
   return provider === "openai" || provider === "gemini" ? provider : fallback;
 }
 
 export function writeConfig(
-  config: FeedsiloConfig,
+  config: ScrollbackConfig,
   configPath: string = DEFAULT_CONFIG_PATH,
   envPath: string = DEFAULT_ENV_PATH
 ): void {
@@ -122,8 +132,8 @@ export function writeConfig(
 }
 
 export function resolveConfig(
-  fileConfig: FeedsiloConfig | null
-): FeedsiloConfig | null {
+  fileConfig: ScrollbackConfig | null
+): ScrollbackConfig | null {
   if (!fileConfig) {
     const dbUrl = process.env.DATABASE_URL;
     const dbType = process.env.DATABASE_TYPE as DatabaseType | undefined;
@@ -182,15 +192,15 @@ export function resolveConfig(
   };
 }
 
-export function isConfigured(config: FeedsiloConfig | null): boolean {
+export function isConfigured(config: ScrollbackConfig | null): boolean {
   return config !== null && !!config.database.type && !!config.database.url;
 }
 
-let _resolvedConfig: FeedsiloConfig | null | undefined;
-let _resolvedConfigPromise: Promise<FeedsiloConfig | null> | undefined;
+let _resolvedConfig: ScrollbackConfig | null | undefined;
+let _resolvedConfigPromise: Promise<ScrollbackConfig | null> | undefined;
 
 /** Synchronous getter — uses cached value or falls back to sync file read */
-export function getConfig(): FeedsiloConfig | null {
+export function getConfig(): ScrollbackConfig | null {
   if (_resolvedConfig !== undefined) return _resolvedConfig;
   const fileConfig = readConfig();
   _resolvedConfig = resolveConfig(fileConfig);
@@ -198,7 +208,7 @@ export function getConfig(): FeedsiloConfig | null {
 }
 
 /** Async getter — non-blocking file read, populates the same cache */
-export async function getConfigAsync(): Promise<FeedsiloConfig | null> {
+export async function getConfigAsync(): Promise<ScrollbackConfig | null> {
   if (_resolvedConfig !== undefined) return _resolvedConfig;
   if (_resolvedConfigPromise) return _resolvedConfigPromise;
   _resolvedConfigPromise = readConfigAsync().then((fileConfig) => {
@@ -214,4 +224,4 @@ export function invalidateConfigCache(): void {
   _resolvedConfigPromise = undefined;
 }
 
-export { configSchema, type FeedsiloConfig, type DatabaseType, type AiProvider } from "./schema";
+export { configSchema, type ScrollbackConfig, type DatabaseType, type AiProvider } from "./schema";

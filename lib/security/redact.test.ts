@@ -4,8 +4,8 @@ import { redactSensitiveText, sanitizeErrorMessage } from "@/lib/security/redact
 describe("redactSensitiveText", () => {
   it("redacts credentials embedded in database URLs", () => {
     expect(
-      redactSensitiveText("postgresql://alice:super-secret@example.com:5432/feedsilo")
-    ).toBe("postgresql://[redacted]:[redacted]@example.com:5432/feedsilo");
+      redactSensitiveText("postgresql://alice:super-secret@example.com:5432/scrollback")
+    ).toBe("postgresql://[redacted]:[redacted]@example.com:5432/scrollback");
   });
 
   it("redacts key-like query params and bearer tokens", () => {

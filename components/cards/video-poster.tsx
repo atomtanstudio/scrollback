@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 
-const POSTER_CACHE_NAME = "feedsilo-video-posters";
+const POSTER_CACHE_NAME = "scrollback-video-posters";
 const MAX_CONCURRENT_GENERATIONS = 2;
 
 const posterUrlCache = new Map<string, string>();

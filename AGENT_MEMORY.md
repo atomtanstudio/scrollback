@@ -196,8 +196,8 @@ curl http://192.168.1.102:8001/healthz
 
 Production checkpoint from the 1536 backfill:
 
-- Before backup: `/mnt/user/feedsilo/backups/feedsilo-before-1536-20260503T022335Z.dump`
-- After backup: `/mnt/user/feedsilo/backups/feedsilo-after-1536-20260503T023305Z.dump`
+- Before backup: `/mnt/user/scrollback/backups/scrollback-before-1536-20260503T022335Z.dump`
+- After backup: `/mnt/user/scrollback/backups/scrollback-after-1536-20260503T023305Z.dump`
 - Backfilled chunks: `6364`
 - `agent_memory_embeddings` coverage after backfill: `6364` 768-dimension rows and `6364` 1536-dimension rows
 - Indexes present: `ix_agent_memory_embeddings_768_hnsw` and `ix_agent_memory_embeddings_1536_hnsw`
@@ -207,10 +207,10 @@ Production checkpoint from the 1536 backfill:
 Agents should use the dedicated gateway instead of connecting directly to the
 Scrollback app UI.
 
-- Container: `feedsilo-memory-gateway`
+- Container: `scrollback-memory-gateway`
 - URL from OpenClaw on the Docker bridge: `http://172.17.0.1:8788`
 - LAN URL: `http://100.79.193.105:8788` or `http://UNRAID_HOST:8788`
-- Secret file: `/mnt/user/feedsilo/secrets/feedsilo-memory-gateway.env`
+- Secret file: `/mnt/user/scrollback/secrets/scrollback-memory-gateway.env`
 - Default search path: `POST /search`, hybrid mode, 1536 dimensions
 - Full item lookup: `POST /item`
 
@@ -236,14 +236,14 @@ OpenClaw wrapper installed in the persistent workspace:
 
 ```bash
 cd /home/node/.openclaw/workspace
-node tools/feedsilo_memory_search.mjs search "agent memory search" --limit 5
-node tools/feedsilo_memory_search.mjs item CONTENT_ITEM_UUID
+node tools/scrollback_memory_search.mjs search "agent memory search" --limit 5
+node tools/scrollback_memory_search.mjs item CONTENT_ITEM_UUID
 ```
 
 The wrapper reads its token from:
 
 ```text
-/home/node/.openclaw/workspace/.secrets/feedsilo-memory-gateway.env
+/home/node/.openclaw/workspace/.secrets/scrollback-memory-gateway.env
 ```
 
 Do not print that file in logs or chat.
@@ -263,13 +263,13 @@ locked down. Use `source_url` as a citation, not as the primary readable source.
 The helper reads its token from:
 
 ```text
-~/.codex/secrets/feedsilo-memory-gateway.env
+~/.codex/secrets/scrollback-memory-gateway.env
 ```
 
 That local file contains only the gateway URL and gateway bearer token. It does
 not contain the Scrollback database password.
 
-A global Codex skill is installed as `feedsilo-memory`, so future Codex chats
+A global Codex skill is installed as `scrollback-memory`, so future Codex chats
 can respond naturally to requests like:
 
 ```text
@@ -301,7 +301,7 @@ Do not give agents the main Scrollback application database credentials.
 For the Unraid production deployment, the read-only agent connection file is stored at:
 
 ```text
-/mnt/user/feedsilo/secrets/openclaw-memory-reader.env
+/mnt/user/scrollback/secrets/openclaw-memory-reader.env
 ```
 
 That file contains the read-only `DATABASE_URL`, the Scrollback admin user ID, and the embedding endpoint metadata agents need for 768-dimension query embeddings. Treat it like a secret, but it does not contain the Scrollback application database password.
