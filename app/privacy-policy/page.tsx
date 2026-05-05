@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — FeedSilo",
-  description: "Privacy policy for FeedSilo and the FeedSilo Capture browser extension.",
+  title: "Privacy Policy — Scrollback",
+  description: "Privacy policy for Scrollback and the Scrollback Capture browser extension.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -17,9 +17,9 @@ export default function PrivacyPolicyPage() {
         <section>
           <h2 className="font-heading text-lg font-semibold text-[#f2ede5] mb-3">Overview</h2>
           <p>
-            FeedSilo is a self-hosted knowledge base for saving content from X/Twitter. The
-            FeedSilo Capture browser extension helps you capture tweets, threads, and articles
-            directly into your own FeedSilo instance. Your data stays on your own server — we do
+            Scrollback is a self-hosted knowledge base for saving content from X/Twitter. The
+            Scrollback Capture browser extension helps you capture tweets, threads, and articles
+            directly into your own Scrollback instance. Your data stays on your own server — we do
             not operate a centralized service that collects or stores your captured content.
           </p>
         </section>
@@ -32,7 +32,7 @@ export default function PrivacyPolicyPage() {
             <li>
               <strong className="text-[#f2ede5]">Tweet and article content</strong> — When you
               capture a tweet, thread, or article, the extension reads the content visible on the
-              page (text, media URLs, author info) and sends it to the FeedSilo server URL you
+              page (text, media URLs, author info) and sends it to the Scrollback server URL you
               configured.
             </li>
             <li>
@@ -43,7 +43,7 @@ export default function PrivacyPolicyPage() {
             </li>
             <li>
               <strong className="text-[#f2ede5]">Optional X API bearer token</strong> — If you
-              provide one, it is stored locally and sent only to your configured FeedSilo server
+              provide one, it is stored locally and sent only to your configured Scrollback server
               or to the X/Twitter API on your behalf.
             </li>
           </ul>
@@ -54,7 +54,7 @@ export default function PrivacyPolicyPage() {
             How Data Is Used
           </h2>
           <p>
-            All captured data is sent exclusively to the FeedSilo server URL that you configure in
+            All captured data is sent exclusively to the Scrollback server URL that you configure in
             the extension. We do not collect, transmit, or have access to any of your data. The
             extension does not include analytics, telemetry, or tracking of any kind.
           </p>
@@ -72,7 +72,7 @@ export default function PrivacyPolicyPage() {
               captured tweets. No personal data is sent in these requests beyond the tweet ID.
             </p>
             <p>
-              Your FeedSilo server may also contact optional services that you configure, such
+              Your Scrollback server may also contact optional services that you configure, such
               as OpenAI or Google Gemini for summaries, tags, embeddings, translations, or image
               descriptions; Cloudflare R2 for media storage; or the X API for tweet, bookmark,
               and like sync. These integrations are controlled by your own API keys and server
@@ -87,7 +87,7 @@ export default function PrivacyPolicyPage() {
           </h2>
           <p>
             Extension settings are stored locally in your browser. Captured content is stored on
-            your self-hosted FeedSilo server. Since FeedSilo is self-hosted, you are responsible
+            your self-hosted Scrollback server. Since Scrollback is self-hosted, you are responsible
             for the security and backup of your own server and data.
           </p>
         </section>
@@ -108,7 +108,7 @@ export default function PrivacyPolicyPage() {
             <li>
               <strong className="text-[#f2ede5]">Your server URL (optional permission)</strong> —
               Granted when you configure your server, so the extension can send captured content
-              to your FeedSilo instance.
+              to your Scrollback instance.
             </li>
             <li>
               <strong className="text-[#f2ede5]">storage</strong> — To persist your connection
@@ -140,10 +140,10 @@ export default function PrivacyPolicyPage() {
           <p>
             If you have questions about this privacy policy, contact us at{" "}
             <a
-              href="mailto:hello@feedsilo.app"
+              href="mailto:hello@scrollback.local"
               className="text-[#b89462] hover:text-[#f0cf9f] transition-colors"
             >
-              hello@feedsilo.app
+              hello@scrollback.local
             </a>
             .
           </p>

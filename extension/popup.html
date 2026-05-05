@@ -10,13 +10,17 @@
     <header class="popup-header">
       <div class="brand-lockup">
         <div class="brand-icon" aria-hidden="true">
-          <div class="brand-mark brand-mark-left"></div>
-          <div class="brand-mark-dot"></div>
-          <div class="brand-mark brand-mark-right"></div>
+          <svg viewBox="0 0 44 44" class="brand-svg">
+            <rect x="4" y="4" width="36" height="36" rx="12"></rect>
+            <path class="brand-rail brand-rail-left" d="M15 13v18"></path>
+            <path class="brand-rail brand-rail-right" d="M29 13v18"></path>
+            <path class="brand-arc" d="M29 13c-7.5 0-13.5 5.2-13.5 12.2"></path>
+            <path class="brand-arrow" d="M15.5 25.2l-4-3.8M15.5 25.2l3.9-3.8"></path>
+          </svg>
         </div>
         <div class="brand-copy">
-          <div class="brand-eyebrow">FeedSilo Capture</div>
-          <div class="brand-wordmark">feed<span class="brand-separator"></span>silo</div>
+          <div class="brand-eyebrow">Scrollback Capture</div>
+          <div class="brand-wordmark">scroll<span class="brand-separator"></span>back</div>
         </div>
       </div>
       <div id="connectionStatus" class="connection-status offline" title="Disconnected">
@@ -30,7 +34,7 @@
       <div class="section-heading">
         <div>
           <div class="section-label">Connection</div>
-          <p class="section-copy">Point the extension at your hosted FeedSilo and pair it with your deployment token.</p>
+          <p class="section-copy">Point the extension at your hosted Scrollback and pair it with your deployment token.</p>
         </div>
       </div>
       <div class="form-group">

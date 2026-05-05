@@ -70,7 +70,7 @@ export function AccountStep({ onContinue }: AccountStepProps) {
 
       <h2 className={onboardingHeadingClass}>Create Admin Account</h2>
       <p className={`${onboardingSubheadingClass} mb-8 mt-4 max-w-[480px]`}>
-        Set up your login credentials before continuing. FeedSilo protects your
+        Set up your login credentials before continuing. Scrollback protects your
         archive, settings, and extension token behind this account.
       </p>
 

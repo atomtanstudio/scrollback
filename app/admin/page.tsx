@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth/auth";
 import { fetchStats } from "@/lib/db/queries";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Admin — FeedSilo" };
+export const metadata: Metadata = { title: "Admin — Scrollback" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminRoute() {

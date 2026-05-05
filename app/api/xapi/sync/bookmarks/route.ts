@@ -34,7 +34,7 @@ export async function POST() {
           else synced++;
         } catch (err) {
           errors++;
-          console.error("FeedSilo: bookmark ingest error:", err instanceof Error ? err.message : err);
+          console.error("Scrollback: bookmark ingest error:", err instanceof Error ? err.message : err);
         }
       }
 

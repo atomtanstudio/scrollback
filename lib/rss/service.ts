@@ -144,7 +144,7 @@ async function fetchReadableArticle(url: string): Promise<{
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15_000);
   const response = await safeFetch(url, {
-    headers: { "User-Agent": "FeedSilo RSS Fetcher/1.0" },
+    headers: { "User-Agent": "Scrollback RSS Fetcher/1.0" },
     signal: controller.signal,
   });
   clearTimeout(timeout);
@@ -202,7 +202,7 @@ async function fetchParsedFeed(
   lastModified?: string | null;
 }> {
   const headers: HeadersInit = {
-    "User-Agent": "FeedSilo RSS Fetcher/1.0",
+    "User-Agent": "Scrollback RSS Fetcher/1.0",
     Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8",
   };
 

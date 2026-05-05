@@ -92,7 +92,7 @@ function parseArgs(argv: string[]): Args {
 
 function printHelp(): void {
   console.log(`
-Backfill FeedSilo content into the agent memory chunk/vector index.
+Backfill Scrollback content into the agent memory chunk/vector index.
 
 Usage:
   npx tsx scripts/backfill-agent-memory.ts --user-email you@example.com

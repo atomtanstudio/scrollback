@@ -1,11 +1,11 @@
 ---
 name: feedsilo-memory
-description: Use when the user asks to check, search, look in, query, or consult FeedSilo, Feed Silo, saved captures, saved articles, saved tweets, captured prompts, the personal archive, or prior captured research. This skill searches the FeedSilo memory gateway and can fetch full saved items by content_item_id.
+description: Use when the user asks to check, search, look in, query, or consult Scrollback, Scrollback, saved captures, saved articles, saved tweets, captured prompts, the personal archive, or prior captured research. This skill searches the Scrollback memory gateway and can fetch full saved items by content_item_id.
 ---
 
-# FeedSilo Memory
+# Scrollback Memory
 
-Use the FeedSilo memory gateway before general web search when the user asks
+Use the Scrollback memory gateway before general web search when the user asks
 about saved or captured material.
 
 ## Search
@@ -17,10 +17,10 @@ cd /Users/richgates/Documents/coding/feedsilo
 npm run agent-memory:gateway -- check "QUERY" --limit 3
 ```
 
-Default search is hybrid retrieval over 1536-dimensional FeedSilo vectors. The
-`check` command returns both matched chunks and full saved FeedSilo items.
+Default search is hybrid retrieval over 1536-dimensional Scrollback vectors. The
+`check` command returns both matched chunks and full saved Scrollback items.
 
-Use this command for normal user requests like "check FeedSilo for this." Use
+Use this command for normal user requests like "check Scrollback for this." Use
 `search` only when you need lighter output or more candidates.
 
 ## Fetch Full Item

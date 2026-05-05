@@ -58,7 +58,7 @@ export function DatabaseStep({
     <div className="flex flex-col items-center">
       <StepBadge tone="recommended">Choose storage</StepBadge>
       <h2 className={onboardingHeadingClass}>
-        Where should FeedSilo store your data?
+        Where should Scrollback store your data?
       </h2>
       <p className={`${onboardingSubheadingClass} mb-8 mt-4 text-center`}>
         You can always switch later from the settings page

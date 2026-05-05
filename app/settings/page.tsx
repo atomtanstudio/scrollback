@@ -5,8 +5,8 @@ import { fetchStats } from "@/lib/db/queries";
 import { auth } from "@/lib/auth/auth";
 
 export const metadata: Metadata = {
-  title: "Settings — FeedSilo",
-  description: "Configure your FeedSilo instance",
+  title: "Settings — Scrollback",
+  description: "Configure your Scrollback instance",
 };
 
 export const dynamic = "force-dynamic";

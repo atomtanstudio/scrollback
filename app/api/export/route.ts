@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     return new Response(lines.join("\n"), {
       headers: {
         "Content-Type": "text/csv",
-        "Content-Disposition": 'attachment; filename="feedsilo-export.csv"',
+        "Content-Disposition": 'attachment; filename="scrollback-export.csv"',
       },
     });
   }
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
   return new Response(ndjson, {
     headers: {
       "Content-Type": "application/x-ndjson",
-      "Content-Disposition": 'attachment; filename="feedsilo-export.json"',
+      "Content-Disposition": 'attachment; filename="scrollback-export.json"',
     },
   });
 }

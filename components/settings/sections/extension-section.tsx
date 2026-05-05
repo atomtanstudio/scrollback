@@ -59,7 +59,7 @@ export function ExtensionSection({ settings, onRefresh }: ExtensionSectionProps)
           </div>
           <div>
             <h3 className="font-heading text-[15px] font-semibold text-[#f2ede5]">
-              FeedSilo Browser Extension
+              Scrollback Browser Extension
             </h3>
             <p className="text-xs text-[#a49b8b]">
               Capture content from X/Twitter and the web

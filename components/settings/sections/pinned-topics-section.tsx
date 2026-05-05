@@ -134,7 +134,7 @@ export function PinnedTopicsSection() {
           <div>
             <h4 className="text-sm font-medium text-[#f2ede5]">Suggested from your saves</h4>
             <p className="mt-1 text-xs text-[#8a8174]">
-              FeedSilo watches for recurring capture themes so obvious interests bubble up.
+              Scrollback watches for recurring capture themes so obvious interests bubble up.
             </p>
           </div>
 

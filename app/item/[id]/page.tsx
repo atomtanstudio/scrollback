@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const displayBodyText = getDisplayBodyText(item);
 
   return {
-    title: `${displayTitle || displayBodyText.slice(0, 60)} — FeedSilo`,
+    title: `${displayTitle || displayBodyText.slice(0, 60)} — Scrollback`,
     description: displayBodyText.slice(0, 160),
   };
 }

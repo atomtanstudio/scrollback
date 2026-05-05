@@ -40,14 +40,14 @@ function parseArgs(argv: string[]): Args {
 
 function printHelp(): void {
   console.log(`
-Create a logical JSON backup of all public FeedSilo tables.
+Create a logical JSON backup of all public Scrollback tables.
 
 Usage:
   npx tsx scripts/backup-database.ts
 
 Options:
   --database-url URL   PostgreSQL URL. Defaults to DATABASE_URL.
-  --output PATH        Backup file path. Defaults to backups/feedsilo-backup-<timestamp>.json.gz.
+  --output PATH        Backup file path. Defaults to backups/scrollback-backup-<timestamp>.json.gz.
 `);
 }
 
@@ -94,7 +94,7 @@ async function main(): Promise<void> {
 
   const outputPath =
     args.output ||
-    path.join(process.cwd(), "backups", `feedsilo-backup-${timestamp()}.json.gz`);
+    path.join(process.cwd(), "backups", `scrollback-backup-${timestamp()}.json.gz`);
 
   const client = new pg.Client({ connectionString: databaseUrl });
   await client.connect();

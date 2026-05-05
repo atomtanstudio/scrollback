@@ -1,6 +1,6 @@
 # Remote Query API
 
-FeedSilo exposes a read-only remote query API for exporting your saved items into tools like Obsidian, OpenClaw, scripts, or local pipelines.
+Scrollback exposes a read-only remote query API for exporting your saved items into tools like Obsidian, OpenClaw, scripts, or local pipelines.
 
 This API is designed to be:
 
@@ -14,7 +14,7 @@ This API is designed to be:
 Production:
 
 ```bash
-https://your-feedsilo-domain/api/remote/items
+https://your-scrollback-domain/api/remote/items
 ```
 
 Local example:
@@ -25,16 +25,16 @@ http://127.0.0.1:3000/api/remote/items
 
 ## Authentication
 
-Use your FeedSilo capture token as a Bearer token.
+Use your Scrollback capture token as a Bearer token.
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://your-feedsilo-domain/api/remote/items?per_page=10"
+  "https://your-scrollback-domain/api/remote/items?per_page=10"
 ```
 
-You can reveal or regenerate the token from FeedSilo settings.
+You can reveal or regenerate the token from Scrollback settings.
 
-If you are already logged into FeedSilo in the browser, the route also accepts your session automatically for browser-based usage.
+If you are already logged into Scrollback in the browser, the route also accepts your session automatically for browser-based usage.
 
 ## What It Returns
 
@@ -64,7 +64,7 @@ Each item can include:
 ### Filters
 
 - `id`
-  - fetch a specific item by FeedSilo item ID
+  - fetch a specific item by Scrollback item ID
 - `q`
   - case-insensitive search across:
     - `title`
@@ -129,7 +129,7 @@ Use NDJSON when you want to stream items line-by-line into another tool:
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://your-feedsilo-domain/api/remote/items?format=ndjson&per_page=100"
+  "https://your-scrollback-domain/api/remote/items?format=ndjson&per_page=100"
 ```
 
 Each line is one JSON object.
@@ -140,63 +140,63 @@ Each line is one JSON object.
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://your-feedsilo-domain/api/remote/items?per_page=100"
+  "https://your-scrollback-domain/api/remote/items?per_page=100"
 ```
 
 ### 2. Pull only art-related items
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://your-feedsilo-domain/api/remote/items?type=art&per_page=100"
+  "https://your-scrollback-domain/api/remote/items?type=art&per_page=100"
 ```
 
 ### 3. Pull items by tag or category slug
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://your-feedsilo-domain/api/remote/items?tag=performance-optimization"
+  "https://your-scrollback-domain/api/remote/items?tag=performance-optimization"
 ```
 
 ### 4. Search by text
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://your-feedsilo-domain/api/remote/items?q=vector%20search"
+  "https://your-scrollback-domain/api/remote/items?q=vector%20search"
 ```
 
 ### 5. Pull content from a given author
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://your-feedsilo-domain/api/remote/items?author=karpathy"
+  "https://your-scrollback-domain/api/remote/items?author=karpathy"
 ```
 
 ### 6. Pull only items with prompts
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://your-feedsilo-domain/api/remote/items?has_prompt=true"
+  "https://your-scrollback-domain/api/remote/items?has_prompt=true"
 ```
 
 ### 7. Pull items created in a date range
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://your-feedsilo-domain/api/remote/items?since=2026-01-01T00:00:00Z&until=2026-04-01T00:00:00Z"
+  "https://your-scrollback-domain/api/remote/items?since=2026-01-01T00:00:00Z&until=2026-04-01T00:00:00Z"
 ```
 
 ### 8. Fetch a single item by ID
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://your-feedsilo-domain/api/remote/items?id=YOUR_ITEM_ID"
+  "https://your-scrollback-domain/api/remote/items?id=YOUR_ITEM_ID"
 ```
 
 ### 9. Stream NDJSON into a file
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://your-feedsilo-domain/api/remote/items?format=ndjson&per_page=500" \
+  "https://your-scrollback-domain/api/remote/items?format=ndjson&per_page=500" \
   > feedsilo-export.ndjson
 ```
 

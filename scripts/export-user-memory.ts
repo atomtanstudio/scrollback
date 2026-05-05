@@ -134,14 +134,14 @@ function parseArgs(argv: string[]): Args {
 
 function printHelp(): void {
   console.log(`
-Export one FeedSilo user's content graph into a single JSON file.
+Export one Scrollback user's content graph into a single JSON file.
 
 Usage:
   npx tsx scripts/export-user-memory.ts \\
     --database-url 'postgresql://...' \\
     --user-email 'you@example.com' \\
-    --app-url 'https://your-feedsilo.app' \\
-    --output './exports/feedsilo-memory.json'
+    --app-url 'https://your-scrollback.app' \\
+    --output './exports/scrollback-memory.json'
 
 Required:
   --database-url   PostgreSQL connection string, or set DATABASE_URL
@@ -152,7 +152,7 @@ User targeting:
   --user-id        Alternate. Export by user UUID
 
 Output:
-  --output         Optional. Defaults to ./exports/feedsilo-memory-<user>.json
+  --output         Optional. Defaults to ./exports/scrollback-memory-<user>.json
 `);
 }
 
@@ -480,7 +480,7 @@ async function main(): Promise<void> {
       path.join(
         process.cwd(),
         "exports",
-        `feedsilo-memory-${sanitizeForFilename(user.email)}.json`
+        `scrollback-memory-${sanitizeForFilename(user.email)}.json`
       );
 
     await fs.mkdir(path.dirname(outputPath), { recursive: true });

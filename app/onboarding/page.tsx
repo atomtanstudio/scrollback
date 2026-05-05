@@ -5,8 +5,8 @@ import { getConfig, isConfigured } from "@/lib/config";
 import { getClient } from "@/lib/db/client";
 
 export const metadata: Metadata = {
-  title: "Setup — FeedSilo",
-  description: "Set up your FeedSilo instance",
+  title: "Setup — Scrollback",
+  description: "Set up your Scrollback instance",
 };
 
 export default async function Page() {

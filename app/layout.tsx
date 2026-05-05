@@ -17,8 +17,8 @@ const geistBody = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "FeedSilo",
-  description: "Your digital knowledge, searchable.",
+  title: "Scrollback",
+  description: "A self-hosted archive for posts, threads, and feeds.",
 };
 
 export default function RootLayout({

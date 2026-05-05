@@ -1,5 +1,5 @@
 // ============================================================
-// FeedSilo - API Interceptor (runs in MAIN world / page context)
+// Scrollback - API Interceptor (runs in MAIN world / page context)
 // ============================================================
 // Patches the page's fetch() and XHR to intercept X's GraphQL API
 // responses. Data is passed to the content script via CustomEvents.

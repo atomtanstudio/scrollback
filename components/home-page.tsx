@@ -481,7 +481,7 @@ export function HomePage({
 
             <div className="rounded-[16px] border border-[#b8946222] bg-gradient-to-b from-[#b894620a] to-transparent p-4">
               <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#b89462]">Support our projects</p>
-              <p className="mb-3 text-[11px] leading-4 text-[#8a8174]">Other tools from the maker of FeedSilo</p>
+              <p className="mb-3 text-[11px] leading-4 text-[#8a8174]">Other tools from the maker of Scrollback</p>
               <div className="grid gap-2">
                 <a
                   href="https://promptsilo.app"
@@ -513,7 +513,7 @@ export function HomePage({
                   href="/waitlist"
                   className="flex items-center justify-center gap-1.5 rounded-[10px] border border-[#b8946222] bg-[#b894620a] px-3 py-2 text-[11px] font-medium text-[#b89462] transition-colors hover:bg-[#b8946218] hover:text-[#f0cf9f]"
                 >
-                  Join the waitlist for FeedSilo Cloud
+                  Join the waitlist for Scrollback Cloud
                 </a>
               </div>
             </div>

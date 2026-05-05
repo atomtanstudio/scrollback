@@ -46,7 +46,7 @@ Core system:
 This is valuable because distribution is an operational system, not a one-off
 content idea. The repeatable asset is the workflow.
 
-[Source: FeedSilo item ca41fba5-0a26-4c24-9b4b-482393672f20,
+[Source: Scrollback item ca41fba5-0a26-4c24-9b4b-482393672f20,
 https://x.com/i/web/status/2048806262586950038]
 
 ## Play 2: AI Creative Services
@@ -68,7 +68,7 @@ The durable lesson is that the sale is not "AI generation." The sale is a
 pipeline that produces assets in the right format for a buyer with an urgent
 distribution or sales need.
 
-[Source: FeedSilo item c7e0b575-13fa-4db2-b7b4-83a01728705c,
+[Source: Scrollback item c7e0b575-13fa-4db2-b7b4-83a01728705c,
 https://x.com/AmirMushich/status/2042613800147308839]
 
 ## Play 3: Agentic Service Loops
@@ -85,7 +85,7 @@ The proposed pricing ladder is simple: sell one-off clips for a small amount or
 move creators to monthly retainers. The larger lesson is to productize a narrow
 creator-business workflow where output and ROI are easy to understand.
 
-[Source: FeedSilo item f4d833bd-8f28-4ce4-b3c3-0299b5a54881,
+[Source: Scrollback item f4d833bd-8f28-4ce4-b3c3-0299b5a54881,
 https://x.com/Voxyz_ai/status/2043754042468221228]
 
 ## Play 4: Agent Company Operating System
@@ -102,7 +102,7 @@ handoffs, not prompts. The durable company architecture is:
 The key line of thinking: capable agents are not a company until handoffs exist.
 Handoffs are the spine of the organization.
 
-[Source: FeedSilo item 0d4198ab-ffd2-44de-9200-2c94773747ab,
+[Source: Scrollback item 0d4198ab-ffd2-44de-9200-2c94773747ab,
 https://x.com/Voxyz_ai/status/2042626815395524791]
 
 ## What This Means For Our Work
@@ -118,7 +118,7 @@ The near-term business strategy should be biased toward workflows that:
 Best first experiments:
 
 1. Build our own Notion/Postiz-style distribution pipeline.
-2. Build a FeedSilo/GBrain research-to-content pipeline.
+2. Build a Scrollback/GBrain research-to-content pipeline.
 3. Productize an AI creative asset workflow for a narrow buyer.
 4. Use Judy/OpenClaw as Chief of Staff for content, sales follow-up, and memory.
 
@@ -132,12 +132,12 @@ Do not save every business tweet to GBrain. Promote:
 - repeatable prompts/skills,
 - and evidence that a path produced revenue or distribution.
 
-FeedSilo remains the archive. GBrain keeps the playbook.
+Scrollback remains the archive. GBrain keeps the playbook.
 
 ---
 
 ## Timeline
 
-- 2026-05-03: Created from FeedSilo promotion search after OpenClaw snapshot and
+- 2026-05-03: Created from Scrollback promotion search after OpenClaw snapshot and
   GBrain backup. [Source: User-directed promotion, 2026-05-03]
 

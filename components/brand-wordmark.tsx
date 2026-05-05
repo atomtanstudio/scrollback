@@ -12,11 +12,22 @@ export function BrandWordmark({
   return (
     <span
       className={cn(
-        "font-heading inline-flex items-center leading-none tracking-[-0.05em]",
+        "font-heading inline-flex items-center gap-[0.32em] leading-none tracking-normal",
         className
       )}
     >
-      <span>feed</span>
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 44 44"
+        className="h-[0.98em] w-[0.98em] shrink-0 translate-y-[0.03em]"
+      >
+        <rect x="5" y="5" width="34" height="34" rx="11" fill="#111821" stroke="rgba(214,201,178,0.22)" />
+        <path d="M15 13v18" stroke="#f2ede5" strokeWidth="5" strokeLinecap="round" />
+        <path d="M29 13v18" stroke="#f2ede5" strokeWidth="5" strokeLinecap="round" opacity="0.62" />
+        <path d="M29 13c-7.5 0-13.5 5.2-13.5 12.2" stroke="#b89462" strokeWidth="3" strokeLinecap="round" fill="none" />
+        <path d="M15.5 25.2l-4-3.8M15.5 25.2l3.9-3.8" stroke="#b89462" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span>scroll</span>
       <span
         aria-hidden="true"
         className={cn(
@@ -24,7 +35,7 @@ export function BrandWordmark({
           dotClassName
         )}
       />
-      <span>silo</span>
+      <span>back</span>
     </span>
   );
 }

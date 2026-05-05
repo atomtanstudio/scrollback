@@ -46,13 +46,13 @@ routes:
 - Before running mutating GBrain commands, verify the target database/brain repo
   and confirm whether the command writes local markdown, Postgres, or both.
 - Do not print API keys or database URLs.
-- If the user asks for FeedSilo-captured content, use the `feedsilo-memory`
+- If the user asks for Scrollback-captured content, use the `feedsilo-memory`
   skill first. GBrain is a separate markdown-brain system unless explicitly
-  wired to imported FeedSilo exports.
+  wired to imported Scrollback exports.
 
 ## Runtime
 
-The GBrain runtime is installed locally. Prefer the FeedSilo wrapper so the
+The GBrain runtime is installed locally. Prefer the Scrollback wrapper so the
 database URL and local embedding endpoint are loaded without exposing secrets:
 
 ```bash

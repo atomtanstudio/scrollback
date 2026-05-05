@@ -109,9 +109,9 @@ async function route(request, response) {
 
 function manifest() {
   return {
-    name: "FeedSilo Memory Gateway",
+    name: "Scrollback Memory Gateway",
     description:
-      "Read-only agent search over saved FeedSilo captures. Search first, then fetch full items when needed.",
+      "Read-only agent search over saved Scrollback captures. Search first, then fetch full items when needed.",
     auth: {
       type: "bearer",
       header: "Authorization: Bearer <token>",

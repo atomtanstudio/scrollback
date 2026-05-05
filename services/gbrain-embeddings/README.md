@@ -1,9 +1,9 @@
 # GBrain Embeddings Sidecar
 
-OpenAI-compatible embedding service for the FeedSilo/OpenClaw memory surface.
+OpenAI-compatible embedding service for the Scrollback/OpenClaw memory surface.
 
 This is meant to run on a GPU box, such as the Legion WSL2 environment, while
-Postgres and the FeedSilo data stay on Unraid. FeedSilo can point
+Postgres and the Scrollback data stay on Unraid. Scrollback can point
 `OPENAI_BASE_URL` at this service when generating 1536-dimensional agent memory
 vectors.
 
@@ -21,7 +21,7 @@ Qwen/Qwen3-Embedding-4B
 ```
 
 Qwen3-Embedding-4B exposes up to 2560 dimensions and supports smaller output
-dimensions, so FeedSilo can request `1536` while still leaving room to increase
+dimensions, so Scrollback can request `1536` while still leaving room to increase
 later.
 
 ## Install

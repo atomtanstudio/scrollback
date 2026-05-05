@@ -1,6 +1,6 @@
 # GBrain Integration
 
-This directory keeps the FeedSilo-side handoff for Garry Tan's GBrain/G memory
+This directory keeps the Scrollback-side handoff for Garry Tan's GBrain/G memory
 skillpack. The upstream source of truth is:
 
 - Local clone: `/Users/richgates/gbrain`
@@ -61,7 +61,7 @@ GBrain itself expects:
 - `OPENAI_API_KEY` for hybrid/vector search
 - Optional `ANTHROPIC_API_KEY` for query expansion
 
-The current FeedSilo memory gateway already provides a 1536-dimensional local
+The current Scrollback memory gateway already provides a 1536-dimensional local
 embedding surface through the Legion WSL2 sidecar. GBrain's current embedding
 service is hard-coded to `text-embedding-3-large` at 1536 dimensions and uses the
 OpenAI SDK. The Legion sidecar advertises `text-embedding-3-large` as an alias

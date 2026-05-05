@@ -1,4 +1,4 @@
-# Chrome Web Store Listing — FeedSilo Capture
+# Chrome Web Store Listing — Scrollback Capture
 
 Use this content when filling out the Chrome Web Store developer dashboard.
 
@@ -6,24 +6,24 @@ Use this content when filling out the Chrome Web Store developer dashboard.
 
 ## Name
 
-FeedSilo Capture
+Scrollback Capture
 
 ## Short Description (132 char max)
 
-Capture tweets, threads, and articles from X/Twitter to your self-hosted FeedSilo knowledge base.
+Capture tweets, threads, and articles from X/Twitter to your self-hosted Scrollback knowledge base.
 
 ## Detailed Description
 
-FeedSilo Capture lets you save tweets, full threads, and linked articles from X (formerly Twitter) directly into your own FeedSilo instance — a self-hosted, searchable knowledge base.
+Scrollback Capture lets you save tweets, full threads, and linked articles from X (formerly Twitter) directly into your own Scrollback instance — a self-hosted, searchable knowledge base.
 
 **One-Click Capture**
-See a tweet worth saving? Click the FeedSilo button that appears on every tweet to capture it instantly — including text, images, videos, GIFs, and linked articles.
+See a tweet worth saving? Click the Scrollback button that appears on every tweet to capture it instantly — including text, images, videos, GIFs, and linked articles.
 
 **Full Thread Capture**
-When you capture a tweet that's part of a conversation, FeedSilo automatically fetches and saves the entire thread so you never lose context.
+When you capture a tweet that's part of a conversation, Scrollback automatically fetches and saves the entire thread so you never lose context.
 
 **Bulk Capture**
-Open your Likes or Bookmarks page and capture everything at once. FeedSilo Capture supports two bulk modes:
+Open your Likes or Bookmarks page and capture everything at once. Scrollback Capture supports two bulk modes:
 • Page scraping — captures tweets visible on the page as you scroll
 • X API mode — uses your X API bearer token for faster, more reliable bulk capture
 
@@ -31,14 +31,14 @@ Open your Likes or Bookmarks page and capture everything at once. FeedSilo Captu
 Tweets that link to articles are enriched with the article title, preview text, and link card image — all saved alongside the tweet.
 
 **Self-Hosted & Private**
-Your data goes to your FeedSilo server and nowhere else. No analytics, no telemetry, no third-party data collection. You own your data.
+Your data goes to your Scrollback server and nowhere else. No analytics, no telemetry, no third-party data collection. You own your data.
 
 **How It Works**
 1. Install the extension
-2. Enter your FeedSilo server URL and pairing token in the popup
+2. Enter your Scrollback server URL and pairing token in the popup
 3. Navigate to x.com and start capturing
 
-FeedSilo is open source. Learn more at https://feedsilo.app
+Scrollback is open source. Learn more at https://scrollback.local
 
 ## Category
 
@@ -73,7 +73,7 @@ Required to run content scripts on X/Twitter pages that read tweet content from 
 Required to resolve media URLs (videos, GIFs) and article metadata (titles, preview text) from the Twitter syndication API for captured tweets.
 
 ### Optional host permissions (https://*/* and http://*/*)
-The extension sends captured data to a user-configured FeedSilo server URL. Since FeedSilo is self-hosted, the server can be at any domain or local address. Permission is requested at runtime only when the user saves their server URL.
+The extension sends captured data to a user-configured Scrollback server URL. Since Scrollback is self-hosted, the server can be at any domain or local address. Permission is requested at runtime only when the user saves their server URL.
 
 ---
 
@@ -82,9 +82,9 @@ The extension sends captured data to a user-configured FeedSilo server URL. Sinc
 Capture these for your 1280x800 store screenshots:
 
 1. **Popup connected** — Extension popup showing "Connected" status with server URL filled in
-2. **Capture button on tweet** — A tweet on x.com with the FeedSilo capture button visible
+2. **Capture button on tweet** — A tweet on x.com with the Scrollback capture button visible
 3. **Bulk capture in action** — The Likes/Bookmarks page with bulk capture running
-4. **Saved item in FeedSilo** — The FeedSilo web UI showing a captured tweet with media
+4. **Saved item in Scrollback** — The Scrollback web UI showing a captured tweet with media
 
 ---
 
@@ -92,9 +92,9 @@ Capture these for your 1280x800 store screenshots:
 
 When filling out the "Privacy practices" tab:
 
-- **Single purpose description**: "Captures tweets, threads, and articles from X/Twitter and sends them to the user's self-hosted FeedSilo server."
-- Does the extension collect or transmit data to the developer? **No** — user-directed captured content is sent only to the user's configured FeedSilo server.
+- **Single purpose description**: "Captures tweets, threads, and articles from X/Twitter and sends them to the user's self-hosted Scrollback server."
+- Does the extension collect or transmit data to the developer? **No** — user-directed captured content is sent only to the user's configured Scrollback server.
 - Does the extension use remote code? **No**
 - Certify data use disclosures: **Yes**
 
-Privacy policy URL: https://feedsilo.app/privacy-policy
+Privacy policy URL: https://scrollback.local/privacy-policy

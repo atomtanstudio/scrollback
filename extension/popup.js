@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
       xapiBadge.className = 'badge badge-active';
       updateCaptureMode(true);
 
-      // Also save to FeedSilo server if connected
+      // Also save to Scrollback server if connected
       const serverUrl = serverUrlInput.value.trim().replace(/\/+$/, '');
       const secret = captureSecretInput.value.trim();
       if (serverUrl && secret) {
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
           : 'No singleton threads left';
         recaptureThreadsBtn.disabled = response.remainingAfter === 0;
       }
-      console.log('FeedSilo thread recapture summary', response);
+      console.log('Scrollback thread recapture summary', response);
     });
   });
 

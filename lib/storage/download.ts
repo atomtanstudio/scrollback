@@ -70,7 +70,7 @@ export async function downloadAndStoreMedia(
 
     const response = await safeFetch(originalUrl, {
       signal: controller.signal,
-      headers: { "User-Agent": "FeedSilo/1.0" },
+      headers: { "User-Agent": "Scrollback/1.0" },
     });
     clearTimeout(timeout);
 

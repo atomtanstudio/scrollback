@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "FeedSilo Capture",
+  "name": "Scrollback Capture",
   "version": "2.0.0",
-  "description": "Capture tweets, threads, and articles from X/Twitter to your FeedSilo knowledge base.",
+  "description": "Capture tweets, threads, and RSS-backed saves to your self-hosted Scrollback archive.",
   "permissions": [
     "activeTab",
     "storage",

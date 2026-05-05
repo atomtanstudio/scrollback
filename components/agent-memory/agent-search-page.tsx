@@ -230,7 +230,7 @@ export function AgentSearchPage({ isAuthed, isAdmin }: AgentSearchPageProps) {
                       href={`/item/${result.content_item_id}`}
                       className="inline-flex items-center rounded-md border border-[#d6c9b21f] px-2.5 py-1.5 text-xs text-[#a49b8b] transition-colors hover:text-[#f2ede5]"
                     >
-                      FeedSilo
+                      Scrollback
                     </Link>
                   </div>
                 </article>

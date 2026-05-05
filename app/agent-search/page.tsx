@@ -5,7 +5,7 @@ import { DemoBanner } from "@/components/demo-banner";
 import { auth } from "@/lib/auth/auth";
 
 export const metadata: Metadata = {
-  title: "Agent Search - FeedSilo",
+  title: "Agent Search - Scrollback",
 };
 
 export const dynamic = "force-dynamic";

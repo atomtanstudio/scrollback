@@ -34,7 +34,7 @@ export async function POST() {
           else synced++;
         } catch (err) {
           errors++;
-          console.error("FeedSilo: like ingest error:", err instanceof Error ? err.message : err);
+          console.error("Scrollback: like ingest error:", err instanceof Error ? err.message : err);
         }
       }
 

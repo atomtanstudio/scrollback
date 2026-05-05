@@ -75,7 +75,7 @@ function parseArgs(argv: string[]): Args {
 
 function printHelp(): void {
   console.log(`
-Search the FeedSilo agent memory index without opening the web app.
+Search the Scrollback agent memory index without opening the web app.
 
 Usage:
   npx tsx scripts/search-agent-memory.ts \\

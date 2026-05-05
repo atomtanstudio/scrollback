@@ -41,7 +41,7 @@ function loadSharedScript(chrome: ChromeMock) {
   };
 }
 
-describe("FeedSilo extension tab bootstrap", () => {
+describe("Scrollback extension tab bootstrap", () => {
   it("reuses an already-live content script without reinjecting", async () => {
     const chrome = {
       runtime: { lastError: null },

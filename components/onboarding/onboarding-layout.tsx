@@ -24,7 +24,7 @@ export function OnboardingLayout({
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.18em] text-[#a49b8b]">
-                  FeedSilo setup
+                  Scrollback setup
                 </p>
                 <p className="mt-2 text-sm text-[#cdc4b7]">
                   Step {currentStep} of {totalSteps}

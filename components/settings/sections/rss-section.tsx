@@ -373,7 +373,7 @@ export function RssSection({ onRefresh, isAdmin = true }: RssSectionProps) {
         <div className="h-28 animate-pulse rounded-[16px] bg-[#ffffff06]" />
       ) : feeds.length === 0 ? (
         <div className="rounded-[16px] border border-dashed border-[#d6c9b214] bg-[#ffffff04] px-4 py-6 text-sm text-[#a49b8b]">
-          No feeds yet. Add a feed URL and FeedSilo will treat it like another signal source instead of a separate reader.
+          No feeds yet. Add a feed URL and Scrollback will treat it like another signal source instead of a separate reader.
         </div>
       ) : (
         <div className="flex flex-col gap-3">

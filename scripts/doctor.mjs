@@ -144,7 +144,7 @@ function checkRolldown() {
   );
 }
 
-console.log("FeedSilo doctor\n");
+console.log("Scrollback doctor\n");
 
 checkNodeVersion();
 checkNpmAvailable();

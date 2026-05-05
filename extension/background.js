@@ -1,5 +1,5 @@
-// FeedSilo Extension - Background Service Worker
-// Relays captured tweet data from content script to FeedSilo server.
+// Scrollback Extension - Background Service Worker
+// Relays captured tweet data from content script to Scrollback server.
 
 importScripts('shared.js');
 
@@ -172,7 +172,7 @@ async function resolveVideoUrls(data) {
       data.media_urls.push(...videoUrls);
     }
   } catch (e) {
-    console.warn('FeedSilo: syndication resolve failed', e instanceof Error ? e.message : 'Unknown error');
+    console.warn('Scrollback: syndication resolve failed', e instanceof Error ? e.message : 'Unknown error');
   }
 
   // Clean internal flag before sending to server
@@ -220,7 +220,7 @@ async function resolveArticleContent(data) {
       if (!data.title && cardTitle) data.title = cardTitle;
     }
   } catch (e) {
-    console.warn('FeedSilo: article resolve failed', e instanceof Error ? e.message : 'Unknown error');
+    console.warn('Scrollback: article resolve failed', e instanceof Error ? e.message : 'Unknown error');
   }
 }
 
@@ -367,7 +367,7 @@ async function handleSingleCapture(data) {
 
     return await response.json();
   } catch (error) {
-    console.error('FeedSilo capture error:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Scrollback capture error:', error instanceof Error ? error.message : 'Unknown error');
     return { success: false, error: error instanceof Error ? error.message : 'Capture failed' };
   }
 }
@@ -406,7 +406,7 @@ async function handleBulkCapture(items) {
 
     return await response.json();
   } catch (error) {
-    console.error('FeedSilo bulk capture error:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Scrollback bulk capture error:', error instanceof Error ? error.message : 'Unknown error');
     return { success: false, error: error instanceof Error ? error.message : 'Bulk capture failed' };
   }
 }
@@ -438,7 +438,7 @@ async function handleBulkCaptureViaApi(tweetIds) {
 
     return await response.json();
   } catch (error) {
-    console.error('FeedSilo API bulk capture error:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Scrollback API bulk capture error:', error instanceof Error ? error.message : 'Unknown error');
     return { success: false, error: error instanceof Error ? error.message : 'Bulk capture failed' };
   }
 }

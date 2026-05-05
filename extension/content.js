@@ -1,5 +1,5 @@
 // ============================================================
-// FeedSilo Extension - Content Script
+// Scrollback Extension - Content Script
 // ============================================================
 
 {
@@ -11,7 +11,7 @@ const contentBootstrappedLate = document.readyState !== 'loading';
 
 // --- Debug logging (set to true for development) ---
 const DEBUG = false;
-function log(...args) { if (DEBUG) console.log('FeedSilo:', ...args); }
+function log(...args) { if (DEBUG) console.log('Scrollback:', ...args); }
 
 // Merge source into target without overwriting non-null values with null
 function mergeKeepNonNull(target, source) {
@@ -1482,7 +1482,7 @@ async function hydrateArticleDataFromDOMWithScroll(data, button = null) {
   collectArticleDomSnapshot(accumulator, data.title || '');
   const hydrated = hydrateArticleDataFromDOM(data, accumulator);
   window.scrollTo({ top: startY, behavior: 'auto' });
-  if (button) button.title = 'Save to FeedSilo';
+  if (button) button.title = 'Save to Scrollback';
   return hydrated;
 }
 
@@ -1583,7 +1583,7 @@ function injectSaveButtons() {
     btn.setAttribute(BUTTON_ATTR, 'true');
     btn.className = 'feedsilo-save-btn';
     btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`;
-    btn.title = 'Save to FeedSilo';
+    btn.title = 'Save to Scrollback';
 
     btn.addEventListener('click', async (e) => {
       e.preventDefault();
@@ -1760,7 +1760,7 @@ function injectSaveButtons() {
           clearTimeout(saveTimeout);
           btn.classList.remove('saving');
           if (chrome.runtime.lastError) {
-            console.error('FeedSilo: runtime error', chrome.runtime.lastError);
+            console.error('Scrollback: runtime error', chrome.runtime.lastError);
             btn.classList.add('error');
             setTimeout(() => resetButton(btn), 3000);
             return;
@@ -1780,7 +1780,7 @@ function injectSaveButtons() {
             }
           } else {
             btn.classList.add('error');
-            console.error('FeedSilo thread save failed:', response?.error);
+            console.error('Scrollback thread save failed:', response?.error);
             setTimeout(() => resetButton(btn), 3000);
           }
         });
@@ -1793,7 +1793,7 @@ function injectSaveButtons() {
         log(' capture response', response);
         btn.classList.remove('saving');
         if (chrome.runtime.lastError) {
-          console.error('FeedSilo: runtime error', chrome.runtime.lastError);
+          console.error('Scrollback: runtime error', chrome.runtime.lastError);
           btn.classList.add('error');
           setTimeout(() => resetButton(btn), 3000);
           return;
@@ -1809,7 +1809,7 @@ function injectSaveButtons() {
           }
         } else {
           btn.classList.add('error');
-          console.error('FeedSilo save failed:', response?.error);
+          console.error('Scrollback save failed:', response?.error);
           setTimeout(() => resetButton(btn), 3000);
         }
       });
@@ -1826,7 +1826,7 @@ function injectSaveButtons() {
         } else {
           btn.classList.remove('saving');
           btn.classList.add('error');
-          console.error('FeedSilo capture error:', err);
+          console.error('Scrollback capture error:', err);
           setTimeout(() => resetButton(btn), 3000);
         }
       }
@@ -2077,7 +2077,7 @@ function createHUD() {
   hud.innerHTML = `
     <div class="feedsilo-hud-header">
       <div class="feedsilo-hud-title">
-        <div class="feedsilo-hud-kicker">FeedSilo</div>
+        <div class="feedsilo-hud-kicker">Scrollback</div>
         <div class="feedsilo-hud-name">Capture run</div>
       </div>
       <button id="feedsilo-hud-stop">STOP</button>

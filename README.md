@@ -1,6 +1,6 @@
-# FeedSilo
+# Scrollback
 
-FeedSilo is a self-hosted personal content intelligence app for saving tweets, threads, RSS articles, regular articles, media, and AI art prompts into a searchable private archive.
+Scrollback is a self-hosted personal content intelligence app for saving tweets, threads, RSS articles, regular articles, media, and AI art prompts into a searchable private archive.
 
 It gives you a browser-extension capture flow, a polished reading interface, full-text search, optional semantic search, AI classification, RSS syncing, and export APIs without handing your archive to a hosted third party.
 
@@ -9,7 +9,7 @@ Built with Next.js 16, React 18, Prisma 7, PostgreSQL/pgvector, SQLite, Tailwind
 ## Features
 
 - **One-click capture** - Save tweets, threads, articles, images, GIFs, and videos from the browser extension.
-- **RSS archive** - Add RSS or Atom feeds, sync them into your library, and read them in FeedSilo.
+- **RSS archive** - Add RSS or Atom feeds, sync them into your library, and read them in Scrollback.
 - **Hybrid search** - Combine keyword search with semantic vector search when pgvector and an AI provider are configured.
 - **AI enrichment** - Optional OpenAI or Gemini summaries, tags, categories, translations, image descriptions, and embeddings.
 - **Private media storage** - Store media in Cloudflare R2 or on local disk, with authenticated media proxy routes.
@@ -17,7 +17,7 @@ Built with Next.js 16, React 18, Prisma 7, PostgreSQL/pgvector, SQLite, Tailwind
 - **Admin tools** - Edit, delete, reprocess, backfill media, export data, manage pinned filters, and reveal/regenerate capture tokens.
 - **Remote query API** - Pull your archive into tools like Obsidian, OpenClaw, scripts, or local pipelines without exposing the database.
 - **Agent memory search** - Build a chunk-level Postgres/pgvector index for OpenClaw agents, direct SQL search, and the `/agent-search` web surface.
-- **Self-hosted privacy model** - No telemetry, no analytics, no central FeedSilo content service.
+- **Self-hosted privacy model** - No telemetry, no analytics, no central Scrollback content service.
 
 ## Quick Start
 
@@ -85,7 +85,7 @@ Environment variables override values from `feedsilo.config.json`.
 
 ### 1. Use Node 22
 
-FeedSilo is pinned to Node 22.x. Set your host, CI, Docker image, or runtime to Node 22 before installing dependencies.
+Scrollback is pinned to Node 22.x. Set your host, CI, Docker image, or runtime to Node 22 before installing dependencies.
 
 ### 2. Configure PostgreSQL
 
@@ -117,7 +117,7 @@ OPENAI_API_KEY=...
 R2_ACCOUNT_ID=...
 R2_ACCESS_KEY_ID=...
 R2_SECRET_ACCESS_KEY=...
-R2_BUCKET_NAME=feedsilo-media
+R2_BUCKET_NAME=scrollback-media
 ```
 
 ### 4. Build and start
@@ -132,7 +132,7 @@ npm run start
 
 ### 5. Browser extension
 
-In FeedSilo Settings, reveal or regenerate your capture token. Put your FeedSilo server URL and capture token into the FeedSilo Capture extension popup.
+In Scrollback Settings, reveal or regenerate your capture token. Put your Scrollback server URL and capture token into the Scrollback Capture extension popup.
 
 For local development, the server URL is usually:
 
@@ -177,7 +177,7 @@ Expected result for a clean launch branch:
 
 ## Security Notes
 
-- FeedSilo requires login for the app, settings, admin tools, media proxy routes, and user-scoped APIs.
+- Scrollback requires login for the app, settings, admin tools, media proxy routes, and user-scoped APIs.
 - Extension capture uses per-user bearer tokens. Store them like passwords.
 - RSS/article HTML is sanitized before display.
 - Server-side URL fetches reject local/private/reserved network targets.
@@ -187,13 +187,13 @@ Expected result for a clean launch branch:
 
 ## Remote Query API
 
-FeedSilo includes a read-only remote query endpoint for pulling content into external tools.
+Scrollback includes a read-only remote query endpoint for pulling content into external tools.
 
 Use your per-user capture token:
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CAPTURE_TOKEN" \
-  "https://your-feedsilo-domain/api/remote/items?per_page=100"
+  "https://your-scrollback-domain/api/remote/items?per_page=100"
 ```
 
 Supported filters include:
@@ -214,7 +214,7 @@ See [REMOTE_QUERY_API.md](REMOTE_QUERY_API.md) for full examples and response sh
 
 ## Agent Memory Search
 
-For agent-native retrieval, FeedSilo can maintain a separate chunk-level memory index beside the canonical archive. See [AGENT_MEMORY.md](AGENT_MEMORY.md) for backfill commands, direct SQL functions, read-only role grants, and the `/agent-search` interface.
+For agent-native retrieval, Scrollback can maintain a separate chunk-level memory index beside the canonical archive. See [AGENT_MEMORY.md](AGENT_MEMORY.md) for backfill commands, direct SQL functions, read-only role grants, and the `/agent-search` interface.
 
 ## Troubleshooting
 
@@ -240,7 +240,7 @@ These errors usually happen when dependencies were installed under one Node/runt
 
 ### Onboarding redirects to login
 
-If setup was completed but no admin account exists, open `/login`. FeedSilo will show the first-run admin creation form.
+If setup was completed but no admin account exists, open `/login`. Scrollback will show the first-run admin creation form.
 
 ### AI works locally but not in production
 

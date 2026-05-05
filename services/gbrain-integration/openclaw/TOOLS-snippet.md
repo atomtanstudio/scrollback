@@ -22,8 +22,8 @@ entry points:
 - Link/article/idea ingestion: `skills/idea-ingest/SKILL.md`
 - Maintenance and health: `skills/maintain/SKILL.md`
 
-Do not treat source URLs from FeedSilo as the only source of truth. For saved
-FeedSilo material, use the FeedSilo Memory Gateway and answer from captured
+Do not treat source URLs from Scrollback as the only source of truth. For saved
+Scrollback material, use the Scrollback Memory Gateway and answer from captured
 database text. Use GBrain for markdown-brain skills, routing, memory structure,
 and GBrain-specific runtime operations.
 
@@ -34,7 +34,7 @@ memory layer before answering questions about OpenClaw architecture, agent
 memory, business strategy, distribution, monetization, or durable project
 decisions.
 
-Use FeedSilo as the raw captured-source layer. Use GBrain as the distilled
+Use Scrollback as the raw captured-source layer. Use GBrain as the distilled
 playbook/knowledge layer.
 
 Current promoted GBrain pages:

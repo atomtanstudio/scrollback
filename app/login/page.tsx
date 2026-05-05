@@ -5,7 +5,7 @@ import { BrandWordmark } from "@/components/brand-wordmark";
 import { getConfig, isConfigured } from "@/lib/config";
 import { hasAdminUsers } from "@/lib/auth/bootstrap";
 
-export const metadata: Metadata = { title: "Login — FeedSilo" };
+export const metadata: Metadata = { title: "Login — Scrollback" };
 
 export default async function LoginPage() {
   let bootstrapMode = false;

@@ -1,14 +1,14 @@
-# FeedSilo Memory Gateway
+# Scrollback Memory Gateway
 
 Small read-only HTTP gateway for OpenClaw/Codex agents that need to search the
-FeedSilo archive without opening the FeedSilo web app.
+Scrollback archive without opening the Scrollback web app.
 
 The gateway:
 
 - accepts a bearer token
 - uses the read-only `openclaw_memory_reader` database role
 - embeds queries through the Legion WSL2 sidecar
-- calls FeedSilo's SQL search functions
+- calls Scrollback's SQL search functions
 - returns compact JSON with citations and chunk IDs
 
 ## Environment
@@ -60,7 +60,7 @@ The env file contains the gateway bearer token. Do not paste it into logs.
 Give agents:
 
 ```text
-Use the FeedSilo memory gateway before general web search. POST JSON to /search
+Use the Scrollback memory gateway before general web search. POST JSON to /search
 with a short natural-language query. Prefer hybrid search, keep dimensions at
 1536, and cite source_url values from the results. Use /item when you need the
 full saved content for a result.
@@ -97,7 +97,7 @@ For agent-facing answers, prefer the full captured-data path:
 node tools/feedsilo_memory_search.mjs check "agent memory search" --limit 3
 ```
 
-This attaches the full saved FeedSilo item to each result. Use source URLs as
+This attaches the full saved Scrollback item to each result. Use source URLs as
 citations, but answer from `chunk_text` and `item`, not from Twitter/X fetches.
 
 ## Fetch Full Item

@@ -73,7 +73,7 @@ export function ExtensionStep() {
       <StepBadge>Final step</StepBadge>
       <h2 className={onboardingHeadingClass}>Connect the browser extension</h2>
       <p className={`${onboardingSubheadingClass} mb-8 mt-4 max-w-[480px]`}>
-        The FeedSilo browser extension captures tweets, threads, and articles
+        The Scrollback browser extension captures tweets, threads, and articles
         with one click. Copy this token and paste it in the extension settings.
       </p>
 
@@ -93,7 +93,7 @@ export function ExtensionStep() {
           disabled={saving}
           className={onboardingPrimaryButtonClass}
         >
-          {saving ? "Finishing..." : "Open FeedSilo"}
+          {saving ? "Finishing..." : "Open Scrollback"}
         </button>
 
         <button onClick={handleSkip} className={onboardingTextButtonClass}>

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
             payloads.push(mapTweetToPayload(tweet, users, media, referencedTweets));
           } catch (err) {
             errors++;
-            console.error("FeedSilo: tweet map error:", err instanceof Error ? err.message : err);
+            console.error("Scrollback: tweet map error:", err instanceof Error ? err.message : err);
           }
         }
         detectSelfThreadsInBatch(payloads);
@@ -63,13 +63,13 @@ export async function POST(request: NextRequest) {
             else synced++;
           } catch (err) {
             errors++;
-            console.error("FeedSilo: tweet ingest error:", err instanceof Error ? err.message : err);
+            console.error("Scrollback: tweet ingest error:", err instanceof Error ? err.message : err);
           }
         }
       } catch (err) {
         // Batch-level failure — all IDs need DOM fallback
         missingIds.push(...batch);
-        console.error("FeedSilo: batch fetch error:", err instanceof Error ? err.message : err);
+        console.error("Scrollback: batch fetch error:", err instanceof Error ? err.message : err);
       }
     }
 

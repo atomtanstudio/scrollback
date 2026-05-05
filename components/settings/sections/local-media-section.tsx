@@ -84,7 +84,7 @@ export function LocalMediaSection({ settings, onRefresh }: LocalMediaSectionProp
             type="text"
             value={path}
             onChange={e => { setPath(e.target.value); setSaved(false); }}
-            placeholder="/home/user/feedsilo-media"
+            placeholder="/home/user/scrollback-media"
             className="h-9 rounded-[12px] border border-[#d6c9b214] bg-[#0f141b] px-3 text-sm text-[#f2ede5] font-mono placeholder:text-[#4a4540] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
           />
           <p className="text-[10px] text-[#8a8174]">

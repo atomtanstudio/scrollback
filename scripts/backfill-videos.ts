@@ -79,7 +79,7 @@ async function downloadAndUpload(
   try {
     const response = await fetch(originalUrl, {
       signal: controller.signal,
-      headers: { "User-Agent": "FeedSilo/1.0" },
+      headers: { "User-Agent": "Scrollback/1.0" },
     });
     clearTimeout(timeout);
 
