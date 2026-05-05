@@ -1,15 +1,15 @@
 # Scrollback
 
-Scrollback is a self-hosted personal content intelligence app for saving tweets, threads, RSS articles, regular articles, media, and AI art prompts into a searchable private archive.
+Scrollback is a self-hosted personal archive for saving X/Twitter posts, threads, linked article cards, RSS items, media, and AI art prompts into a searchable private library.
 
-It gives you a browser-extension capture flow, a polished reading interface, full-text search, optional semantic search, AI classification, RSS syncing, and export APIs without handing your archive to a hosted third party.
+It gives you a browser-extension capture flow for X/Twitter, RSS syncing, a polished reading interface, full-text search, optional semantic search, AI enrichment, and export APIs without handing your archive to a hosted third party.
 
 Built with Next.js 16, React 18, Prisma 7, PostgreSQL/pgvector, SQLite, Tailwind CSS, and optional OpenAI or Google Gemini AI providers.
 
 ## Features
 
-- **One-click capture** - Save tweets, threads, articles, images, GIFs, and videos from the browser extension.
-- **RSS archive** - Add RSS or Atom feeds, sync them into your library, and read them in Scrollback.
+- **One-click X/Twitter capture** - Save posts, threads, linked article metadata, images, GIFs, and videos from the browser extension.
+- **RSS archive** - Add RSS or Atom feeds, sync readable entries into your library, and read them in Scrollback.
 - **Hybrid search** - Combine keyword search with semantic vector search when pgvector and an AI provider are configured.
 - **AI enrichment** - Optional OpenAI or Gemini summaries, tags, categories, translations, image descriptions, and embeddings.
 - **Private media storage** - Store media in Cloudflare R2 or on local disk, with authenticated media proxy routes.
@@ -18,6 +18,15 @@ Built with Next.js 16, React 18, Prisma 7, PostgreSQL/pgvector, SQLite, Tailwind
 - **Remote query API** - Pull your archive into tools like Obsidian, OpenClaw, scripts, or local pipelines without exposing the database.
 - **Agent memory search** - Build a chunk-level Postgres/pgvector index for OpenClaw agents, direct SQL search, and the `/agent-search` web surface.
 - **Self-hosted privacy model** - No telemetry, no analytics, no central Scrollback content service.
+
+## Current Scope
+
+Scrollback is focused on two capture paths:
+
+- X/Twitter capture through the Scrollback Capture browser extension.
+- RSS/Atom ingestion through the web app.
+
+It can enrich linked article cards and some long-form X article content when that data is available in the page or X API responses, but it is not meant to be a universal web clipper yet.
 
 ## Quick Start
 
@@ -49,7 +58,7 @@ The onboarding wizard does the same setup work you can do manually:
 6. Optionally save an X API bearer token.
 7. Generate and save a browser-extension pairing token.
 
-Admin account creation is required. AI provider, X API, and extension pairing can all be configured later from Settings.
+Admin account creation is required. AI provider, X API, RSS feeds, local/R2 media storage, and extension pairing can all be configured later from Settings.
 
 ## Configuration
 
@@ -132,7 +141,7 @@ npm run start
 
 ### 5. Browser extension
 
-In Scrollback Settings, reveal or regenerate your capture token. Put your Scrollback server URL and capture token into the Scrollback Capture extension popup.
+Load the extension from the `extension/` directory during development. In Scrollback Settings, reveal or regenerate your capture token. Put your Scrollback server URL and capture token into the Scrollback Capture extension popup.
 
 For local development, the server URL is usually:
 
@@ -140,7 +149,7 @@ For local development, the server URL is usually:
 http://localhost:3000
 ```
 
-For production, use your deployed HTTPS origin.
+For production, use your deployed HTTPS origin. After code changes in `extension/`, reload the unpacked extension in your browser.
 
 ## Scripts
 
@@ -156,6 +165,9 @@ For production, use your deployed HTTPS origin.
 | `npm run start` | Run migrations/setup helpers and start production server |
 | `npm run db:push` | Push the schema for the configured database |
 | `npm run prisma:generate` | Generate PostgreSQL and SQLite Prisma clients |
+| `npm run agent-memory:backfill` | Build the optional agent-memory chunk/vector index |
+| `npm run agent-memory:search` | Search the optional agent-memory index from the CLI |
+| `npm run agent-memory:gateway` | Query the optional Scrollback memory gateway helper |
 
 ## Verification Before Launch
 
@@ -179,6 +191,7 @@ Expected result for a clean launch branch:
 
 - Scrollback requires login for the app, settings, admin tools, media proxy routes, and user-scoped APIs.
 - Extension capture uses per-user bearer tokens. Store them like passwords.
+- Extension settings are stored locally in the browser.
 - RSS/article HTML is sanitized before display.
 - Server-side URL fetches reject local/private/reserved network targets.
 - R2/local media routes check ownership before serving stored media.

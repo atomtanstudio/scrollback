@@ -10,17 +10,17 @@ Scrollback Capture
 
 ## Short Description (132 char max)
 
-Capture tweets, threads, and articles from X/Twitter to your self-hosted Scrollback knowledge base.
+Capture X/Twitter posts, threads, media, and linked article cards to your self-hosted Scrollback archive.
 
 ## Detailed Description
 
-Scrollback Capture lets you save tweets, full threads, and linked articles from X (formerly Twitter) directly into your own Scrollback instance — a self-hosted, searchable knowledge base.
+Scrollback Capture lets you save X/Twitter posts, full threads, media, and linked article metadata directly into your own Scrollback instance.
 
 **One-Click Capture**
-See a tweet worth saving? Click the Scrollback button that appears on every tweet to capture it instantly — including text, images, videos, GIFs, and linked articles.
+See a post worth saving? Click the Scrollback button that appears on X/Twitter posts to capture it instantly, including text, images, videos, GIFs, and linked article cards when available.
 
 **Full Thread Capture**
-When you capture a tweet that's part of a conversation, Scrollback automatically fetches and saves the entire thread so you never lose context.
+When you capture a post that's part of a conversation, Scrollback can save thread context so you do not lose the surrounding discussion.
 
 **Bulk Capture**
 Open your Likes or Bookmarks page and capture everything at once. Scrollback Capture supports two bulk modes:
@@ -28,7 +28,7 @@ Open your Likes or Bookmarks page and capture everything at once. Scrollback Cap
 • X API mode — uses your X API bearer token for faster, more reliable bulk capture
 
 **Article Resolution**
-Tweets that link to articles are enriched with the article title, preview text, and link card image — all saved alongside the tweet.
+Posts that link to articles are enriched with the article title, preview text, and link card image when X exposes that data.
 
 **Self-Hosted & Private**
 Your data goes to your Scrollback server and nowhere else. No analytics, no telemetry, no third-party data collection. You own your data.
@@ -38,7 +38,7 @@ Your data goes to your Scrollback server and nowhere else. No analytics, no tele
 2. Enter your Scrollback server URL and pairing token in the popup
 3. Navigate to x.com and start capturing
 
-Scrollback is open source. Learn more at https://scrollback.local
+Scrollback is open source. Add your project URL here before submitting the listing.
 
 ## Category
 
@@ -92,9 +92,9 @@ Capture these for your 1280x800 store screenshots:
 
 When filling out the "Privacy practices" tab:
 
-- **Single purpose description**: "Captures tweets, threads, and articles from X/Twitter and sends them to the user's self-hosted Scrollback server."
+- **Single purpose description**: "Captures X/Twitter posts, threads, media, and linked article cards and sends them to the user's self-hosted Scrollback server."
 - Does the extension collect or transmit data to the developer? **No** — user-directed captured content is sent only to the user's configured Scrollback server.
 - Does the extension use remote code? **No**
 - Certify data use disclosures: **Yes**
 
-Privacy policy URL: https://scrollback.local/privacy-policy
+Privacy policy URL: replace with the deployed Scrollback privacy policy URL before submission.
