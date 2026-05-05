@@ -126,6 +126,7 @@ NODE_ENV=production
 Recommended additions:
 
 ```bash
+SCROLLBACK_SETUP_TOKEN=...
 OPENAI_API_KEY=...
 R2_ACCOUNT_ID=...
 R2_ACCESS_KEY_ID=...
@@ -141,7 +142,7 @@ npm run build
 npm run start
 ```
 
-`npm run start` applies the configured database schema, ensures users/categories, and starts Next.js. If no admin exists, open `/login` and create the first admin account.
+`npm run start` applies the configured database schema, ensures users/categories, and starts Next.js. If no admin exists, open `/login` and create the first admin account. First-run admin creation requires `SCROLLBACK_SETUP_TOKEN` or the generated `.scrollback-setup-token` file.
 
 ### 5. Browser extension
 
@@ -190,6 +191,18 @@ Expected result for a clean launch branch:
 - tests pass
 - production build passes
 - audit reports `found 0 vulnerabilities`
+
+See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for the full release checklist.
+
+## Known Limitations
+
+- X/Twitter capture is best-effort. X changes its markup and article surfaces
+  frequently, so some long-form article layouts or media ordering can require
+  extension updates.
+- Scrollback is not a universal web clipper yet. The current release focuses on
+  X/Twitter capture and RSS/Atom ingestion.
+- SQLite is excellent for local evaluation and personal archives, but semantic
+  vector search requires PostgreSQL/Supabase with pgvector.
 
 ## Security Notes
 

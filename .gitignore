@@ -6,6 +6,7 @@
 # launch/local artifacts
 .agents/
 backups/
+dist/
 demo-video/
 design-explorations/
 docs/superpowers/

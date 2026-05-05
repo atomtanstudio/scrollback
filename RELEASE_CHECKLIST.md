@@ -1,0 +1,36 @@
+# Scrollback Release Checklist
+
+Use this before tagging or publishing the open-source release.
+
+## Code Readiness
+
+- [ ] Merge the release branch into `dev`.
+- [ ] Run `npm run verify`.
+- [ ] Run `npm audit --audit-level=moderate`.
+- [ ] Smoke-test a fresh first-run setup with `SCROLLBACK_SETUP_TOKEN`.
+- [ ] Capture one X/Twitter post with media through the extension.
+- [ ] Add and sync one RSS feed.
+- [ ] Export or query a saved item through the remote query API.
+
+## Repository Readiness
+
+- [ ] Rename or create the public GitHub repository for Scrollback.
+- [ ] Confirm README links point to the public repository.
+- [ ] Confirm `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`, and `CHANGELOG.md` are present.
+- [ ] Confirm the release branch is merged into `main`.
+- [ ] Create a GitHub release/tag.
+
+## Extension Readiness
+
+- [ ] Reload the unpacked extension from `extension/` and test capture.
+- [ ] Zip the extension folder for upload.
+- [ ] Add Chrome Web Store screenshots.
+- [ ] Add the public project URL in the store listing.
+- [ ] Add the public privacy policy URL in the store listing.
+- [ ] Review Chrome Web Store privacy practice answers.
+
+## Launch Assets
+
+- [ ] Capture 2-4 clean product screenshots.
+- [ ] Create a launch image or short demo clip.
+- [ ] Write the launch post with the project URL, scope, and known limitations.

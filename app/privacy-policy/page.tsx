@@ -11,7 +11,7 @@ export default function PrivacyPolicyPage() {
       <h1 className="font-heading text-3xl font-semibold tracking-tight text-[#f2ede5] mb-2">
         Privacy Policy
       </h1>
-      <p className="text-sm text-[#7d7569] mb-10">Last updated: April 26, 2026</p>
+      <p className="text-sm text-[#7d7569] mb-10">Last updated: May 5, 2026</p>
 
       <div className="space-y-8 text-[15px] leading-relaxed">
         <section>
@@ -138,14 +138,8 @@ export default function PrivacyPolicyPage() {
         <section>
           <h2 className="font-heading text-lg font-semibold text-[#f2ede5] mb-3">Contact</h2>
           <p>
-            If you have questions about this privacy policy, contact us at{" "}
-            <a
-              href="mailto:hello@scrollback.local"
-              className="text-[#b89462] hover:text-[#f0cf9f] transition-colors"
-            >
-              hello@scrollback.local
-            </a>
-            .
+            If you have questions about this privacy policy, open an issue in the public
+            Scrollback repository once it is available.
           </p>
         </section>
       </div>

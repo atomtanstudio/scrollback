@@ -14,13 +14,13 @@ Capture X/Twitter posts, threads, media, and linked article cards to your self-h
 
 ## Detailed Description
 
-Scrollback Capture lets you save X/Twitter posts, full threads, media, and linked article metadata directly into your own Scrollback instance.
+Scrollback Capture lets you save X/Twitter posts, threads, media, and linked article metadata directly into your own Scrollback instance.
 
 **One-Click Capture**
 See a post worth saving? Click the Scrollback button that appears on X/Twitter posts to capture it instantly, including text, images, videos, GIFs, and linked article cards when available.
 
-**Full Thread Capture**
-When you capture a post that's part of a conversation, Scrollback can save thread context so you do not lose the surrounding discussion.
+**Thread Capture**
+When you capture a post that's part of a thread or conversation, Scrollback can save available thread context so you do not lose the surrounding discussion.
 
 **Bulk Capture**
 Open your Likes or Bookmarks page and capture everything at once. Scrollback Capture supports two bulk modes:
@@ -38,7 +38,7 @@ Your data goes to your Scrollback server and nowhere else. No analytics, no tele
 2. Enter your Scrollback server URL and pairing token in the popup
 3. Navigate to x.com and start capturing
 
-Scrollback is open source. Add your project URL here before submitting the listing.
+Scrollback is open source. Add the public repository URL before submitting the listing.
 
 ## Category
 
@@ -97,4 +97,4 @@ When filling out the "Privacy practices" tab:
 - Does the extension use remote code? **No**
 - Certify data use disclosures: **Yes**
 
-Privacy policy URL: replace with the deployed Scrollback privacy policy URL before submission.
+Privacy policy URL: use the public URL for Scrollback's privacy policy before submission.
