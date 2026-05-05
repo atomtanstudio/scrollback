@@ -1,4 +1,4 @@
-title = "FeedSilo gitleaks config"
+title = "Scrollback gitleaks config"
 
 [extend]
 useDefault = true

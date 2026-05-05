@@ -52,8 +52,9 @@ of scope for the current open-source release.
 - Keep changes focused and consistent with existing patterns.
 - Add tests for security-sensitive behavior, parsing, ingestion, and data
   ownership logic.
-- Do not commit `.env`, `.env.local`, `.scrollback-setup-token`, local database
-  files, media files, screenshots, or generated build artifacts.
+- Do not commit `.env`, `.env.local`, `scrollback.config.json`,
+  `.scrollback-setup-token`, local database files, media files, screenshots, or
+  generated build artifacts.
 - Treat capture tokens, API keys, database URLs, and OAuth credentials as
   secrets.
 

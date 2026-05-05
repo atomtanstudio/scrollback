@@ -15,8 +15,10 @@ Use this before tagging or publishing the open-source release.
 ## Repository Readiness
 
 - [ ] Rename or create the public GitHub repository for Scrollback.
+- [ ] Confirm the local `origin` remote points to the public Scrollback repository.
 - [ ] Confirm README links point to the public repository.
 - [ ] Confirm `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`, and `CHANGELOG.md` are present.
+- [ ] Confirm no tracked local artifacts, launch scratch files, or old project-name assets remain.
 - [ ] Confirm the release branch is merged into `main`.
 - [ ] Create a GitHub release/tag.
 

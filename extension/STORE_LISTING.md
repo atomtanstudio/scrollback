@@ -38,7 +38,7 @@ Your data goes to your Scrollback server and nowhere else. No analytics, no tele
 2. Enter your Scrollback server URL and pairing token in the popup
 3. Navigate to x.com and start capturing
 
-Scrollback is open source. Add the public repository URL before submitting the listing.
+Scrollback is open source: https://github.com/atomtanstudio/scrollback
 
 ## Category
 
