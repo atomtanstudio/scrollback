@@ -88,7 +88,6 @@ Environment variables override values from `scrollback.config.json`.
 | `XAPI_CLIENT_SECRET` | No | X OAuth 2.0 client secret |
 | `XAPI_ENCRYPTION_KEY` | No | 32-byte hex key for encrypted X OAuth token storage |
 | `DEMO_EMAIL`, `DEMO_PASSWORD` | No | Creates a read-only demo user at startup |
-| `WAITLIST_NOTIFY_EMAIL` | No | Enables server log notification that a waitlist signup happened |
 
 ## Production Deploy
 

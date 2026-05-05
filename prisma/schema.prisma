@@ -231,11 +231,3 @@ model User {
 
   @@map("users")
 }
-
-model WaitlistEntry {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email      String   @unique @db.Text
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-
-  @@map("waitlist_entries")
-}

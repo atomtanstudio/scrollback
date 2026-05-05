@@ -6,7 +6,7 @@
 
 **Why:** The codebase is now rebranded, but the launch still needs a clean project URL, screenshots, a short demo clip or launch image, and a final extension listing/privacy-policy pass.
 
-**Context:** The old waitlist-rate-limit TODO is complete; `/api/waitlist` now has an in-memory IP rate limiter. This replacement TODO tracks the remaining release-facing polish.
+**Context:** The old hosted-cloud signup flow has been removed. This TODO tracks the remaining release-facing polish.
 
 **Depends on:** README/store listing copy, project URL, and visual assets.
 

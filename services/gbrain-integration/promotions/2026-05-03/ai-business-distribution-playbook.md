@@ -29,7 +29,7 @@ The strongest saved material points to three money paths:
 
 The Elijah Khan article is the most directly applicable business source. It
 argues that before building harder, the founder should validate the problem,
-interview users, build a waitlist, and keep the market warm before launch. It
+interview users, build an early-interest list, and keep the market warm before launch. It
 then shows OpenClaw as the orchestration layer for a content/distribution system
 that connects Notion and Postiz.
 

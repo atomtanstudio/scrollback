@@ -24,9 +24,7 @@ const PUBLIC_API_PATHS = [
 ];
 
 // POST routes accessible without authentication
-const PUBLIC_POST_PATHS = [
-  "/api/waitlist",
-];
+const PUBLIC_POST_PATHS: string[] = [];
 
 // GET routes that trigger mutations or expensive operations — admin only
 const ADMIN_ONLY_GET_PATHS = [
@@ -107,7 +105,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Public POST paths — allow without auth (e.g., waitlist form)
+  // Public POST paths — allow without auth
   if (matchAny(pathname, PUBLIC_POST_PATHS) && method === "POST") {
     return NextResponse.next();
   }
@@ -134,7 +132,6 @@ export async function proxy(request: NextRequest) {
   const isPublicPage =
     pathname === "/login" ||
     pathname.startsWith("/onboarding") ||
-    pathname === "/waitlist" ||
     pathname === "/privacy-policy";
   const isPage = !pathname.startsWith("/api/");
 

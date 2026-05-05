@@ -14,7 +14,7 @@ const PUBLIC_API_PATHS = [
   "/api/auth/", "/api/setup/", "/api/admin/setup", "/api/stats",
   "/api/items", "/api/search", "/api/r2/", "/api/local-media/",
 ];
-const PUBLIC_POST_PATHS = ["/api/waitlist"];
+const PUBLIC_POST_PATHS: string[] = [];
 const ADMIN_ONLY_GET_PATHS = [
   "/api/backfill/", "/api/media/backfill", "/api/media/local-backfill",
   "/api/embeddings/", "/api/search/reindex", "/api/data/", "/api/export",
@@ -223,8 +223,8 @@ describe("Middleware role enforcement", () => {
   });
 
   describe("Unauthenticated requests", () => {
-    it("allows POST to /api/waitlist (public POST)", () => {
-      expect(simulateMiddleware("/api/waitlist", "POST", null).action).toBe("next");
+    it("returns 401 for the retired signup API", () => {
+      expect(simulateMiddleware("/api/retired-signup", "POST", null).status).toBe(401);
     });
 
     it("redirects protected page to /login", () => {

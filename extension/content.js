@@ -2029,7 +2029,7 @@ if (document.body) {
 
 
 // --- Thread Detection ---
-// Adapted from PromptSilo: skip reply tweets during bulk capture
+// Skip reply tweets during bulk capture
 function isThreadReply(tweetElement) {
   // Check for visual thread connector line
   const cell = tweetElement.closest('[data-testid="cellInnerDiv"]');
