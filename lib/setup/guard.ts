@@ -3,20 +3,36 @@ import { auth } from "@/lib/auth/auth";
 import { getClient } from "@/lib/db/client";
 import { getConfig, isConfigured } from "@/lib/config";
 import { sanitizeErrorMessage } from "@/lib/security/redact";
+import { getProvidedSetupToken, getSetupTokenHint, isValidSetupToken } from "@/lib/setup/token";
 
 type SetupGuardOptions = {
   allowAdmin?: boolean;
 };
 
 export async function requireSetupUnlocked(
+  request?: Request | null,
   options: SetupGuardOptions = {}
 ): Promise<NextResponse | null> {
-  if (!isConfigured(getConfig())) return null;
+  const token = getProvidedSetupToken(request);
+
+  if (!isConfigured(getConfig())) {
+    if (isValidSetupToken(token)) return null;
+    return NextResponse.json(
+      { success: false, error: `Setup token required. ${getSetupTokenHint()}` },
+      { status: 403 }
+    );
+  }
 
   try {
     const db = await getClient();
     const userCount = await db.user.count();
-    if (userCount === 0) return null;
+    if (userCount === 0) {
+      if (isValidSetupToken(token)) return null;
+      return NextResponse.json(
+        { success: false, error: `Setup token required. ${getSetupTokenHint()}` },
+        { status: 403 }
+      );
+    }
 
     if (options.allowAdmin) {
       const session = await auth();

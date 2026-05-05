@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 import { BrandWordmark } from "@/components/brand-wordmark";
 import {
   onboardingHeadingClass,
+  onboardingInputClass,
+  onboardingLabelClass,
   onboardingNoteClass,
   onboardingPanelClass,
   onboardingPrimaryButtonClass,
@@ -11,10 +13,16 @@ import {
 } from "../ui";
 
 interface WelcomeStepProps {
+  setupToken: string;
+  onSetupTokenChange: (token: string) => void;
   onContinue: () => void;
 }
 
-export function WelcomeStep({ onContinue }: WelcomeStepProps) {
+export function WelcomeStep({
+  setupToken,
+  onSetupTokenChange,
+  onContinue,
+}: WelcomeStepProps) {
   return (
     <div className="flex flex-col items-center text-center">
       <BrandWordmark className="mb-4 text-[32px] font-semibold tracking-tight text-[#f2ede5]" />
@@ -103,7 +111,26 @@ export function WelcomeStep({ onContinue }: WelcomeStepProps) {
         </div>
       </div>
 
-      <button onClick={onContinue} className={onboardingPrimaryButtonClass}>
+      <div className="mb-6 w-full max-w-[440px] text-left">
+        <label className={onboardingLabelClass}>Setup token</label>
+        <input
+          type="password"
+          value={setupToken}
+          onChange={(event) => onSetupTokenChange(event.target.value)}
+          placeholder="Paste your server setup token"
+          className={onboardingInputClass}
+        />
+        <p className={`${onboardingNoteClass} mt-2`}>
+          Find it in SCROLLBACK_SETUP_TOKEN or in .scrollback-setup-token on
+          the server.
+        </p>
+      </div>
+
+      <button
+        onClick={onContinue}
+        disabled={!setupToken.trim()}
+        className={`${onboardingPrimaryButtonClass} disabled:cursor-default disabled:opacity-30`}
+      >
         Get Started
       </button>
 

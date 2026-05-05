@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import { getClient } from "@/lib/db/client";
+import { isValidSetupToken } from "@/lib/setup/token";
 
 export async function hasAdminUsers(): Promise<boolean> {
   const db = await getClient();
@@ -8,7 +9,11 @@ export async function hasAdminUsers(): Promise<boolean> {
   return count > 0;
 }
 
-export async function createInitialAdmin(email: string, password: string) {
+export async function createInitialAdmin(email: string, password: string, setupToken: string) {
+  if (!isValidSetupToken(setupToken)) {
+    throw new Error("Setup token required");
+  }
+
   const db = await getClient();
   const existingCount = await db.user.count();
 

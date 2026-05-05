@@ -48,7 +48,7 @@ async function testOpenAI(apiKey: string): Promise<void> {
 
 export async function POST(request: NextRequest) {
   try {
-    const locked = await requireSetupUnlocked({ allowAdmin: true });
+    const locked = await requireSetupUnlocked(request, { allowAdmin: true });
     if (locked) return locked;
 
     const { apiKey, provider } = await request.json();

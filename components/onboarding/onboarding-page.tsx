@@ -13,6 +13,7 @@ import { ExtensionStep } from "./steps/extension-step";
 
 const STORAGE_KEY = "scrollback-onboarding-step";
 const DB_STORAGE_KEY = "scrollback-onboarding-db";
+const SETUP_TOKEN_STORAGE_KEY = "scrollback-setup-token";
 
 const slideVariants = {
   enter: (direction: number) => ({
@@ -38,14 +39,17 @@ export function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
   const [dbChoice, setDbChoice] = useState<DatabaseChoice | null>(null);
+  const [setupToken, setSetupToken] = useState("");
   const [mounted, setMounted] = useState(false);
 
   // Hydrate from sessionStorage
   useEffect(() => {
     const savedStep = sessionStorage.getItem(STORAGE_KEY);
     const savedDb = sessionStorage.getItem(DB_STORAGE_KEY);
+    const savedSetupToken = sessionStorage.getItem(SETUP_TOKEN_STORAGE_KEY);
     if (savedStep) setStep(parseInt(savedStep, 10));
     if (savedDb) setDbChoice(savedDb as DatabaseChoice);
+    if (savedSetupToken) setSetupToken(savedSetupToken);
     setMounted(true);
   }, []);
 
@@ -54,8 +58,9 @@ export function OnboardingPage() {
     if (mounted) {
       sessionStorage.setItem(STORAGE_KEY, String(step));
       if (dbChoice) sessionStorage.setItem(DB_STORAGE_KEY, dbChoice);
+      if (setupToken) sessionStorage.setItem(SETUP_TOKEN_STORAGE_KEY, setupToken);
     }
-  }, [step, dbChoice, mounted]);
+  }, [step, dbChoice, setupToken, mounted]);
 
   const goNext = useCallback(() => {
     setDirection(1);
@@ -92,7 +97,13 @@ export function OnboardingPage() {
           exit="exit"
           transition={slideTransition}
         >
-          {step === 1 && <WelcomeStep onContinue={goNext} />}
+          {step === 1 && (
+            <WelcomeStep
+              setupToken={setupToken}
+              onSetupTokenChange={setSetupToken}
+              onContinue={goNext}
+            />
+          )}
           {step === 2 && (
             <DatabaseStep
               selected={dbChoice}
@@ -101,9 +112,13 @@ export function OnboardingPage() {
             />
           )}
           {step === 3 && dbChoice && (
-            <ConfigureStep dbType={dbChoice} onContinue={goNext} />
+            <ConfigureStep
+              dbType={dbChoice}
+              setupToken={setupToken}
+              onContinue={goNext}
+            />
           )}
-          {step === 4 && <AccountStep onContinue={goNext} />}
+          {step === 4 && <AccountStep setupToken={setupToken} onContinue={goNext} />}
           {step === 5 && <GeminiStep onContinue={goNext} />}
           {step === 6 && <XApiStep onContinue={goNext} />}
           {step === 7 && <ExtensionStep />}

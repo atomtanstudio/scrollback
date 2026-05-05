@@ -4,6 +4,7 @@ const mockFindUnique = vi.fn();
 const mockUpdate = vi.fn();
 const mockUpsert = vi.fn();
 const mockIngestItem = vi.fn();
+const mockSafeFetch = vi.fn();
 
 vi.mock("dns/promises", () => ({
   lookup: vi.fn(async () => [{ address: "93.184.216.34", family: 4 }]),
@@ -21,6 +22,10 @@ vi.mock("@/lib/db/client", () => ({
 
 vi.mock("@/lib/ingest", () => ({
   ingestItem: (...args: unknown[]) => mockIngestItem(...args),
+}));
+
+vi.mock("@/lib/security/safe-fetch", () => ({
+  safeFetch: (...args: unknown[]) => mockSafeFetch(...args),
 }));
 
 const feedXml = `<?xml version="1.0" encoding="UTF-8" ?>
@@ -78,23 +83,21 @@ describe("syncRssFeed", () => {
     mockUpdate.mockReset();
     mockUpsert.mockReset();
     mockIngestItem.mockReset();
+    mockSafeFetch.mockReset();
     vi.unstubAllGlobals();
   });
 
   it("does not store feed validators before any items are imported", async () => {
     mockUpsert.mockResolvedValue({ id: "feed-1", title: "Example Feed" });
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () =>
-        new Response(feedXml, {
-          status: 200,
-          headers: {
-            "content-type": "application/rss+xml",
-            etag: '"metadata-only-validator"',
-            "last-modified": "Sat, 25 Apr 2026 09:00:00 GMT",
-          },
-        })
-      )
+    mockSafeFetch.mockResolvedValueOnce(
+      new Response(feedXml, {
+        status: 200,
+        headers: {
+          "content-type": "application/rss+xml",
+          etag: '"metadata-only-validator"',
+          "last-modified": "Sat, 25 Apr 2026 09:00:00 GMT",
+        },
+      })
     );
 
     const { createRssFeed } = await import("@/lib/rss/service");
@@ -132,8 +135,7 @@ describe("syncRssFeed", () => {
     mockUpdate.mockResolvedValue({});
     mockIngestItem.mockResolvedValue({ success: true, already_exists: false, item_id: "item-1" });
 
-    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
-      const href = typeof url === "string" ? url : url instanceof URL ? url.href : url.url;
+    mockSafeFetch.mockImplementation(async (href: string, init?: RequestInit) => {
       if (href === "https://example.com/feed.xml") {
         if (
           hasHeader(init?.headers, "if-none-match") ||
@@ -157,7 +159,6 @@ describe("syncRssFeed", () => {
         headers: { "content-type": "text/html" },
       });
     });
-    vi.stubGlobal("fetch", fetchMock);
 
     const { syncRssFeed } = await import("@/lib/rss/service");
 
@@ -165,7 +166,7 @@ describe("syncRssFeed", () => {
 
     expect(result).toMatchObject({ synced: 1, skipped: 0, errors: 0, notModified: false });
     expect(mockIngestItem).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith(
+    expect(mockSafeFetch).toHaveBeenCalledWith(
       "https://example.com/feed.xml",
       expect.objectContaining({
         headers: expect.not.objectContaining({
@@ -197,23 +198,19 @@ describe("syncRssFeed", () => {
       return 0;
     }) as typeof setTimeout);
 
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (url: string | URL | Request) => {
-        const href = typeof url === "string" ? url : url instanceof URL ? url.href : url.url;
-        if (href === "https://example.com/feed.xml") {
-          return new Response(buildFeedXml(25), {
-            status: 200,
-            headers: { "content-type": "application/rss+xml" },
-          });
-        }
-
-        return new Response("<html><body><article><p>Full article body.</p></article></body></html>", {
+    mockSafeFetch.mockImplementation(async (href: string) => {
+      if (href === "https://example.com/feed.xml") {
+        return new Response(buildFeedXml(25), {
           status: 200,
-          headers: { "content-type": "text/html" },
+          headers: { "content-type": "application/rss+xml" },
         });
-      })
-    );
+      }
+
+      return new Response("<html><body><article><p>Full article body.</p></article></body></html>", {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      });
+    });
 
     const { syncRssFeed } = await import("@/lib/rss/service");
 

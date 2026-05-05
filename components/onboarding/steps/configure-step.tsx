@@ -16,10 +16,18 @@ import {
 
 interface ConfigureStepProps {
   dbType: DatabaseChoice;
+  setupToken: string;
   onContinue: () => void;
 }
 
-export function ConfigureStep({ dbType, onContinue }: ConfigureStepProps) {
+function setupHeaders(setupToken: string): HeadersInit {
+  return {
+    "Content-Type": "application/json",
+    "x-scrollback-setup-token": setupToken,
+  };
+}
+
+export function ConfigureStep({ dbType, setupToken, onContinue }: ConfigureStepProps) {
   return (
     <div className="flex flex-col items-center">
       <StepBadge tone="recommended">Connection</StepBadge>
@@ -32,9 +40,9 @@ export function ConfigureStep({ dbType, onContinue }: ConfigureStepProps) {
         {dbType === "supabase" && "Enter your Supabase project details"}
       </p>
 
-      {dbType === "sqlite" && <SqliteForm onContinue={onContinue} />}
-      {dbType === "postgresql" && <PostgresForm onContinue={onContinue} />}
-      {dbType === "supabase" && <SupabaseForm onContinue={onContinue} />}
+      {dbType === "sqlite" && <SqliteForm setupToken={setupToken} onContinue={onContinue} />}
+      {dbType === "postgresql" && <PostgresForm setupToken={setupToken} onContinue={onContinue} />}
+      {dbType === "supabase" && <SupabaseForm setupToken={setupToken} onContinue={onContinue} />}
     </div>
   );
 }
@@ -69,7 +77,7 @@ function InputField({
   );
 }
 
-function SqliteForm({ onContinue }: { onContinue: () => void }) {
+function SqliteForm({ setupToken, onContinue }: { setupToken: string; onContinue: () => void }) {
   const [filePath, setFilePath] = useState("./scrollback.db");
   const [migrating, setMigrating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +88,7 @@ function SqliteForm({ onContinue }: { onContinue: () => void }) {
     try {
       const res = await fetch("/api/setup/migrate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: setupHeaders(setupToken),
         body: JSON.stringify({
           database: { type: "sqlite", url: `file:${filePath}` },
         }),
@@ -125,7 +133,7 @@ function SqliteForm({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-function PostgresForm({ onContinue }: { onContinue: () => void }) {
+function PostgresForm({ setupToken, onContinue }: { setupToken: string; onContinue: () => void }) {
   const [connectionString, setConnectionString] = useState("");
   const [showFields, setShowFields] = useState(false);
   const [host, setHost] = useState("");
@@ -152,7 +160,7 @@ function PostgresForm({ onContinue }: { onContinue: () => void }) {
     const url = getConnectionUrl();
     const res = await fetch("/api/setup/test-connection", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: setupHeaders(setupToken),
       body: JSON.stringify({ type: "postgresql", url }),
     });
     const data = await res.json();
@@ -167,7 +175,7 @@ function PostgresForm({ onContinue }: { onContinue: () => void }) {
       const url = getConnectionUrl();
       const res = await fetch("/api/setup/migrate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: setupHeaders(setupToken),
         body: JSON.stringify({
           database: { type: "postgresql", url },
         }),
@@ -269,7 +277,7 @@ function PostgresForm({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-function SupabaseForm({ onContinue }: { onContinue: () => void }) {
+function SupabaseForm({ setupToken, onContinue }: { setupToken: string; onContinue: () => void }) {
   const [connectionString, setConnectionString] = useState("");
   const [tested, setTested] = useState(false);
   const [migrating, setMigrating] = useState(false);
@@ -278,7 +286,7 @@ function SupabaseForm({ onContinue }: { onContinue: () => void }) {
   const handleTest = async () => {
     const res = await fetch("/api/setup/test-connection", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: setupHeaders(setupToken),
       body: JSON.stringify({ type: "supabase", url: connectionString }),
     });
     const data = await res.json();
@@ -292,7 +300,7 @@ function SupabaseForm({ onContinue }: { onContinue: () => void }) {
     try {
       const res = await fetch("/api/setup/migrate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: setupHeaders(setupToken),
         body: JSON.stringify({
           database: { type: "supabase", url: connectionString },
         }),

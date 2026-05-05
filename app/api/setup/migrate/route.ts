@@ -107,7 +107,7 @@ const requestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const locked = await requireSetupUnlocked();
+    const locked = await requireSetupUnlocked(request, { allowAdmin: true });
     if (locked) return locked;
 
     const body = await request.json();

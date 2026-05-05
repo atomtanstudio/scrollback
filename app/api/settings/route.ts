@@ -113,7 +113,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const session = await requireAuth();
   const isInitialSetupWrite = session instanceof NextResponse
-    ? !(await requireSetupUnlocked())
+    ? !(await requireSetupUnlocked(request))
     : false;
 
   if (session instanceof NextResponse && !isInitialSetupWrite) return session;

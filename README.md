@@ -44,6 +44,10 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). If the app is not configured yet, the onboarding wizard will guide you through database setup, admin account creation, optional AI provider setup, optional X API setup, and extension pairing.
 
+First-run setup is protected by a setup token. Set `SCROLLBACK_SETUP_TOKEN`
+yourself, or let Scrollback generate `.scrollback-setup-token` in the project
+root and paste that token into onboarding.
+
 For the fastest local evaluation, choose SQLite. For a hosted instance with semantic search, use PostgreSQL or Supabase with pgvector.
 
 ## Onboarding Flow
@@ -71,6 +75,7 @@ Environment variables override values from `scrollback.config.json`.
 | `DATABASE_URL` | Yes | PostgreSQL/Supabase URL or SQLite file URL such as `file:./scrollback.db` |
 | `DATABASE_TYPE` | Yes | `postgresql`, `supabase`, or `sqlite` |
 | `AUTH_SECRET` | Yes | Auth.js session secret. Generate with `openssl rand -hex 32` |
+| `SCROLLBACK_SETUP_TOKEN` | Recommended | One-time first-run setup token. If omitted, Scrollback creates `.scrollback-setup-token` locally |
 | `EMBEDDINGS_PROVIDER` | No | Override the configured AI provider. Supported values: `openai`, `gemini` |
 | `OPENAI_API_KEY` | No | Enables OpenAI embeddings, classification, summaries, translation, and image descriptions |
 | `OPENAI_BASE_URL` | No | OpenAI-compatible API base URL for local/proxy embedding and model servers |
@@ -252,7 +257,7 @@ These errors usually happen when dependencies were installed under one Node/runt
 
 ### Onboarding redirects to login
 
-If setup was completed but no admin account exists, open `/login`. Scrollback will show the first-run admin creation form.
+If setup was completed but no admin account exists, open `/login`. Scrollback will show the first-run admin creation form. You will need the same `SCROLLBACK_SETUP_TOKEN` value, or the token stored in `.scrollback-setup-token`.
 
 ### AI works locally but not in production
 

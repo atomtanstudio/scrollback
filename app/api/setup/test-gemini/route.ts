@@ -4,7 +4,7 @@ import { requireSetupUnlocked } from "@/lib/setup/guard";
 
 export async function POST(request: NextRequest) {
   try {
-    const locked = await requireSetupUnlocked({ allowAdmin: true });
+    const locked = await requireSetupUnlocked(request, { allowAdmin: true });
     if (locked) return locked;
 
     const { apiKey } = await request.json();

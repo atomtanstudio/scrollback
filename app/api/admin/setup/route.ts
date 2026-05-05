@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createInitialAdmin } from "@/lib/auth/bootstrap";
+import { getProvidedSetupToken, getSetupTokenHint, isValidSetupToken } from "@/lib/setup/token";
 
 export async function POST(request: NextRequest) {
   try {
+    const setupToken = getProvidedSetupToken(request);
+    if (!isValidSetupToken(setupToken)) {
+      return NextResponse.json(
+        { error: `Setup token required. ${getSetupTokenHint()}` },
+        { status: 403 }
+      );
+    }
+
     const { email, password } = await request.json();
 
     if (!email || !password || password.length < 8) {
@@ -12,7 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await createInitialAdmin(email, password);
+    await createInitialAdmin(email, password, setupToken!);
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -13,10 +13,11 @@ import {
 } from "../ui";
 
 interface AccountStepProps {
+  setupToken: string;
   onContinue: () => void;
 }
 
-export function AccountStep({ onContinue }: AccountStepProps) {
+export function AccountStep({ setupToken, onContinue }: AccountStepProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -36,7 +37,10 @@ export function AccountStep({ onContinue }: AccountStepProps) {
     try {
       const res = await fetch("/api/admin/setup", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-scrollback-setup-token": setupToken,
+        },
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();

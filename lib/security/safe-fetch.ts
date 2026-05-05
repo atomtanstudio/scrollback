@@ -1,5 +1,8 @@
 import { lookup as defaultDnsLookup } from "dns/promises";
+import http from "http";
+import https from "https";
 import net from "net";
+import { Readable } from "stream";
 
 type LookupAddress = {
   address: string;
@@ -10,11 +13,17 @@ type SafeUrlOptions = {
   lookup?: (hostname: string) => Promise<LookupAddress[]>;
 };
 
-type SafeFetchOptions = SafeUrlOptions & {
-  maxRedirects?: number;
+const BLOCKED_HOSTNAMES = new Set(["localhost", "localhost.localdomain"]);
+
+type SafeHttpUrl = {
+  url: URL;
+  addresses: LookupAddress[];
 };
 
-const BLOCKED_HOSTNAMES = new Set(["localhost", "localhost.localdomain"]);
+type SafeFetchOptions = SafeUrlOptions & {
+  maxRedirects?: number;
+  request?: (safeUrl: SafeHttpUrl, init: RequestInit) => Promise<Response>;
+};
 
 function parseIpv4(address: string): number[] | null {
   const parts = address.split(".");
@@ -75,6 +84,13 @@ export async function assertSafeHttpUrl(
   rawUrl: string,
   options: SafeUrlOptions = {}
 ): Promise<URL> {
+  return (await resolveSafeHttpUrl(rawUrl, options)).url;
+}
+
+async function resolveSafeHttpUrl(
+  rawUrl: string,
+  options: SafeUrlOptions = {}
+): Promise<SafeHttpUrl> {
   let url: URL;
   try {
     url = new URL(rawUrl);
@@ -90,7 +106,7 @@ export async function assertSafeHttpUrl(
     throw new Error("URL credentials are not allowed");
   }
 
-  const hostname = url.hostname.toLowerCase();
+  const hostname = url.hostname.toLowerCase().replace(/^\[(.*)\]$/, "$1");
   if (!hostname || BLOCKED_HOSTNAMES.has(hostname) || hostname.endsWith(".localhost")) {
     throw new Error(`Host "${hostname}" is not allowed`);
   }
@@ -99,7 +115,7 @@ export async function assertSafeHttpUrl(
     if (isBlockedIpAddress(hostname)) {
       throw new Error(`Host "${hostname}" resolves to a private or reserved address`);
     }
-    return url;
+    return { url, addresses: [{ address: hostname, family: net.isIP(hostname) as 4 | 6 }] };
   }
 
   const lookup = options.lookup ?? (async (host: string) =>
@@ -114,7 +130,86 @@ export async function assertSafeHttpUrl(
     throw new Error(`Host "${hostname}" resolves to a private or reserved address`);
   }
 
-  return url;
+  return { url, addresses };
+}
+
+function buildHostHeader(url: URL): string {
+  return url.host;
+}
+
+function requestBodyFromInit(body: BodyInit | null | undefined): string | Buffer | Uint8Array | undefined {
+  if (!body) return undefined;
+  if (typeof body === "string" || body instanceof URLSearchParams) return body.toString();
+  if (body instanceof ArrayBuffer) return Buffer.from(body);
+  if (ArrayBuffer.isView(body)) return Buffer.from(body.buffer, body.byteOffset, body.byteLength);
+  if (body instanceof Blob) {
+    throw new Error("Blob request bodies are not supported by safeFetch");
+  }
+  throw new Error("Streaming request bodies are not supported by safeFetch");
+}
+
+function headersFromIncoming(headers: http.IncomingHttpHeaders): Headers {
+  const result = new Headers();
+  for (const [key, value] of Object.entries(headers)) {
+    if (typeof value === "string") {
+      result.append(key, value);
+    } else if (Array.isArray(value)) {
+      for (const item of value) result.append(key, item);
+    }
+  }
+  return result;
+}
+
+function isNullBodyStatus(statusCode: number): boolean {
+  return statusCode === 204 || statusCode === 205 || statusCode === 304;
+}
+
+async function fetchPinnedAddress(
+  safeUrl: SafeHttpUrl,
+  init: RequestInit
+): Promise<Response> {
+  const { url, addresses } = safeUrl;
+  const address = addresses[0];
+  const isHttps = url.protocol === "https:";
+  const transport = isHttps ? https : http;
+  const headers = new Headers(init.headers);
+  headers.set("host", buildHostHeader(url));
+
+  const body = requestBodyFromInit(init.body);
+  const port = url.port ? Number(url.port) : isHttps ? 443 : 80;
+
+  return new Promise<Response>((resolve, reject) => {
+    const request = transport.request(
+      {
+        protocol: url.protocol,
+        hostname: address.address,
+        family: address.family,
+        port,
+        method: init.method || "GET",
+        path: `${url.pathname}${url.search}`,
+        headers: Object.fromEntries(headers.entries()),
+        signal: init.signal ?? undefined,
+        servername: isHttps ? url.hostname.replace(/^\[(.*)\]$/, "$1") : undefined,
+      },
+      (incoming) => {
+        const status = incoming.statusCode ?? 0;
+        const responseBody = isNullBodyStatus(status)
+          ? null
+          : (Readable.toWeb(incoming) as ReadableStream<Uint8Array>);
+        resolve(
+          new Response(responseBody, {
+            status,
+            statusText: incoming.statusMessage,
+            headers: headersFromIncoming(incoming.headers),
+          })
+        );
+      }
+    );
+
+    request.on("error", reject);
+    if (body) request.write(body);
+    request.end();
+  });
 }
 
 export async function safeFetch(
@@ -126,8 +221,10 @@ export async function safeFetch(
   let currentUrl = rawUrl;
 
   for (let redirectCount = 0; redirectCount <= maxRedirects; redirectCount++) {
-    const url = await assertSafeHttpUrl(currentUrl, options);
-    const response = await fetch(url.href, { ...init, redirect: "manual" });
+    const safeUrl = await resolveSafeHttpUrl(currentUrl, options);
+    const request = options.request ?? fetchPinnedAddress;
+    const response = await request(safeUrl, { ...init, redirect: "manual" });
+    const url = safeUrl.url;
 
     if (
       response.status >= 300 &&

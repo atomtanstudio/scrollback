@@ -141,18 +141,32 @@ export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword }: Lo
           </div>
 
           {bootstrapMode && (
-            <div>
-              <label className="mb-1.5 block text-[13px] font-medium text-[#e7e0d5]">
-                Confirm password
-              </label>
-              <input
-                name="confirmPassword"
-                type="password"
-                placeholder="Repeat your password"
-                required
-                className="h-10 w-full rounded-[14px] border border-[#d6c9b21f] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
-              />
-            </div>
+            <>
+              <div>
+                <label className="mb-1.5 block text-[13px] font-medium text-[#e7e0d5]">
+                  Confirm password
+                </label>
+                <input
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="Repeat your password"
+                  required
+                  className="h-10 w-full rounded-[14px] border border-[#d6c9b21f] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[13px] font-medium text-[#e7e0d5]">
+                  Setup token
+                </label>
+                <input
+                  name="setupToken"
+                  type="password"
+                  placeholder="Paste your server setup token"
+                  required
+                  className="h-10 w-full rounded-[14px] border border-[#d6c9b21f] bg-[#0f141b] px-4 text-sm text-[#f2ede5] placeholder:text-[#7d7569] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b89462]"
+                />
+              </div>
+            </>
           )}
 
           {error && (

@@ -4,6 +4,7 @@ import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import { signIn, signOut } from "@/lib/auth/auth";
 import { createInitialAdmin } from "@/lib/auth/bootstrap";
+import { getSetupTokenHint, isValidSetupToken } from "@/lib/setup/token";
 
 function normalizeRedirectTarget(value: FormDataEntryValue | null, fallback: string) {
   if (typeof value !== "string" || !value.startsWith("/")) {
@@ -42,6 +43,7 @@ export async function bootstrapAdminAction(formData: FormData) {
   const email = formData.get("email");
   const password = formData.get("password");
   const confirmPassword = formData.get("confirmPassword");
+  const setupToken = formData.get("setupToken");
 
   if (typeof email !== "string" || !email) {
     redirect(`/login?setupError=${encodeURIComponent("Email is required")}&callbackUrl=${encodeURIComponent(redirectTo)}`);
@@ -55,8 +57,12 @@ export async function bootstrapAdminAction(formData: FormData) {
     redirect(`/login?setupError=${encodeURIComponent("Passwords do not match")}&callbackUrl=${encodeURIComponent(redirectTo)}`);
   }
 
+  if (typeof setupToken !== "string" || !isValidSetupToken(setupToken)) {
+    redirect(`/login?setupError=${encodeURIComponent(`Setup token required. ${getSetupTokenHint()}`)}&callbackUrl=${encodeURIComponent(redirectTo)}`);
+  }
+
   try {
-    await createInitialAdmin(email, password);
+    await createInitialAdmin(email, password, setupToken);
     await signIn("credentials", {
       email,
       password,
