@@ -1,0 +1,51 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: scrollback-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Scrollback
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build source archive
+        run: git archive --format=tar.gz -o scrollback-main.tar.gz HEAD
+
+      - name: Configure SSH
+        env:
+          HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
+          HETZNER_SSH_KEY: ${{ secrets.HETZNER_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$HETZNER_SSH_KEY" > ~/.ssh/scrollback_deploy
+          chmod 600 ~/.ssh/scrollback_deploy
+          ssh-keyscan -H "$HETZNER_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload archive
+        env:
+          HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
+          HETZNER_USER: ${{ secrets.HETZNER_USER }}
+        run: |
+          set -euo pipefail
+          scp -i ~/.ssh/scrollback_deploy scrollback-main.tar.gz "$HETZNER_USER@$HETZNER_HOST:/tmp/scrollback-main.tar.gz"
+
+      - name: Run deploy
+        env:
+          HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
+          HETZNER_USER: ${{ secrets.HETZNER_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/scrollback_deploy "$HETZNER_USER@$HETZNER_HOST" "sudo /usr/local/sbin/scrollback-deploy /tmp/scrollback-main.tar.gz"
