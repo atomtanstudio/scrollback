@@ -3,7 +3,7 @@
 import os from "node:os";
 import path from "node:path";
 
-process.env.SCROLLBACK_MEMORY_GATEWAY_ENV ||= process.env.FEEDSILO_MEMORY_GATEWAY_ENV || path.join(
+process.env.SCROLLBACK_MEMORY_GATEWAY_ENV ||= path.join(
   os.homedir(),
   ".codex",
   "secrets",

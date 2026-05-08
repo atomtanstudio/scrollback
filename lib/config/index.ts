@@ -6,14 +6,10 @@ import { configSchema, type ScrollbackConfig, type DatabaseType } from "./schema
 
 const PROJECT_ROOT = /* turbopackIgnore: true */ process.cwd();
 const DEFAULT_CONFIG_PATH = path.join(PROJECT_ROOT, "scrollback.config.json");
-const LEGACY_CONFIG_PATH = path.join(PROJECT_ROOT, "feedsilo.config.json");
 const DEFAULT_ENV_PATH = path.join(PROJECT_ROOT, ".env.local");
 
 function resolveConfigPath(configPath: string): string {
-  if (configPath !== DEFAULT_CONFIG_PATH) return configPath;
-  if (fs.existsSync(DEFAULT_CONFIG_PATH)) return DEFAULT_CONFIG_PATH;
-  if (fs.existsSync(LEGACY_CONFIG_PATH)) return LEGACY_CONFIG_PATH;
-  return DEFAULT_CONFIG_PATH;
+  return configPath;
 }
 
 export function readConfig(

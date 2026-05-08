@@ -6,6 +6,30 @@ It gives you a browser-extension capture flow for X/Twitter, RSS syncing, a poli
 
 Built with Next.js 16, React 18, Prisma 7, PostgreSQL/pgvector, SQLite, Tailwind CSS, and optional OpenAI or Google Gemini AI providers.
 
+## Launch Trailer
+
+The production launch trailer is committed with the repo and published by the app as a static asset:
+
+- Video: [`/launch/scrollback-launch-trailer.mp4`](public/launch/scrollback-launch-trailer.mp4)
+- Poster: [`/launch/scrollback-launch-trailer-poster.jpg`](public/launch/scrollback-launch-trailer-poster.jpg)
+- Source kit: [`scrollback-launch-trailer/`](scrollback-launch-trailer/)
+
+After deployment, the public video URL will be:
+
+```text
+https://scrollback.atomtan.studio/launch/scrollback-launch-trailer.mp4
+```
+
+Launch asset map:
+
+| Path | Purpose |
+| --- | --- |
+| `public/launch/scrollback-launch-trailer.mp4` | Public launch trailer served by the deployed app |
+| `public/launch/scrollback-launch-trailer-poster.jpg` | Poster/share image for the launch trailer |
+| `public/trailer-capture/*.svg` | Lightweight feature cards used for trailer and launch collateral |
+| `scrollback-launch-trailer/` | Full editable HyperFrames production kit |
+| `scrollback-launch-trailer/renders/scrollback-launch-trailer-command-center-glasscore-v4.mp4` | Selected final render kept with the source kit |
+
 ## Features
 
 - **One-click X/Twitter capture** - Save posts, threads, linked article metadata, images, GIFs, and videos from the browser extension.
@@ -27,6 +51,21 @@ Scrollback is focused on two capture paths:
 - RSS/Atom ingestion through the web app.
 
 It can enrich linked article cards and some long-form X article content when that data is available in the page or X API responses, but it is not meant to be a universal web clipper yet.
+
+## Browser Extension and X API Safety
+
+The Scrollback Capture browser extension can save individual X/Twitter posts, threads, media, and linked article cards without an X API token. That keeps setup simple and is useful for normal one-click capture.
+
+For bulk capture, especially syncing Likes and Bookmarks, Scrollback strongly recommends using an official X API bearer token or OAuth connection. API mode is more reliable, avoids scraping private X web endpoints, and is the lowest-risk way to import large parts of your account activity.
+
+Without the X API, the extension can still attempt page-based capture from visible X pages as you scroll. That mode is best-effort and depends on X's web app behavior. Because it may rely on internal X web requests or page scraping, use it thoughtfully and understand that it can carry more account risk than official API access.
+
+Practical guidance:
+
+- Use the extension without X API for occasional one-click saves.
+- Add an X API bearer token before bulk importing Likes or Bookmarks.
+- Use OAuth from Settings when you want direct bookmark and like syncing.
+- If account safety matters more than convenience, prefer API mode.
 
 ## Quick Start
 
@@ -64,6 +103,40 @@ The onboarding wizard does the same setup work you can do manually:
 
 Admin account creation is required. AI provider, X API, RSS feeds, local/R2 media storage, and extension pairing can all be configured later from Settings.
 
+## SQLite Onboarding Smoke Test
+
+Use this before launch, before publishing a release, or whenever setup code changes. Run it from a clean checkout or temporary copy so existing `.env.local`, `scrollback.config.json`, and database files do not mask first-run behavior.
+
+```bash
+nvm use 22
+npm install
+SCROLLBACK_SETUP_TOKEN="$(openssl rand -base64 32)" npm run dev
+```
+
+Then open [http://localhost:3000/onboarding](http://localhost:3000/onboarding) and follow the wizard:
+
+1. Paste the setup token from `SCROLLBACK_SETUP_TOKEN`.
+2. Choose **Local SQLite**.
+3. Keep the default database path, or enter another local path such as `./scrollback-smoke.db`.
+4. Continue through migration.
+5. Create the first admin account.
+6. Skip AI provider and X API setup unless you are testing those integrations.
+7. Skip or save the extension pairing token.
+8. Confirm the app opens at `/` and you are signed in.
+
+Expected local files after a successful SQLite onboarding smoke test:
+
+- `scrollback.config.json`
+- `.env.local`
+- the SQLite database file you selected, for example `scrollback.db`
+
+Expected app state:
+
+- `/api/setup/status` returns `configured: true` and `databaseType: "sqlite"`.
+- The SQLite database contains the core tables, including `users`, `content_items`, `categories`, and `rss_feeds`.
+- The `users` table has one admin user.
+- Reloading `/` shows the authenticated Scrollback app, not onboarding.
+
 ## Configuration
 
 For local development, either use onboarding or copy `.env.example` to `.env.local`.
@@ -88,13 +161,15 @@ Environment variables override values from `scrollback.config.json`.
 | `R2_SECRET_ACCESS_KEY` | No | R2 API token secret key |
 | `R2_BUCKET_NAME` | No | R2 bucket name |
 | `LOCAL_MEDIA_PATH` | No | Local directory for media storage when not using R2 |
-| `XAPI_BEARER_TOKEN` | No | App-only X API bearer token for tweet lookup fallback |
-| `XAPI_CLIENT_ID` | No | X OAuth 2.0 client ID for bookmark/like sync |
+| `XAPI_BEARER_TOKEN` | Recommended for bulk capture | App-only X API bearer token for safer extension bulk capture and tweet lookup fallback |
+| `XAPI_CLIENT_ID` | No | X OAuth 2.0 client ID for direct bookmark/like sync |
 | `XAPI_CLIENT_SECRET` | No | X OAuth 2.0 client secret |
 | `XAPI_ENCRYPTION_KEY` | No | 32-byte hex key for encrypted X OAuth token storage |
 | `DEMO_EMAIL`, `DEMO_PASSWORD` | No | Creates a read-only demo user at startup |
 
 ## Production Deploy
+
+Production target: `https://scrollback.atomtan.studio` on a Hetzner VPS behind HTTPS.
 
 ### 1. Use Node 22
 
@@ -156,6 +231,12 @@ http://localhost:3000
 
 For production, use your deployed HTTPS origin. After code changes in `extension/`, reload the unpacked extension in your browser.
 
+For the safest bulk capture experience, also configure an X API bearer token in the extension popup or Settings before importing Likes or Bookmarks. One-click saves can work without it, but API mode is recommended for account safety and reliability.
+
+### 6. Static launch assets
+
+The launch trailer is served by Next.js from `public/launch/`. No separate object storage or CDN step is required for the launch video unless traffic exceeds the VPS bandwidth budget.
+
 ## Scripts
 
 | Script | Description |
@@ -193,6 +274,10 @@ Expected result for a clean launch branch:
 - audit reports `found 0 vulnerabilities`
 
 See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for the full release checklist.
+
+## Launch Posting Plan
+
+Use [docs/LAUNCH_PLAN.md](docs/LAUNCH_PLAN.md) for the launch-day posting checklist, asset URLs, and channel plan.
 
 ## Known Limitations
 

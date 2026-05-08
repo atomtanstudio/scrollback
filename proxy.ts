@@ -97,9 +97,7 @@ export async function proxy(request: NextRequest) {
     !pathname.startsWith("/api/")
   ) {
     const hasEnv = Boolean(process.env.DATABASE_URL && process.env.DATABASE_TYPE);
-    const configured =
-      request.cookies.get("scrollback-configured") ??
-      request.cookies.get("feedsilo-configured");
+    const configured = request.cookies.get("scrollback-configured");
     if (!hasEnv && configured?.value !== "true") {
       return NextResponse.redirect(new URL("/onboarding", request.url));
     }
