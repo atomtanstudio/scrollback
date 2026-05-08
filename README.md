@@ -20,6 +20,16 @@ After deployment, the public video URL will be:
 https://scrollback.atomtan.studio/launch/scrollback-launch-trailer.mp4
 ```
 
+Launch asset map:
+
+| Path | Purpose |
+| --- | --- |
+| `public/launch/scrollback-launch-trailer.mp4` | Public launch trailer served by the deployed app |
+| `public/launch/scrollback-launch-trailer-poster.jpg` | Poster/share image for the launch trailer |
+| `public/trailer-capture/*.svg` | Lightweight feature cards used for trailer and launch collateral |
+| `scrollback-launch-trailer/` | Full editable HyperFrames production kit |
+| `scrollback-launch-trailer/renders/scrollback-launch-trailer-command-center-glasscore-v4.mp4` | Selected final render kept with the source kit |
+
 ## Features
 
 - **One-click X/Twitter capture** - Save posts, threads, linked article metadata, images, GIFs, and videos from the browser extension.
