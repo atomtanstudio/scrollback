@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="780" viewBox="0 0 1400 780">
+  <rect width="1400" height="780" rx="44" fill="#0b0f14"/>
+  <rect x="64" y="64" width="1272" height="652" rx="34" fill="#121923" stroke="rgba(214,201,178,0.18)" stroke-width="3"/>
+  <circle cx="1140" cy="180" r="150" fill="#c07b88" opacity="0.28"/>
+  <circle cx="1030" cy="520" r="240" fill="#c07b88" opacity="0.12"/>
+  <path d="M128 208h620M128 282h480M128 356h720" stroke="#f2ede5" stroke-width="24" stroke-linecap="round" opacity="0.84"/>
+  <path d="M128 500h330M128 560h510" stroke="#c07b88" stroke-width="18" stroke-linecap="round" opacity="0.78"/>
+  <text x="128" y="132" fill="#c07b88" font-family="Inter, system-ui, sans-serif" font-size="34" font-weight="700">AI art research</text>
+  <text x="128" y="680" fill="#f2ede5" font-family="Inter, system-ui, sans-serif" font-size="58" font-weight="760">Prompt library</text>
+</svg>

@@ -1,0 +1,12 @@
+{
+  "name": "scrollback-launch-trailer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "music": "node scripts/generate-audio-bed.mjs",
+    "lint": "npx --yes hyperframes@0.4.45 lint",
+    "inspect": "npx --yes hyperframes@0.4.45 inspect --samples 18",
+    "preview": "npx --yes hyperframes@0.4.45 preview --port 3002",
+    "render": "npx --yes hyperframes@0.4.45 render --quality draft --output renders/scrollback-launch-trailer-preview.mp4"
+  }
+}
