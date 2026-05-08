@@ -7,7 +7,7 @@ Use this before tagging or publishing the open-source release.
 - [ ] Merge the release branch into `dev`.
 - [ ] Run `npm run verify`.
 - [ ] Run `npm audit --audit-level=moderate`.
-- [ ] Smoke-test a fresh first-run setup with `SCROLLBACK_SETUP_TOKEN`.
+- [ ] Smoke-test a fresh first-run SQLite setup with `SCROLLBACK_SETUP_TOKEN`; follow the README's "SQLite Onboarding Smoke Test" and confirm login works.
 - [ ] Capture one X/Twitter post with media through the extension.
 - [ ] Add and sync one RSS feed.
 - [ ] Export or query a saved item through the remote query API.
@@ -33,6 +33,8 @@ Use this before tagging or publishing the open-source release.
 
 ## Launch Assets
 
-- [ ] Capture 2-4 clean product screenshots.
-- [ ] Create a launch image or short demo clip.
+- [ ] Confirm `public/launch/scrollback-launch-trailer.mp4` opens locally after `npm run dev`.
+- [ ] Confirm `public/launch/scrollback-launch-trailer-poster.jpg` opens locally after `npm run dev`.
+- [ ] Confirm the deployed trailer URL opens at `https://scrollback.atomtan.studio/launch/scrollback-launch-trailer.mp4`.
+- [ ] Confirm the source trailer kit in `scrollback-launch-trailer/` is committed.
 - [ ] Write the launch post with the project URL, scope, and known limitations.
