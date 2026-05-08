@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { bootstrapAdminAction, loginAction } from "@/lib/auth/actions";
@@ -23,9 +23,10 @@ interface LoginFormProps {
   bootstrapMode?: boolean;
   demoEmail?: string;
   demoPassword?: string;
+  autoDemoLogin?: boolean;
 }
 
-export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword }: LoginFormProps) {
+export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword, autoDemoLogin = false }: LoginFormProps) {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/admin";
   const errorParam = searchParams.get("error");
@@ -38,6 +39,13 @@ export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword }: Lo
 
   const showDemo = !!(demoEmail && demoPassword && !bootstrapMode);
   const [tab, setTab] = useState<"signin" | "demo">(showDemo ? "demo" : "signin");
+  const demoFormRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (showDemo && autoDemoLogin) {
+      demoFormRef.current?.requestSubmit();
+    }
+  }, [autoDemoLogin, showDemo]);
 
   return (
     <div className="rounded-[24px] border border-[#d6c9b214] bg-[linear-gradient(180deg,rgba(24,29,37,0.96),rgba(14,18,24,0.98))] p-6 shadow-[0_24px_64px_rgba(2,6,12,0.4)]">
@@ -104,7 +112,7 @@ export function LoginForm({ bootstrapMode = false, demoEmail, demoPassword }: Lo
             </p>
           )}
 
-          <form action={loginAction}>
+          <form ref={demoFormRef} action={loginAction}>
             <input type="hidden" name="callbackUrl" value={callbackUrl} />
             <input type="hidden" name="email" value={demoEmail} />
             <input type="hidden" name="password" value={demoPassword} />

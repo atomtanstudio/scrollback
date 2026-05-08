@@ -157,6 +157,9 @@ export async function proxy(request: NextRequest) {
     }
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
+    if (process.env.SCROLLBACK_PUBLIC_DEMO === "true") {
+      loginUrl.searchParams.set("demo", "1");
+    }
     return NextResponse.redirect(loginUrl);
   }
 
