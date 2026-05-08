@@ -54,10 +54,12 @@ async function pushSchema(config: ScrollbackConfig, schemaFlag: string): Promise
   });
 }
 
-async function ensureSqliteParentDirectory(databaseUrl: string): Promise<void> {
+async function ensureSqliteDatabaseFile(databaseUrl: string): Promise<void> {
   const sqlitePath = resolveSqliteFilePath(databaseUrl);
   if (!sqlitePath) return;
-  await fs.mkdir(path.dirname(sqlitePath), { recursive: true });
+  await fs.mkdir(/* turbopackIgnore: true */ path.dirname(sqlitePath), { recursive: true });
+  const handle = await fs.open(/* turbopackIgnore: true */ sqlitePath, "a");
+  await handle.close();
 }
 
 async function verifySqliteSchema(databaseUrl: string): Promise<void> {
@@ -136,10 +138,6 @@ export async function POST(request: NextRequest) {
       localMedia: {},
     };
 
-    // Write config files
-    writeConfig(config);
-    invalidateConfigCache();
-
     // Run Prisma db push
     const schemaFlag =
       config.database.type === "sqlite"
@@ -148,7 +146,7 @@ export async function POST(request: NextRequest) {
 
     try {
       if (config.database.type === "sqlite") {
-        await ensureSqliteParentDirectory(config.database.url);
+        await ensureSqliteDatabaseFile(config.database.url);
       }
       await pushSchema(config, schemaFlag);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -186,6 +184,11 @@ export async function POST(request: NextRequest) {
         });
       }
     }
+
+    // Write config files only after schema setup succeeds. This avoids locking
+    // onboarding into a partially configured instance after a failed migration.
+    writeConfig(config);
+    invalidateConfigCache();
 
     // For PostgreSQL, try to create pgvector extension
     if (config.database.type !== "sqlite") {
