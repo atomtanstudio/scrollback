@@ -27,6 +27,9 @@ Launch asset map:
 | `public/launch/scrollback-launch-trailer.mp4` | Public launch trailer served by the deployed app |
 | `public/launch/scrollback-launch-trailer-poster.jpg` | Poster/share image for the launch trailer |
 | `public/trailer-capture/*.svg` | Lightweight feature cards used for trailer and launch collateral |
+| `assets/product-hunt/gallery/*.png` | Product Hunt-ready gallery screenshots captured from the public demo |
+| `assets/product-hunt/scrollback-product-hunt-thumbnail.png` | Product Hunt thumbnail upload |
+| `assets/product-hunt/scrollback-product-hunt-thumbnail.svg` | Product Hunt thumbnail source |
 | `scrollback-launch-trailer/` | Full editable HyperFrames production kit |
 | `scrollback-launch-trailer/renders/scrollback-launch-trailer-command-center-glasscore-v4.mp4` | Selected final render kept with the source kit |
 

@@ -37,4 +37,6 @@ Use this before tagging or publishing the open-source release.
 - [ ] Confirm `public/launch/scrollback-launch-trailer-poster.jpg` opens locally after `npm run dev`.
 - [ ] Confirm the deployed trailer URL opens at `https://scrollback.atomtan.studio/launch/scrollback-launch-trailer.mp4`.
 - [ ] Confirm the source trailer kit in `scrollback-launch-trailer/` is committed.
+- [ ] Confirm Product Hunt gallery images in `assets/product-hunt/gallery/` are ready to upload.
+- [ ] Confirm launch copy in `docs/launch-copy/` is current.
 - [ ] Write the launch post with the project URL, scope, and known limitations.
