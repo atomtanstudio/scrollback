@@ -40,6 +40,9 @@ const ADMIN_ONLY_GET_PATHS = [
 // Static/framework paths — skip entirely
 const SKIP_PATHS = ["/_next", "/favicon.ico"];
 
+// Public non-API paths that should be reachable without a session.
+const PUBLIC_PAGE_PATHS = ["/privacy-policy", "/launch"];
+
 function matchPath(pathname: string, pattern: string): boolean {
   if (pattern.endsWith("/")) {
     return pathname.startsWith(pattern);
@@ -130,7 +133,7 @@ export async function proxy(request: NextRequest) {
   const isPublicPage =
     pathname === "/login" ||
     pathname.startsWith("/onboarding") ||
-    pathname === "/privacy-policy";
+    matchAny(pathname, PUBLIC_PAGE_PATHS);
   const isPage = !pathname.startsWith("/api/");
 
   const needsAuth =
