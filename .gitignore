@@ -58,9 +58,6 @@ next-env.d.ts
 # Scrollback config (written by onboarding; may contain credentials)
 scrollback.config.json
 
-# Legacy config filename from the pre-release project name
-feedsilo.config.json
-
 # SQLite generated Prisma client
 /lib/generated/prisma-sqlite
 

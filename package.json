@@ -9,7 +9,7 @@
   "bugs": {
     "url": "https://github.com/atomtanstudio/scrollback/issues"
   },
-  "homepage": "https://github.com/atomtanstudio/scrollback#readme",
+  "homepage": "https://scrollback.atomtan.studio",
   "engines": {
     "node": "22.x"
   },

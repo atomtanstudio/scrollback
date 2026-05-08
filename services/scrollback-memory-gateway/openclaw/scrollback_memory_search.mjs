@@ -11,17 +11,17 @@ const DEFAULT_ENV_PATH = path.resolve(
 );
 
 const env = {
-  ...readEnvFile(process.env.SCROLLBACK_MEMORY_GATEWAY_ENV || process.env.FEEDSILO_MEMORY_GATEWAY_ENV || DEFAULT_ENV_PATH),
+  ...readEnvFile(process.env.SCROLLBACK_MEMORY_GATEWAY_ENV || DEFAULT_ENV_PATH),
   ...process.env,
 };
 
 const BASE_URL =
-  env.SCROLLBACK_MEMORY_GATEWAY_URL || env.FEEDSILO_MEMORY_GATEWAY_URL || env.MEMORY_GATEWAY_URL || "http://172.17.0.1:8788";
+  env.SCROLLBACK_MEMORY_GATEWAY_URL || env.MEMORY_GATEWAY_URL || "http://172.17.0.1:8788";
 const TOKEN = env.MEMORY_GATEWAY_TOKEN;
 
 if (!TOKEN) {
   fail(
-    `Missing MEMORY_GATEWAY_TOKEN. Expected it in ${process.env.SCROLLBACK_MEMORY_GATEWAY_ENV || process.env.FEEDSILO_MEMORY_GATEWAY_ENV || DEFAULT_ENV_PATH}`
+    `Missing MEMORY_GATEWAY_TOKEN. Expected it in ${process.env.SCROLLBACK_MEMORY_GATEWAY_ENV || DEFAULT_ENV_PATH}`
   );
 }
 
