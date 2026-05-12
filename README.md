@@ -14,7 +14,7 @@ The production launch trailer is committed with the repo and published by the ap
 - Poster: [`/launch/scrollback-launch-trailer-poster.jpg`](public/launch/scrollback-launch-trailer-poster.jpg)
 - Source kit: [`scrollback-launch-trailer/`](scrollback-launch-trailer/)
 
-After deployment, the public video URL will be:
+The public video URL is:
 
 ```text
 https://scrollback.atomtan.studio/launch/scrollback-launch-trailer.mp4
