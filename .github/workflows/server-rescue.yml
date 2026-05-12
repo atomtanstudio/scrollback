@@ -1,0 +1,68 @@
+name: Server Rescue
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action to run on the Scrollback VPS"
+        required: true
+        type: choice
+        default: diagnose
+        options:
+          - diagnose
+          - restart
+
+jobs:
+  rescue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        env:
+          HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
+          HETZNER_SSH_KEY: ${{ secrets.HETZNER_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$HETZNER_SSH_KEY" > ~/.ssh/scrollback_deploy
+          chmod 600 ~/.ssh/scrollback_deploy
+          ssh-keyscan -T 10 -H "$HETZNER_HOST" >> ~/.ssh/known_hosts
+
+      - name: Diagnose
+        if: inputs.action == 'diagnose'
+        env:
+          HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
+          HETZNER_USER: ${{ secrets.HETZNER_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/scrollback_deploy "$HETZNER_USER@$HETZNER_HOST" '
+            set -u
+            echo "== uptime ==" && uptime
+            echo "== disk ==" && df -h
+            echo "== memory ==" && free -h
+            echo "== matching units ==" && systemctl list-units --all | grep -Ei "scrollback|caddy|next|node" || true
+            echo "== ports ==" && sudo ss -ltnp | grep -E ":3000|:3001|:80|:443" || true
+            echo "== caddy ==" && sudo systemctl status caddy --no-pager || true
+            echo "== scrollback services ==" && for u in scrollback scrollback.service; do sudo systemctl status "$u" --no-pager || true; done
+            echo "== recent scrollback logs ==" && for u in scrollback scrollback.service; do sudo journalctl -u "$u" -n 120 --no-pager || true; done
+            echo "== recent caddy logs ==" && sudo journalctl -u caddy -n 80 --no-pager || true
+          '
+
+      - name: Restart
+        if: inputs.action == 'restart'
+        env:
+          HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
+          HETZNER_USER: ${{ secrets.HETZNER_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/scrollback_deploy "$HETZNER_USER@$HETZNER_HOST" '
+            set -u
+            sudo systemctl daemon-reload
+            for u in scrollback scrollback.service; do
+              if systemctl list-unit-files "$u" --no-pager | grep -q scrollback; then
+                sudo systemctl restart "$u"
+              fi
+            done
+            sudo systemctl reload caddy || sudo systemctl restart caddy
+            sudo ss -ltnp | grep -E ":3000|:3001|:80|:443" || true
+            for u in scrollback scrollback.service caddy; do sudo systemctl status "$u" --no-pager || true; done
+          '
