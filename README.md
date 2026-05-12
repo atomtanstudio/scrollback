@@ -8,30 +8,21 @@ Built with Next.js 16, React 18, Prisma 7, PostgreSQL/pgvector, SQLite, Tailwind
 
 ## Launch Trailer
 
-The production launch trailer is committed with the repo and published by the app as a static asset:
+[![Watch the Scrollback launch trailer](public/launch/scrollback-launch-trailer-poster.jpg)](https://scrollback.atomtan.studio/launch/scrollback-launch-trailer.mp4)
 
-- Video: [`/launch/scrollback-launch-trailer.mp4`](public/launch/scrollback-launch-trailer.mp4)
-- Poster: [`/launch/scrollback-launch-trailer-poster.jpg`](public/launch/scrollback-launch-trailer-poster.jpg)
-- Source kit: [`scrollback-launch-trailer/`](scrollback-launch-trailer/)
+[Watch the trailer](https://scrollback.atomtan.studio/launch/scrollback-launch-trailer.mp4) or open the [public demo](https://scrollback.atomtan.studio).
 
-The public video URL is:
+## Screenshots
 
-```text
-https://scrollback.atomtan.studio/launch/scrollback-launch-trailer.mp4
-```
-
-Launch asset map:
-
-| Path | Purpose |
+| Library dashboard | Search and agent retrieval |
 | --- | --- |
-| `public/launch/scrollback-launch-trailer.mp4` | Public launch trailer served by the deployed app |
-| `public/launch/scrollback-launch-trailer-poster.jpg` | Poster/share image for the launch trailer |
-| `public/trailer-capture/*.svg` | Lightweight feature cards used for trailer and launch collateral |
-| `assets/product-hunt/gallery/*.png` | Product Hunt-ready gallery screenshots captured from the public demo |
-| `assets/product-hunt/scrollback-product-hunt-thumbnail.png` | Product Hunt thumbnail upload |
-| `assets/product-hunt/scrollback-product-hunt-thumbnail.svg` | Product Hunt thumbnail source |
-| `scrollback-launch-trailer/` | Full editable HyperFrames production kit |
-| `scrollback-launch-trailer/renders/scrollback-launch-trailer-command-center-glasscore-v4.mp4` | Selected final render kept with the source kit |
+| ![Scrollback library dashboard](assets/product-hunt/gallery/01-library-dashboard-1270x760.png) | ![Scrollback search and agent retrieval](assets/product-hunt/gallery/02-search-ai-agents-1270x760.png) |
+
+| Article archive | RSS archive |
+| --- | --- |
+| ![Scrollback article archive](assets/product-hunt/gallery/03-articles-filter-1270x760.png) | ![Scrollback RSS archive](assets/product-hunt/gallery/04-rss-filter-1270x760.png) |
+
+![Scrollback settings in demo mode](assets/product-hunt/gallery/05-settings-demo-mode-1270x760.png)
 
 ## Features
 
